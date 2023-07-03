@@ -1,5 +1,3 @@
-#include "uxn.h"
-
 /*
 Copyright (u) 2022-2023 Devine Lu Linvega, Andrew Alderwick, Andrew Richards
 
@@ -10,6 +8,32 @@ copyright notice and this permission notice appear in all copies.
 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
+
+#define PAGE_PROGRAM 0x0100
+
+/* clang-format off */
+
+#define POKE2(d, v) { (d)[0] = (v) >> 8; (d)[1] = (v); }
+#define PEEK2(d) ((d)[0] << 8 | (d)[1])
+
+/* clang-format on */
+
+typedef unsigned char Uint8;
+typedef signed char Sint8;
+typedef unsigned short Uint16;
+typedef signed short Sint16;
+typedef unsigned int Uint32;
+
+typedef struct Stack {
+	Uint8 dat[255], ptr;
+} Stack;
+
+typedef struct Uxn {
+	Uint8 *ram, dev[256];
+	Stack wst, rst;
+	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
+	void (*deo)(struct Uxn *u, Uint8 addr);
+} Uxn;
 
 #define T s->dat[s->ptr - 1]
 #define N s->dat[s->ptr - 2]
