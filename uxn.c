@@ -1,6 +1,14 @@
+/*
+Copyright (u) 2022-2023 Devine Lu Linvega, Andrew Alderwick, Andrew Richards
 
-#include "uintN_t.h"  // uintN_t types for any N
-#include "intN_t.h"  // intN_t types for any N
+Permission to use, copy, modify, and distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE.
+*/
+
 #define PAGE_PROGRAM 0x0100
 
 /* clang-format off */
@@ -10,15 +18,21 @@
 
 /* clang-format on */
 
+typedef unsigned char Uint8;
+typedef signed char Sint8;
+typedef unsigned short Uint16;
+typedef signed short Sint16;
+typedef unsigned int Uint32;
+
 typedef struct Stack {
-	uint8_t dat[255], ptr;
+	Uint8 dat[255], ptr;
 } Stack;
 
 typedef struct Uxn {
-	uint8_t *ram, dev[256];
+	Uint8 *ram, dev[256];
 	Stack wst, rst;
-	uint8_t (*dei)(struct Uxn *u, uint8_t addr);
-	void (*deo)(struct Uxn *u, uint8_t addr);
+	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
+	void (*deo)(struct Uxn *u, Uint8 addr);
 } Uxn;
 
 #define T s->dat[s->ptr - 1]
@@ -39,17 +53,18 @@ typedef struct Uxn {
 
 #define HALT(c) { return uxn_halt(u, ins, (c), pc - 1); }
 #define SET(mul, add) { if(mul > s->ptr) HALT(1) tmp = (mul & k) + add + s->ptr; if(tmp > 254) HALT(2) s->ptr = tmp; }
-#define PUT(o, v) { s->dat[(uint8_t)(s->ptr - 1 - (o))] = (v); }
-#define PUT2(o, v) { tmp = (v); s->dat[(uint8_t)(s->ptr - o - 2)] = tmp >> 8; s->dat[(uint8_t)(s->ptr - o - 1)] = tmp; }
+#define PUT(o, v) { s->dat[(Uint8)(s->ptr - 1 - (o))] = (v); }
+#define PUT2(o, v) { tmp = (v); s->dat[(Uint8)(s->ptr - o - 2)] = tmp >> 8; s->dat[(Uint8)(s->ptr - o - 1)] = tmp; }
 #define PUSH(x, v) { z = (x); if(z->ptr > 254) HALT(2) z->dat[z->ptr++] = (v); }
 #define PUSH2(x, v) { z = (x); if(z->ptr > 253) HALT(2) tmp = (v); z->dat[z->ptr] = tmp >> 8; z->dat[z->ptr + 1] = tmp; z->ptr += 2; }
 #define DEO(a, b) { u->dev[(a)] = (b); if((deo_mask[(a) >> 4] >> ((a) & 0xf)) & 0x1) uxn_deo(u, (a)); }
 #define DEI(a, b) { PUT((a), ((dei_mask[(b) >> 4] >> ((b) & 0xf)) & 0x1) ? uxn_dei(u, (b)) : u->dev[(b)]) }
 
-int8_t uxn_eval(Uxn *u, uint16_t pc)
+int
+uxn_eval(Uxn *u, Uint16 pc)
 {
-	int8_t t, n, l, k, tmp, opc, ins;
-	uint8_t *ram = u->ram;
+	int t, n, l, k, tmp, opc, ins;
+	Uint8 *ram = u->ram;
 	Stack *s, *z;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
@@ -90,11 +105,11 @@ int8_t uxn_eval(Uxn *u, uint16_t pc)
 			case 0x2a:            t=T2;n=N2;      SET(4,-3) PUT(0, n > t) break;
 			case 0x0b: /* LTH  */ t=T;n=N;        SET(2,-1) PUT(0, n < t) break;
 			case 0x2b:            t=T2;n=N2;      SET(4,-3) PUT(0, n < t) break;
-			case 0x0c: /* JMP  */ t=T;            SET(1,-1) pc += (int8_t)t; break;
+			case 0x0c: /* JMP  */ t=T;            SET(1,-1) pc += (Sint8)t; break;
 			case 0x2c:            t=T2;           SET(2,-2) pc = t; break;
-			case 0x0d: /* JCN  */ t=T;n=N;        SET(2,-2) pc += !!n * (int8_t)t; break;
+			case 0x0d: /* JCN  */ t=T;n=N;        SET(2,-2) pc += !!n * (Sint8)t; break;
 			case 0x2d:            t=T2;n=L;       SET(3,-3) if(n) pc = t; break;
-			case 0x0e: /* JSR  */ t=T;            SET(1,-1) PUSH2(&u->rst, pc) pc += (int8_t)t; break;
+			case 0x0e: /* JSR  */ t=T;            SET(1,-1) PUSH2(&u->rst, pc) pc += (Sint8)t; break;
 			case 0x2e:            t=T2;           SET(2,-2) PUSH2(&u->rst, pc) pc = t; break;
 			case 0x0f: /* STH  */ t=T;            SET(1,-1) PUSH((ins & 0x40 ? &u->wst : &u->rst), t) break;
 			case 0x2f:            t=T2;           SET(2,-2) PUSH2((ins & 0x40 ? &u->wst : &u->rst), t) break;
@@ -102,10 +117,10 @@ int8_t uxn_eval(Uxn *u, uint16_t pc)
 			case 0x30:            t=T;            SET(1, 1) PUT2(0, PEEK2(ram + t)) break;
 			case 0x11: /* STZ  */ t=T;n=N;        SET(2,-2) ram[t] = n; break;
 			case 0x31:            t=T;n=H2;       SET(3,-3) POKE2(ram + t, n) break;
-			case 0x12: /* LDR  */ t=T;            SET(1, 0) PUT(0, ram[pc + (int8_t)t]) break;
-			case 0x32:            t=T;            SET(1, 1) PUT2(0, PEEK2(ram + pc + (int8_t)t)) break;
-			case 0x13: /* STR  */ t=T;n=N;        SET(2,-2) ram[pc + (int8_t)t] = n; break;
-			case 0x33:            t=T;n=H2;       SET(3,-3) POKE2(ram + pc + (int8_t)t, n) break;
+			case 0x12: /* LDR  */ t=T;            SET(1, 0) PUT(0, ram[pc + (Sint8)t]) break;
+			case 0x32:            t=T;            SET(1, 1) PUT2(0, PEEK2(ram + pc + (Sint8)t)) break;
+			case 0x13: /* STR  */ t=T;n=N;        SET(2,-2) ram[pc + (Sint8)t] = n; break;
+			case 0x33:            t=T;n=H2;       SET(3,-3) POKE2(ram + pc + (Sint8)t, n) break;
 			case 0x14: /* LDA  */ t=T2;           SET(2,-1) PUT(0, ram[t]) break;
 			case 0x34:            t=T2;           SET(2, 0) PUT2(0, PEEK2(ram + t)) break;
 			case 0x15: /* STA  */ t=T2;n=L;       SET(3,-3) ram[t] = n; break;
@@ -132,13 +147,12 @@ int8_t uxn_eval(Uxn *u, uint16_t pc)
 			case 0x3f:            t=T;n=H2;       SET(3,-1) PUT2(0, n >> (t & 0xf) << (t >> 4)) break;
 		}
 	}
-	
-	return 0;
 }
 
-int8_t uxn_boot(Uxn *u, uint8_t *ram)
+int
+uxn_boot(Uxn *u, Uint8 *ram)
 {
-	uint32_t i;
+	Uint32 i;
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0;
