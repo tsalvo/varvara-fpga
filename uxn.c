@@ -57,10 +57,11 @@ uint16_t peek2_dev(uint8_t address) {
 
 uint8_t push2_stack_func(uint1_t stack_index, uint8_t ins, uint16_t value) {
 	static uint16_t push2_tmp;
-	if stack_ptr[stack_index] > 253 {
+	if (stack_ptr[stack_index] > 253) {
 		return halt(ins, 2);
 	}
 	
+	return 0;
 	// stack_index: 0 = working stack, 1 = return stack
 	/*
 	#define PUSH2(x, v) { z = (x); if(z->ptr > 253) HALT(2) tmp = (v); z->dat[z->ptr] = tmp >> 8; z->dat[z->ptr + 1] = tmp; z->ptr += 2; }
@@ -72,7 +73,7 @@ uint8_t push2_stack_func(uint1_t stack_index, uint8_t ins, uint16_t value) {
 uint8_t halt(uint8_t ins, uint8_t err) {
 	// HALT(c) { return uxn_halt(u, ins, (c), pc - 1); }
 	// Ex: HALT(3)
-	return uxn_halt(ins, err, pc - 1)
+	return uxn_halt(ins, err, pc - 1);
 }
 
 // REGISTERS
@@ -135,7 +136,7 @@ uint1_t uxn_eval(uint16_t pc) {
 
 #pragma MAIN eval_opcode
 uint1_t eval_opcode(
-	unt1_t stack_index,
+	uint1_t stack_index,
 	uint8_t opcode,
 	uint8_t ins,
 	uint8_t k
