@@ -1,10 +1,6 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"  // intN_t types for any N
 
-// #include "device.h"
-// #include "stack.h"
-// #include "registers.h"
-
 uint8_t dev[256];			// 256B of device memory. 16 devices at 16 bytes each
 uint8_t ram[65536];			// 64KB RAM
 uint16_t pc = 0;			// program counter
@@ -56,17 +52,30 @@ uint16_t peek2_dev(uint8_t address) {
 }
 
 uint8_t push2_stack_func(uint1_t stack_index, uint8_t ins, uint16_t value) {
+	// PUSH2(x, v) { z = (x); if(z->ptr > 253) HALT(2) tmp = (v); z->dat[z->ptr] = tmp >> 8; z->dat[z->ptr + 1] = tmp; z->ptr += 2; }
+	// Example: 
 	static uint16_t push2_tmp;
 	if (stack_ptr[stack_index] > 253) {
 		return halt(ins, 2);
 	}
 	
-	return 0;
-	// stack_index: 0 = working stack, 1 = return stack
-	/*
-	#define PUSH2(x, v) { z = (x); if(z->ptr > 253) HALT(2) tmp = (v); z->dat[z->ptr] = tmp >> 8; z->dat[z->ptr + 1] = tmp; z->ptr += 2; }
-	*/
+	push2_tmp = value;
+	stack_data[stack_index][stack_ptr[stack_index]] = (uint8_t)(push2_tmp >> 8);
+	stack_data[stack_index][stack_ptr[stack_index] + 1] = (uint8_t)(push2_tmp);
+	stack_ptr[stack_index] += 2;
 	
+	return 0;
+}
+
+uint8_t push_stack_func(uint1_t stack_index, uint8_t ins, uint8_t value) {
+	// PUSH(x, v) { z = (x); if(z->ptr > 254) HALT(2) z->dat[z->ptr++] = (v); }
+	// Example: PUSH(s, ram[pc++])
+	if (stack_ptr[stack_index] > 254) {
+		return halt(ins, 2);
+	}
+	
+	stack_data[stack_index][stack_ptr[stack_index]] = value;
+	stack_ptr[stack_index] += 1;
 }
 
 #pragma MAIN halt
@@ -142,17 +151,56 @@ uint1_t eval_opcode(
 	uint8_t k
 ) {
 	static uint8_t 	t, n, l, tmp;
+	static uint16_t tmp16;
 
 	switch(opcode) {
 		/* IMM */
-		case 0x00: /* BRK   */ return 1;
-		case 0xff: /* JCI   */ pc += !!stack_data[stack_index][--stack_ptr[stack_index]] * peek2_ram_func(pc) + 2; break;
+		case 0x00: /* BRK   */ 
+			return 1;
+		case 0xff: /* JCI   */ 
+			stack_ptr[stack_index]--;
+			if ()
+			tmp = stack_data[stack_index][stack_ptr[stack_index]];
+			if (tmp == 0) {
+				tmp16 = 0;
+			} else {
+				tmp16 = peek2_ram_func(pc) + 2;
+			}
+			pc += tmp16; 
+			break;
+			/* ORIGINAL: 
+				pc += !!s->dat[--s->ptr] * PEEK2(ram + pc) + 2; break;
+			*/
 		case 0xfe: /* JMI   */ pc += peek2_ram_func(pc) + 2; break;
-		case 0xfd: /* JSI   */ PUSH2(&u->rst, pc + 2) pc += PEEK2(ram + pc) + 2; break;
-		case 0xfc: /* LIT   */ PUSH(s, ram[pc++]) break;
-		case 0xfb: /* LIT2  */ PUSH2(s, PEEK2(ram + pc)) pc += 2; break;
-		case 0xfa: /* LITr  */ PUSH(s, ram[pc++]) break;
-		case 0xf9: /* LIT2r */ PUSH2(s, PEEK2(ram + pc)) pc += 2; break;
+		case 0xfd: /* JSI   */ 
+			tmp = push2_stack_func(1, ins, pc + 2);
+			if (tmp > 0) { // stack overflow
+				return 1;
+			}
+			pc += peek2_ram_func(pc) + 2;
+			break;
+		case 0xfc: /* LIT   */ 
+			tmp = push_stack_func(stack_index, ins, ram[pc]);
+			if (tmp > 0) { // stack overflow
+				return 1;
+			}
+			pc++;
+			break;
+		case 0xfb: /* LIT2  */ 
+			break;
+			/* ORIGINAL
+				PUSH2(s, PEEK2(ram + pc)) pc += 2; break;
+			*/
+		case 0xfa: /* LITr  */ 
+			break;
+			/* ORIGINAL
+				PUSH(s, ram[pc++]) break;
+			*/
+		case 0xf9: /* LIT2r */ 
+			break;
+			/* ORIGINAL
+				PUSH2(s, PEEK2(ram + pc)) pc += 2; break;
+			*/
 		/* ALU */
 		case 0x01: /* INC  */ t=T;            SET(1, 0) PUT(0, t + 1) break;
 		case 0x21:            t=T2;           SET(2, 0) PUT2(0, t + 1) break;
