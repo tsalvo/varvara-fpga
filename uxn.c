@@ -7,13 +7,16 @@ uint16_t pc = 0;            // program counter
 uint8_t stack_data[2][255]; // 0 = working stack, 1 = return stack
 uint8_t stack_ptr[2];       // 0 = working stack ptr, 1 = return stack ptr
 
+// Function Prototypes
+uint1_t uxn_eval(uint16_t pc);
+uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr);
+
 void boot() {
 	
 }
 
 // SHARED
 
-#pragma MAIN uxn_halt
 uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr)
 {
 	// TODO: implement
@@ -113,7 +116,6 @@ void put2_stack_func(uint1_t stack_index, uint8_t offset, uint16_t value) {
 	stack_data[stack_index][put2_tmp8 + 1] = ((uint8_t)(tmp));
 } 
 
-#pragma MAIN halt
 uint8_t halt(uint8_t ins, uint8_t err) {
 	// HALT(c) { return uxn_halt(u, ins, (c), pc - 1); }
 	// Ex: HALT(3)
@@ -122,63 +124,38 @@ uint8_t halt(uint8_t ins, uint8_t err) {
 
 // REGISTERS
 
-#pragma MAIN t_register_func
 uint8_t t_register_func(uint1_t stack_index) {
 	return stack_data[stack_index][stack_ptr[stack_index] - 1];
 }
 
-#pragma MAIN n_register_func
 uint8_t n_register_func(uint1_t stack_index) {
 	return stack_data[stack_index][stack_ptr[stack_index] - 2];
 }
 
-#pragma MAIN l_register_func
 uint8_t l_register_func(uint1_t stack_index) {
 	return stack_data[stack_index][stack_ptr[stack_index] - 3];
 }
 
-#pragma MAIN h2_register_func
 uint16_t h2_register_func(uint1_t stack_index) {
 	return peek2_stack_func(stack_index, stack_ptr[stack_index] - 3);
 }
 
-#pragma MAIN t2_register_func
 uint16_t t2_register_func(uint1_t stack_index) {
 	return peek2_stack_func(stack_index, stack_ptr[stack_index]- 2);
 }
 
-#pragma MAIN n2_register_func
 uint16_t n2_register_func(uint1_t stack_index) {
 	return peek2_stack_func(stack_index, stack_ptr[stack_index] - 4);
 }
 
-#pragma MAIN l2_register_func
 uint16_t l2_register_func(uint1_t stack_index) {
 	return peek2_stack_func(stack_index, stack_ptr[stack_index] - 6);
 }
 
 // INSTRUCTION HANDLING
 
-#pragma MAIN uxn_eval
-uint1_t uxn_eval(uint16_t pc) {
 
-	static uint8_t k, opc, ins;
-	static uint1_t s;
 
-	if(pc == 0 || dev[0x0f] != 0) {
-		return 0;
-	}
-	
-	for(;;) {
-		ins = ram[pc++] & 0xff;
-		k = ins & 0x80 ? 0xff : 0;
-		s = ins & 0x40 ? 1 : 0;
-		opc = !(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f;	
-		return eval_opcode(s, opc, ins, k);
-	}
-}
-
-#pragma MAIN eval_opcode
 uint1_t eval_opcode(
 	uint1_t stack_index,
 	uint8_t opcode,
@@ -310,15 +287,39 @@ uint1_t eval_opcode(
 			break; 
 			/* t=T2;n=N2;l=L2; SET(6, 0) PUT2(0, l) PUT2(2, t) PUT2(4, n) break; */
 		case 0x06: /* DUP  */ 
+			t8 = t_register_func(stack_index);
+			tmp = set_func(stack_index, ins, k, 1, 1);
+			if (tmp > 0) { return 1; } // stack overflow
+			put_stack_func(stack_index, 0, t8);
+			put_stack_func(stack_index, 1, t8);
 			break; 
 			/* t=T;            SET(1, 1) PUT(0, t) PUT(1, t) break; */
-		case 0x26:            
+		case 0x26:
+			t16 = t2_register_func(stack_index);
+			tmp = set_func(stack_index, ins, k, 2, 2);
+			if (tmp > 0) { return 1; } // stack overflow
+			put2_stack_func(stack_index, 0, t16);
+			put2_stack_func(stack_index, 2, t16);       
 			break; 
 			/* t=T2;           SET(2, 2) PUT2(0, t) PUT2(2, t) break; */
 		case 0x07: /* OVR  */ 
+			t8 = t_register_func(stack_index);
+			n8 = n_register_func(stack_index);
+			tmp = set_func(stack_index, ins, k, 2, 1);
+			if (tmp > 0) { return 1; } // stack overflow
+			put_stack_func(stack_index, 0, n8);
+			put_stack_func(stack_index, 1, t8);
+			put_stack_func(stack_index, 2, n8);
 			break; 
 			/* t=T;n=N;        SET(2, 1) PUT(0, n) PUT(1, t) PUT(2, n) break; */
-		case 0x27:            
+		case 0x27:  
+			t16 = t2_register_func(stack_index);
+			n16 = n2_register_func(stack_index);
+			tmp = set_func(stack_index, ins, k, 4, 2);
+			if (tmp > 0) { return 1; } // stack overflow
+			put2_stack_func(stack_index, 0, n16);
+			put2_stack_func(stack_index, 2, t16);
+			put2_stack_func(stack_index, 4, n16);     
 			break; 
 			/* t=T2;n=N2;      SET(4, 2) PUT2(0, n) PUT2(2, t) PUT2(4, n) break; */
 		case 0x08: /* EQU  */ 
@@ -469,4 +470,23 @@ uint1_t eval_opcode(
 	}
 	
 	return 0;
+}
+
+#pragma MAIN uxn_eval
+uint1_t uxn_eval(uint16_t pc) {
+
+	static uint8_t k, opc, ins;
+	static uint1_t s;
+
+	if(pc == 0 || dev[0x0f] != 0) {
+		return 0;
+	}
+	
+	for(;;) {
+		ins = ram[pc++] & 0xff;
+		k = ins & 0x80 ? 0xff : 0;
+		s = ins & 0x40 ? 1 : 0;
+		opc = !(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f;	
+		return eval_opcode(s, opc, ins, k);
+	}
 }
