@@ -225,40 +225,40 @@ uint1_t eval_opcode(
 			stack_ptr_move(stack_index, 1, 1);
 			tmp = stack_data[stack_index][stack_ptr[stack_index]];
 			tmp16 = (tmp == 0) ? 0 : peek2_ram_func(pc) + 2;
-			pc_adjust(tmp16, 0);
+			pc_add(tmp16);
 			break;
 			/* pc += !!s->dat[--s->ptr] * PEEK2(ram + pc) + 2; break; */
 		case 0xfe: /* JMI   */ 
-			pc_adjust(peek2_ram_func(pc) + 2, 0);
+			pc_add(peek2_ram_func(pc) + 2);
 			break;
 		case 0xfd: /* JSI   */ 
 			tmp = push2_stack_func(1, ins, pc + 2);
 			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
-			pc_adjust(peek2_ram_func(pc) + 2, 0);
+			pc_add(peek2_ram_func(pc) + 2);
 			break;
 		case 0xfc: /* LIT   */ 
 			tmp = push_stack_func(stack_index, ins, ram[pc]);
 			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
-			pc_adjust(1, 0);
+			pc_add(1);
 			break;
 		case 0xfb: /* LIT2  */ 
 			tmp16 = peek2_ram_func(pc);
 			tmp = push2_stack_func(stack_index, ins, tmp16);
 			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
-			pc_adjust(2, 0);
+			pc_add(2);
 			break;
 			/* PUSH2(s, PEEK2(ram + pc)) pc += 2; break; */
 		case 0xfa: /* LITr  */ 
 			tmp = push_stack_func(stack_index, ins, ram[pc]);
 			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
-			pc_adjust(1, 0);
+			pc_add(1);
 			break;
 			/* PUSH(s, ram[pc++]) break; */
 		case 0xf9: /* LIT2r */ 
 			tmp16 = peek2_ram_func(pc);
 			tmp = push2_stack_func(stack_index, ins, tmp16);
 			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
-			pc_adjust(2, 0);
+			pc_add(2);
 			break;
 			/* PUSH2(s, PEEK2(ram + pc)) pc += 2; break; */
 		/* ALU */
@@ -545,7 +545,7 @@ uint1_t uxn_eval() {
 	
 	if (!uxn_eval_should_return) {
 		ins = ram[pc] & 0xff;
-		pc_adjust(1, 0);
+		pc_add(1);
 		k = ins & 0x80 ? 0xff : 0;
 		s = ins & 0x40 ? 1 : 0;
 		opc = !(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f;	
