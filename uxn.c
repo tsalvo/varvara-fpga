@@ -1,32 +1,54 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"  // intN_t types for any N
 
+// TODO: RULES:
+// - cannot write to a gloal variable from more than one function
+// - no switch statements (C AST node cannot be parsed to logic)
+// only one return per function
+// - no ++ or -- operators
+
 uint8_t dev[256];           // 256B of device memory. 16 devices at 16 bytes each
 uint8_t ram[65536];         // 64KB RAM
 uint16_t pc = 0;            // program counter
 uint8_t stack_data[2][255]; // 0 = working stack, 1 = return stack
 uint8_t stack_ptr[2];       // 0 = working stack ptr, 1 = return stack ptr
 
-// Function Prototypes
-uint1_t uxn_eval(uint16_t pc);
-uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr);
+// SHARED
 
-void boot() {
-	
+
+// Global Access 
+void pc_add(uint16_t adjustment) {
+	pc += adjustment;
 }
 
-// SHARED
+void stack_data_set(uint1_t stack_index, uint8_t index, uint8_t value) {
+	stack_data[stack_index][index] = value;
+}
+
+void stack_pointer_set(uint1_t stack_index, uint8_t value) {
+	stack_ptr[stack_index] = value;
+}
+
+void stack_pointer_move(uint1_t stack_index, uint8_t adjustment, uint1_t is_negative) {
+	static uint8_t stack_ptr_existing;
+	stack_ptr_existing = stack_ptr[stack_index];
+	if (is_negative) {
+		stack_ptr[stack_index] = stack_ptr_existing - adjustment;
+	} else {
+		stack_ptr[stack_index] = stack_ptr_existing + adjustment;
+	}
+}
 
 uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr)
 {
 	// TODO: implement
 	uint16_t handler = peek2_dev(0);
 	if(handler) {
-		stack_ptr[0] = 4;
-		stack_data[0][0] = addr >> 0x08;
-		stack_data[0][1] = addr & 0xFF;
-		stack_data[0][2] = instr;
-		stack_data[0][3] = err;
+		stack_ptr_set(0, 4);
+		stack_data_set(0, 0, (uint8_t)(addr >> 8));
+		stack_data_set(0, 1, (uint8_t)(addr & 0x00FF));
+		stack_data_set(0, 2, instr);
+		stack_data_set(0, 3, err);
 		return uxn_eval(handler);
 	} else {
 		// system_inspect(u);
@@ -55,56 +77,83 @@ uint16_t peek2_dev(uint8_t address) {
 }
 
 uint8_t push2_stack_func(uint1_t stack_index, uint8_t ins, uint16_t value) {
-	// PUSH2(x, v) { z = (x); if(z->ptr > 253) HALT(2) tmp = (v); z->dat[z->ptr] = tmp >> 8; z->dat[z->ptr + 1] = tmp; z->ptr += 2; }
-	// Example: 
 	static uint16_t push2_tmp;
+	static uint8_t ret_value;
+	static_uint1_t halt_return;
+	
 	if (stack_ptr[stack_index] > 253) {
-		return halt(ins, 2);
+		ret_value = halt(ins, 2);
+		halt_return = 1;
+	} else {
+		ret_value = 0;
+		halt_return = 0;
 	}
 	
-	push2_tmp = value;
-	stack_data[stack_index][stack_ptr[stack_index]] = (uint8_t)(push2_tmp >> 8);
-	stack_data[stack_index][stack_ptr[stack_index] + 1] = (uint8_t)(push2_tmp);
-	stack_ptr[stack_index] += 2;
+	if (halt_return == 0) {
+		push2_tmp = value;
+		stack_data_set(stack_index, stack_ptr[stack_index], (uint8_t)(push2_tmp >> 8));
+		stack_data_set(stack_index, stack_ptr[stack_index] + 1, (uint8_t)(push2_tmp));
+		stack_ptr_move(stack_index, 2, 0);
+	}
 	
-	return 0;
+	return ret_value;
 }
 
 uint8_t push_stack_func(uint1_t stack_index, uint8_t ins, uint8_t value) {
-	// PUSH(x, v) { z = (x); if(z->ptr > 254) HALT(2) z->dat[z->ptr++] = (v); }
-	// Example: PUSH(s, ram[pc++])
+	
+	static uint8_t ret_value;
+	static_uint1_t halt_return;
+	
 	if (stack_ptr[stack_index] > 254) {
-		return halt(ins, 2);
+		ret_value = halt(ins, 2);
+		halt_return = 1;
+	} else {
+		ret_value = 0;
+		halt_return = 0;
 	}
 	
-	stack_data[stack_index][stack_ptr[stack_index]] = value;
-	stack_ptr[stack_index] += 1;
+	if (halt_return == 0) {
+		stack_data_set(stack_index, stack_ptr[stack_index], value);
+		stack_ptr_move(stack_index, 1, 0);
+	}
+	
+	return ret_value;
 }
 
 uint8_t set_func(uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add) {
 	// SET(mul, add) { if(mul > s->ptr) HALT(1) tmp = (mul & k) + add + s->ptr; if(tmp > 254) HALT(2) s->ptr = tmp; }
 	// Example: SET(2,1)
 	
-	static uint8_t set_tmp;
+	static uint8_t ret_value;
+	static_uint1_t halt_return;
+	
+	static uint8_t set_tmp, ret_value;
 	if (mul > stack_ptr[stack_index]) {
-		return halt(ins, 1);
+		ret_value = halt(ins, 1);
+		halt_return = 1;
+	} else {
+		ret_value = 0;
+		halt_return = 0;
 	}
 	
 	set_tmp = (mul & k) + add + stack_ptr[stack_index];
 	if (set_tmp > 254) {
-		return halt(ins, 2);
+		ret_value = halt(ins, 2);
+		halt_return = 1;
 	}
 	
-	stack_ptr[stack_index] = set_tmp;
+	if (halt_return == 0) {
+		stack_ptr_set(stack_index, set_tmp);
+	}
 	
 	return 0;
 }
 
 void put_stack_func(uint1_t stack_index, uint8_t offset, uint8_t value) {
 	// PUT(o, v) { s->dat[(Uint8)(s->ptr - 1 - (o))] = (v); }
-	uint8_t put_tmp;
+	static uint8_t put_tmp;
 	put_tmp = stack_ptr[stack_index] - 1 - offset;
-	stack_data[stack_index][put_tmp] = value;
+	stack_data_set(stack_index, put_tmp, value);
 }
 
 void put2_stack_func(uint1_t stack_index, uint8_t offset, uint16_t value) {
@@ -112,8 +161,8 @@ void put2_stack_func(uint1_t stack_index, uint8_t offset, uint16_t value) {
 	static uint16_t put2_tmp;
 	static uint8_t put2_tmp8 = stack_ptr[stack_index] - offset - 2;
 	put2_tmp = value;
-	stack_data[stack_index][put2_tmp8] = ((uint8_t)(tmp >> 8));;
-	stack_data[stack_index][put2_tmp8 + 1] = ((uint8_t)(tmp));
+	stack_data_set(stack_index, put2_tmp8, (uint8_t)(tmp >> 8));
+	stack_data_set(stack_index, put2_tmp8 + 1, (uint8_t)(tmp));
 } 
 
 uint8_t halt(uint8_t ins, uint8_t err) {
@@ -164,85 +213,90 @@ uint1_t eval_opcode(
 ) {
 	static uint8_t 	t8, n8, l8, tmp;
 	static uint16_t t16, n16, l16, tmp16;
+	static uint1_t eval_opcode_ret_value;
+	
+	eval_opcode_ret_value = 0;
 
 	switch(opcode) {
 		/* IMM */
 		case 0x00: /* BRK   */ 
 			return 1;
 		case 0xff: /* JCI   */ 
-			stack_ptr[stack_index]--;
+			stack_ptr_move(stack_index, 1, 1);
 			tmp = stack_data[stack_index][stack_ptr[stack_index]];
 			tmp16 = (tmp == 0) ? 0 : peek2_ram_func(pc) + 2;
-			pc += tmp16; 
+			pc_adjust(tmp16, 0);
 			break;
 			/* pc += !!s->dat[--s->ptr] * PEEK2(ram + pc) + 2; break; */
-		case 0xfe: /* JMI   */ pc += peek2_ram_func(pc) + 2; break;
+		case 0xfe: /* JMI   */ 
+			pc_adjust(peek2_ram_func(pc) + 2, 0);
+			break;
 		case 0xfd: /* JSI   */ 
 			tmp = push2_stack_func(1, ins, pc + 2);
-			if (tmp > 0) { return 1; } // stack overflow
-			pc += peek2_ram_func(pc) + 2;
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
+			pc_adjust(peek2_ram_func(pc) + 2, 0);
 			break;
 		case 0xfc: /* LIT   */ 
 			tmp = push_stack_func(stack_index, ins, ram[pc]);
-			if (tmp > 0) { return 1; } // stack overflow
-			pc++;
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
+			pc_adjust(1, 0);
 			break;
 		case 0xfb: /* LIT2  */ 
 			tmp16 = peek2_ram_func(pc);
 			tmp = push2_stack_func(stack_index, ins, tmp16);
-			if (tmp > 0) { return 1; } // stack overflow
-			pc += 2;
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
+			pc_adjust(2, 0);
 			break;
 			/* PUSH2(s, PEEK2(ram + pc)) pc += 2; break; */
 		case 0xfa: /* LITr  */ 
 			tmp = push_stack_func(stack_index, ins, ram[pc]);
-			if (tmp > 0) { return 1; } // stack overflow
-			pc++;
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
+			pc_adjust(1, 0);
 			break;
 			/* PUSH(s, ram[pc++]) break; */
 		case 0xf9: /* LIT2r */ 
 			tmp16 = peek2_ram_func(pc);
 			tmp = push2_stack_func(stack_index, ins, tmp16);
-			if (tmp > 0) { return 1; } // stack overflow
-			pc += 2;
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
+			pc_adjust(2, 0);
 			break;
 			/* PUSH2(s, PEEK2(ram + pc)) pc += 2; break; */
 		/* ALU */
 		case 0x01: /* INC  */ 
 			t8 = t_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 1, 0);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put_stack_func(stack_index, 0, t8 + 1);
 			break;
 			/* t=T; SET(1, 0) PUT(0, t + 1) break; */
 		case 0x21: 
 			t16 = t2_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 2, 0);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put2_stack_func(stack_index, 0, t16 + 1);
 			break;         
 			/* t=T2; SET(2, 0) PUT2(0, t + 1) break; */
 		case 0x02: /* POP  */  
 			tmp = set_func(stack_index, 1, -1);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			break;               
 			/* SET(1,-1) break; */
 		case 0x22:
 			tmp = set_func(stack_index, 2, -2);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			break;                            
 			/* SET(2,-2) break; */
 		case 0x03: /* NIP  */ 
 			t8 = t_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 2, -1);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put_stack_func(stack_index, 0, t8);
 			break;
 			/* t=T; SET(2,-1) PUT(0, t) break; */
 		case 0x23:
 			t16 = t2_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 4, -2);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put2_stack_func(stack_index, 0, t16);
 			break;
 			/* t=T2;           SET(4,-2) PUT2(0, t) break;*/
@@ -250,7 +304,7 @@ uint1_t eval_opcode(
 			t8 = t_register_func(stack_index);
 			n8 = n_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 2, 0);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put_stack_func(stack_index, 0, n8);
 			put_stack_func(stack_index, 1, t8);
 			break;
@@ -259,7 +313,7 @@ uint1_t eval_opcode(
 			t16 = t2_register_func(stack_index);
 			n16 = n2_register_func(stack_index); 
 			tmp = set_func(stack_index, ins, k, 4, 0);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put2_stack_func(stack_index, 0, n16);
 			put2_stack_func(stack_index, 2, t16);          
 			break; 
@@ -269,7 +323,7 @@ uint1_t eval_opcode(
 			n8 = n_register_func(stack_index);
 			l8 = l_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 3, 0);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put_stack_func(stack_index, 0, l8);
 			put_stack_func(stack_index, 1, t8);
 			put_stack_func(stack_index, 2, n8);
@@ -280,7 +334,7 @@ uint1_t eval_opcode(
 			n16 = n2_register_func(stack_index);
 			l16 = l2_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 6, 0);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put2_stack_func(stack_index, 0, l16);
 			put2_stack_func(stack_index, 2, t16);
 			put2_stack_func(stack_index, 4, n16);
@@ -289,7 +343,7 @@ uint1_t eval_opcode(
 		case 0x06: /* DUP  */ 
 			t8 = t_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 1, 1);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put_stack_func(stack_index, 0, t8);
 			put_stack_func(stack_index, 1, t8);
 			break; 
@@ -297,7 +351,7 @@ uint1_t eval_opcode(
 		case 0x26:
 			t16 = t2_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 2, 2);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put2_stack_func(stack_index, 0, t16);
 			put2_stack_func(stack_index, 2, t16);       
 			break; 
@@ -306,7 +360,7 @@ uint1_t eval_opcode(
 			t8 = t_register_func(stack_index);
 			n8 = n_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 2, 1);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put_stack_func(stack_index, 0, n8);
 			put_stack_func(stack_index, 1, t8);
 			put_stack_func(stack_index, 2, n8);
@@ -316,7 +370,7 @@ uint1_t eval_opcode(
 			t16 = t2_register_func(stack_index);
 			n16 = n2_register_func(stack_index);
 			tmp = set_func(stack_index, ins, k, 4, 2);
-			if (tmp > 0) { return 1; } // stack overflow
+			if (tmp > 0) { eval_opcode_ret_value = 1; break; } // stack overflow
 			put2_stack_func(stack_index, 0, n16);
 			put2_stack_func(stack_index, 2, t16);
 			put2_stack_func(stack_index, 4, n16);     
@@ -469,24 +523,34 @@ uint1_t eval_opcode(
 		default: break;
 	}
 	
-	return 0;
+	return eval_opcode_ret_value;
 }
 
-#pragma MAIN uxn_eval
-uint1_t uxn_eval(uint16_t pc) {
+#pragma MAIN_MHZ uxn_eval 1.0
+uint1_t uxn_eval() {
 
 	static uint8_t k, opc, ins;
-	static uint1_t s;
+	static uint1_t s, uxn_eval_should_return, uxn_eval_ret_value;
 
-	if(pc == 0 || dev[0x0f] != 0) {
-		return 0;
+	uxn_eval_ret_value = 0;
+	uxn_eval_should_return = 0;
+
+	if(pc == 0) {
+		uxn_eval_should_return = 1;
 	}
 	
-	for(;;) {
-		ins = ram[pc++] & 0xff;
+	if (dev[15] != 0) {
+		uxn_eval_should_return = 1;
+	}
+	
+	if (!uxn_eval_should_return) {
+		ins = ram[pc] & 0xff;
+		pc_adjust(1, 0);
 		k = ins & 0x80 ? 0xff : 0;
 		s = ins & 0x40 ? 1 : 0;
 		opc = !(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f;	
-		return eval_opcode(s, opc, ins, k);
+		uxn_eval_should_return = eval_opcode(s, opc, ins, k);
 	}
+	
+	return uxn_eval_ret_value;
 }
