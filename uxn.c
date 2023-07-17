@@ -77,16 +77,7 @@ DECL_RAM_DP_RW_R_0(
   RAM_INIT_INT_ZEROS // Initial value VHDL string, from ram.h
 )
 
-//// LEGACY
-// uint8_t dev[256];           // 256B of device memory. 16 devices at 16 bytes each
-// uint8_t ram[65536];         // 64KB RAM
-// uint8_t stack_data[2][255]; // 0 = working stack, 1 = return stack
-// uint8_t stack_ptr[2];       // 0 = working stack ptr, 1 = return stack ptr
-//// END LEGACY
-
-
 // SHARED
-
 // Global Access 
 uint8_t main_ram_read(uint16_t address) {
 	static uint32_t main_r_rdaddr = 0; // Read address
@@ -729,16 +720,40 @@ uint1_t eval_opcode(
 		}
 	}
 	else if (opcode == 0x08 /* EQU */) {
-		/* t=T;n=N;        SET(2,-1) PUT(0, n == t) break; */
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put_stack(stack_index, 0, n8 == t8 ? 1 : 0);
+		}
 	}
 	else if (opcode == 0x28 /*  */) {
-		/* t=T2;n=N2;      SET(4,-3) PUT(0, n == t) break; */
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put2_stack(stack_index, 0, n16 == t16 ? 1 : 0);
+		}
 	}
 	else if (opcode == 0x09 /* NEQ */) {
-		/* t=T;n=N;        SET(2,-1) PUT(0, n != t) break; */
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put_stack(stack_index, 0, n8 == t8 ? 0 : 1);
+		}
 	}
 	else if (opcode == 0x29 /*  */) {
-		/* t=T2;n=N2;      SET(4,-3) PUT(0, n != t) break; */
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put2_stack(stack_index, 0, n16 == t16 ? 0 : 1);
+		}
 	}
 	else if (opcode == 0x0A /* GTH */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n > t) break; */
