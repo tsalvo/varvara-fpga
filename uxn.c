@@ -345,6 +345,18 @@ void pc_add(uint16_t adjustment) {
 	prog_ctr_ram_write(current_prog_ctr + adjustment);
 }
 
+void pc_add_s8(int8_t adjustment) {
+	static uint16_t current_prog_ctr;
+	static uint16_t new_prog_ctr;
+	current_prog_ctr = prog_ctr_ram_read();
+	new_prog_ctr = current_prog_ctr + adjustment;
+	prog_ctr_ram_write(new_prog_ctr);
+}
+
+void pc_set(uint16_t value) {
+	prog_ctr_ram_write(value);
+}
+
 void stack_data_set(uint1_t stack_index, uint8_t index, uint8_t value) {
 	if (stack_index == 0) {
 		stack_w_ram_write(index, value);
@@ -756,132 +768,208 @@ uint1_t eval_opcode(
 		}
 	}
 	else if (opcode == 0x0A /* GTH */) {
-		/* t=T;n=N;        SET(2,-1) PUT(0, n > t) break; */
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put_stack(stack_index, 0, n8 > t8 ? 1 : 0);
+		}
 	}
 	else if (opcode == 0x2A /*  */) {
-		/* t=T2;n=N2;      SET(4,-3) PUT(0, n > t) break; */
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put2_stack(stack_index, 0, n16 > t16 ? 1 : 0);
+		}
 	}
 	else if (opcode == 0x0B /* LTH */) {
-		/* t=T;n=N;        SET(2,-1) PUT(0, n < t) break; */
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put_stack(stack_index, 0, n8 < t8 ? 1 : 0);
+		}
 	}
 	else if (opcode == 0x2B /*  */) {
-		/* t=T2;n=N2;      SET(4,-3) PUT(0, n < t) break; */
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put2_stack(stack_index, 0, n16 < t16 ? 1 : 0);
+		}
 	}
 	else if (opcode == 0x0C /* JMP */) {
-		/* t=T;            SET(1,-1) pc += (Sint8)t; break; */
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			pc_add_s8((int8_t)(t8));
+		}
 	}
 	else if (opcode == 0x2C /*  */) {
-		/* t=T2;           SET(2,-2) pc = t; break; */
+		t16 = t2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			pc_set(t16);
+		}
 	}
 	else if (opcode == 0x0D /* JCN */) {
-		/* t=T;n=N;        SET(2,-2) pc += !!n * (Sint8)t; break; */
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else if (n8 > 0) {
+			pc_add_s8((int8_t)(t8));
+		}
 	}
 	else if (opcode == 0x2D /*  */) {
-		/* t=T2;n=L;       SET(3,-3) if(n) pc = t; break; */
+		t16 = t2_register(stack_index);
+		n8 = l_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else if (n8 > 0) {
+			pc_set(t16);
+		}
 	}
 	else if (opcode == 0x0E /* JSR */) {
-		/* t=T;            SET(1,-1) PUSH2(&u->rst, pc) pc += (Sint8)t; break; */
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			eval_opcode_tmp = push2_stack(1, ins, pc_get());
+			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			else {
+				pc_add_s8((int8_t)(t8));
+			}
+		}
 	}
 	else if (opcode == 0x2E /*  */) {
-		/* t=T2;           SET(2,-2) PUSH2(&u->rst, pc) pc = t; break; */
+		t16 = t2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			eval_opcode_tmp = push2_stack(1, ins, pc_get());
+			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			else {
+				pc_set(t16);
+			}
+		}
 	}
 	else if (opcode == 0x0F /* STH */) {
-		/* t=T;            SET(1,-1) PUSH((ins & 0x40 ? &u->wst : &u->rst), t) break; */
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			eval_opcode_tmp = push_stack(ins & 0x40 ? 0 : 1, ins, t8);
+			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		}
 	}
 	else if (opcode == 0x2F /*  */) {
-		/* t=T2;           SET(2,-2) PUSH2((ins & 0x40 ? &u->wst : &u->rst), t) break; */
+		t16 = t2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			eval_opcode_tmp = push2_stack(ins & 0x40 ? 0 : 1, ins, t16);
+			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		}
 	}
-	else if (opcode == 0x10 /*  */) {
+	else if (opcode == 0x10 /* LDZ */) {
 		/* t=T;            SET(1, 0) PUT(0, ram[t]) break; */
 	}
 	else if (opcode == 0x30 /*  */) {
 		/* t=T;            SET(1, 1) PUT2(0, PEEK2(ram + t)) break; */
 	}
-	else if (opcode == 0x11 /*  */) {
+	else if (opcode == 0x11 /* STZ */) {
 		/* t=T;n=N;        SET(2,-2) ram[t] = n; break; */
 	}
 	else if (opcode == 0x31 /*  */) {
 		/* t=T;n=H2;       SET(3,-3) POKE2(ram + t, n) break; */
 	}
-	else if (opcode == 0x12 /*  */) {
+	else if (opcode == 0x12 /* LDR */) {
 		/* t=T;            SET(1, 0) PUT(0, ram[pc + (Sint8)t]) break; */
 	}
 	else if (opcode == 0x32 /*  */) {
 		/* t=T;            SET(1, 1) PUT2(0, PEEK2(ram + pc + (Sint8)t)) break; */
 	}
-	else if (opcode == 0x13 /*  */) {
+	else if (opcode == 0x13 /* STR */) {
 		/* t=T;n=N;        SET(2,-2) ram[pc + (Sint8)t] = n; break; */
 	}
 	else if (opcode == 0x33 /*  */) {
 		/* t=T;n=H2;       SET(3,-3) POKE2(ram + pc + (Sint8)t, n) break; */
 	}
-	else if (opcode == 0x14 /*  */) {
+	else if (opcode == 0x14 /* LDA */) {
 		/* t=T2;           SET(2,-1) PUT(0, ram[t]) break; */
 	}
 	else if (opcode == 0x34 /*  */) {
 		/* t=T2;           SET(2, 0) PUT2(0, PEEK2(ram + t)) break; */
 	}
-	else if (opcode == 0x15 /*  */) {
+	else if (opcode == 0x15 /* STA */) {
 		/* t=T2;n=L;       SET(3,-3) ram[t] = n; break; */
 	}
 	else if (opcode == 0x35 /*  */) {
 		/* t=T2;n=N2;      SET(4,-4) POKE2(ram + t, n) break; */
 	}
-	else if (opcode == 0x16 /*  */) {
+	else if (opcode == 0x16 /* DEI */) {
 		/* t=T;            SET(1, 0) DEI(0, t) break; */
 	}
 	else if (opcode == 0x36 /*  */) {
 		/* t=T;            SET(1, 1) DEI(1, t) DEI(0, t + 1) break; */
 	}
-	else if (opcode == 0x17 /*  */) {
+	else if (opcode == 0x17 /* DEO */) {
 		/* t=T;n=N;        SET(2,-2) DEO(t, n) break; */
 	}
 	else if (opcode == 0x37 /*  */) {
 		/* t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO(t + 1, n) break; */
 	}
-	else if (opcode == 0x18 /*  */) {
+	else if (opcode == 0x18 /* ADD */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n + t) break; */
 	}
 	else if (opcode == 0x38 /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n + t) break; */
 	}
-	else if (opcode == 0x19 /*  */) {
+	else if (opcode == 0x19 /* SUB */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n - t) break; */
 	}
 	else if (opcode == 0x39 /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n - t) break; */
 	}
-	else if (opcode == 0x1A /*  */) {
+	else if (opcode == 0x1A /* MUL */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n * t) break; */
 	}
 	else if (opcode == 0x3A /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n * t) break; */
 	}
-	else if (opcode == 0x1B /*  */) {
+	else if (opcode == 0x1B /* DIV */) {
 		/* t=T;n=N;        SET(2,-1) if(!t) HALT(3) PUT(0, n / t) break; */
 	}
 	else if (opcode == 0x3B /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) if(!t) HALT(3) PUT2(0, n / t) break; */
 	}
-	else if (opcode == 0x1C /*  */) {
+	else if (opcode == 0x1C /* AND */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n & t) break; */
 	}
 	else if (opcode == 0x3C /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n & t) break; */
 	}
-	else if (opcode == 0x1D /*  */) {
+	else if (opcode == 0x1D /* ORA */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n | t) break; */
 	}
 	else if (opcode == 0x3D /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n | t) break; */
 	}
-	else if (opcode == 0x1E /*  */) {
+	else if (opcode == 0x1E /* EOR */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n ^ t) break; */
 	}
 	else if (opcode == 0x3E /*  */) {
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n ^ t) break; */
 	}
-	else if (opcode == 0x1F /*  */) {
+	else if (opcode == 0x1F /* SFT */) {
 		/* t=T;n=N;        SET(2,-1) PUT(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
 	else if (opcode == 0x3F /*  */) {
