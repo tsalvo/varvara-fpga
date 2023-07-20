@@ -1,6 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"  // intN_t types for any N
 #include "ram.h"
+#include <stdint.h>
 
 // RULES:
 // - cannot write to a global variable from more than one function (unless you use clock domain crossing)
@@ -9,6 +10,7 @@
 // - no ++ or -- operators
 
 // NOTES
+// Build with Docker pipelinec image: docker run -v $(pwd):/workdir pipelinec pipelinec uxn.c
 // https://github.com/JulianKemmerer/PipelineC/wiki/Global-Variables (Global Variables)
 
 // Declare Main RAM (64KB)
@@ -401,6 +403,11 @@ uint16_t peek2_ram(uint16_t address) {
 	uint16_t mem0 = (uint16_t)(main_ram_read(address));
 	uint16_t mem1 = (uint16_t)(main_ram_read(address + 1));
 	return (mem0 << 8) | mem1;
+}
+
+void poke2_ram(uint16_t address, uint16_t value) {
+	main_ram_write(address, (uint8_t)(value >> 8));
+	main_ram_write(address + 1, (uint8_t)(value));
 }
 
 uint16_t peek2_stack(uint1_t stack_index, uint8_t address) {
@@ -880,99 +887,316 @@ uint1_t eval_opcode(
 		}
 	}
 	else if (opcode == 0x10 /* LDZ */) {
-		/* t=T;            SET(1, 0) PUT(0, ram[t]) break; */
+		t8 = t_register(stack_index);
+		t16 = (uint16_t)(t8);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put_stack(stack_index, 0, main_ram_read(t16));
+		}
 	}
 	else if (opcode == 0x30 /*  */) {
-		/* t=T;            SET(1, 1) PUT2(0, PEEK2(ram + t)) break; */
+		t8 = t_register(stack_index);
+		t16 = (uint16_t)(t8);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			put2_stack(stack_index, 0, peek2_ram(t16));
+		}
 	}
 	else if (opcode == 0x11 /* STZ */) {
-		/* t=T;n=N;        SET(2,-2) ram[t] = n; break; */
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		t16 = (uint16_t)(t8);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			main_ram_write(t16, n8);
+		}
 	}
 	else if (opcode == 0x31 /*  */) {
+		t8 = t_register(stack_index);
+		n16 = h2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=H2;       SET(3,-3) POKE2(ram + t, n) break; */
 	}
 	else if (opcode == 0x12 /* LDR */) {
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;            SET(1, 0) PUT(0, ram[pc + (Sint8)t]) break; */
 	}
 	else if (opcode == 0x32 /*  */) {
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;            SET(1, 1) PUT2(0, PEEK2(ram + pc + (Sint8)t)) break; */
 	}
 	else if (opcode == 0x13 /* STR */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-2) ram[pc + (Sint8)t] = n; break; */
 	}
 	else if (opcode == 0x33 /*  */) {
+		t8 = t_register(stack_index);
+		n16 = h2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=H2;       SET(3,-3) POKE2(ram + pc + (Sint8)t, n) break; */
 	}
 	else if (opcode == 0x14 /* LDA */) {
+		t16 = t2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;           SET(2,-1) PUT(0, ram[t]) break; */
 	}
 	else if (opcode == 0x34 /*  */) {
+		t16 = t2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, 0);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;           SET(2, 0) PUT2(0, PEEK2(ram + t)) break; */
 	}
 	else if (opcode == 0x15 /* STA */) {
+		t16 = t2_register(stack_index);
+		n8 = l_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=L;       SET(3,-3) ram[t] = n; break; */
 	}
 	else if (opcode == 0x35 /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -4);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-4) POKE2(ram + t, n) break; */
 	}
 	else if (opcode == 0x16 /* DEI */) {
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;            SET(1, 0) DEI(0, t) break; */
 	}
 	else if (opcode == 0x36 /*  */) {
+		t8 = t_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;            SET(1, 1) DEI(1, t) DEI(0, t + 1) break; */
 	}
 	else if (opcode == 0x17 /* DEO */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-2) DEO(t, n) break; */
 	}
 	else if (opcode == 0x37 /*  */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		l8 = l_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO(t + 1, n) break; */
 	}
 	else if (opcode == 0x18 /* ADD */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n + t) break; */
 	}
 	else if (opcode == 0x38 /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n + t) break; */
 	}
 	else if (opcode == 0x19 /* SUB */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n - t) break; */
 	}
 	else if (opcode == 0x39 /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n - t) break; */
 	}
 	else if (opcode == 0x1A /* MUL */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n * t) break; */
 	}
 	else if (opcode == 0x3A /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n * t) break; */
 	}
 	else if (opcode == 0x1B /* DIV */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) if(!t) HALT(3) PUT(0, n / t) break; */
 	}
 	else if (opcode == 0x3B /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) if(!t) HALT(3) PUT2(0, n / t) break; */
 	}
 	else if (opcode == 0x1C /* AND */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n & t) break; */
 	}
 	else if (opcode == 0x3C /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n & t) break; */
 	}
 	else if (opcode == 0x1D /* ORA */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n | t) break; */
 	}
 	else if (opcode == 0x3D /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n | t) break; */
 	}
 	else if (opcode == 0x1E /* EOR */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n ^ t) break; */
 	}
 	else if (opcode == 0x3E /*  */) {
+		t16 = t2_register(stack_index);
+		n16 = n2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n ^ t) break; */
 	}
 	else if (opcode == 0x1F /* SFT */) {
+		t8 = t_register(stack_index);
+		n8 = n_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
 	else if (opcode == 0x3F /*  */) {
+		t8 = t_register(stack_index);
+		n16 = h2_register(stack_index);
+		eval_opcode_tmp = set(stack_index, ins, k, 3, -1);
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		else {
+			// TODO: implement
+		}
 		/* t=T;n=H2;       SET(3,-1) PUT2(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
 	
