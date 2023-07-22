@@ -426,8 +426,8 @@ uint16_t peek2_dev(uint8_t address) {
 uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr)
 {
 	// TODO: implement
-	static uint16_t uxn_halt_handler = 0;
-	static uint8_t uxn_halt_ret_value = 0;
+	static uint16_t uxn_halt_handler;
+	static uint8_t uxn_halt_ret_value;
 	uxn_halt_handler = peek2_dev(0);
 	uxn_halt_ret_value = 0;
 	if (uxn_halt_handler) {
@@ -597,18 +597,18 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0xFD /* JSI */) {
 		eval_opcode_tmp = push2_stack(1, ins, pc_get() + 2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; } // stack overflow
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else { pc_add(peek2_ram(pc_get()) + 2); }
 	}
 	else if (opcode == 0xFC /* LIT */) {
 		eval_opcode_tmp = push_stack(stack_index, ins, main_ram_read(pc_get()));
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; } // stack overflow
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else { pc_add(1); }
 	}
 	else if (opcode == 0xFB /* LIT2 */) {
 		eval_opcode_tmp16 = peek2_ram(pc_get());
 		eval_opcode_tmp = push2_stack(stack_index, ins, eval_opcode_tmp16);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; } // stack overflow
+		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else { pc_add(2); }
 	}
 	else if (opcode == 0xFA /* LITr */) {
@@ -923,7 +923,6 @@ uint1_t eval_opcode(
 		else {
 			poke2_ram(t16, n16);
 		}
-		/* t=T;n=H2;       SET(3,-3) POKE2(ram + t, n) break; */
 	}
 	else if (opcode == 0x12 /* LDR */) {
 		t8 = t_register(stack_index);
@@ -933,7 +932,6 @@ uint1_t eval_opcode(
 			t16 = pc_get() + ((int8_t)(t8));
 			put_stack(stack_index, 0, main_ram_read(t16));
 		}
-		/* t=T;            SET(1, 0) PUT(0, ram[pc + (Sint8)t]) break; */
 	}
 	else if (opcode == 0x32 /*  */) {
 		t8 = t_register(stack_index);
@@ -943,7 +941,6 @@ uint1_t eval_opcode(
 			t16 = pc_get() + ((int8_t)(t8));
 			put2_stack(stack_index, 0, peek2_ram(t16));
 		}
-		/* t=T;            SET(1, 1) PUT2(0, PEEK2(ram + pc + (Sint8)t)) break; */
 	}
 	else if (opcode == 0x13 /* STR */) {
 		t8 = t_register(stack_index);
@@ -954,7 +951,6 @@ uint1_t eval_opcode(
 			t16 = pc_get() + ((int8_t)(t8));
 			main_ram_write(t16, n8);
 		}
-		/* t=T;n=N;        SET(2,-2) ram[pc + (Sint8)t] = n; break; */
 	}
 	else if (opcode == 0x33 /*  */) {
 		t8 = t_register(stack_index);
@@ -965,7 +961,6 @@ uint1_t eval_opcode(
 			t16 = pc_get() + ((int8_t)(t8));
 			poke2_ram(t16, n16);
 		}
-		/* t=T;n=H2;       SET(3,-3) POKE2(ram + pc + (Sint8)t, n) break; */
 	}
 	else if (opcode == 0x14 /* LDA */) {
 		t16 = t2_register(stack_index);
@@ -974,7 +969,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, main_ram_read(t16));
 		}
-		/* t=T2;           SET(2,-1) PUT(0, ram[t]) break; */
 	}
 	else if (opcode == 0x34 /*  */) {
 		t16 = t2_register(stack_index);
@@ -983,7 +977,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 9, peek2_ram(t16));
 		}
-		/* t=T2;           SET(2, 0) PUT2(0, PEEK2(ram + t)) break; */
 	}
 	else if (opcode == 0x15 /* STA */) {
 		t16 = t2_register(stack_index);
@@ -993,7 +986,6 @@ uint1_t eval_opcode(
 		else {
 			main_ram_write(t16, n8);
 		}
-		/* t=T2;n=L;       SET(3,-3) ram[t] = n; break; */
 	}
 	else if (opcode == 0x35 /*  */) {
 		t16 = t2_register(stack_index);
@@ -1003,7 +995,6 @@ uint1_t eval_opcode(
 		else {
 			poke2_ram(t16, n16);
 		}
-		/* t=T2;n=N2;      SET(4,-4) POKE2(ram + t, n) break; */
 	}
 	else if (opcode == 0x16 /* DEI */) {
 		t8 = t_register(stack_index);
@@ -1052,7 +1043,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, n8 + t8);
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n + t) break; */
 	}
 	else if (opcode == 0x38 /*  */) {
 		t16 = t2_register(stack_index);
@@ -1062,7 +1052,6 @@ uint1_t eval_opcode(
 		else {
 			put2_stack(stack_index, 0, n16 + t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n + t) break; */
 	}
 	else if (opcode == 0x19 /* SUB */) {
 		t8 = t_register(stack_index);
@@ -1072,7 +1061,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, n8 - t8);
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n - t) break; */
 	}
 	else if (opcode == 0x39 /*  */) {
 		t16 = t2_register(stack_index);
@@ -1082,7 +1070,6 @@ uint1_t eval_opcode(
 		else {
 			put2_stack(stack_index, 0, n16 - t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n - t) break; */
 	}
 	else if (opcode == 0x1A /* MUL */) {
 		t8 = t_register(stack_index);
@@ -1092,7 +1079,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, n8 * t8);
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n * t) break; */
 	}
 	else if (opcode == 0x3A /*  */) {
 		t16 = t2_register(stack_index);
@@ -1102,15 +1088,17 @@ uint1_t eval_opcode(
 		else {
 			put2_stack(stack_index, 0, n16 * t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n * t) break; */
 	}
 	else if (opcode == 0x1B /* DIV */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
-		else {
-			// TODO: implement
+		else if (t8 == 0) {
+			eval_opcode_tmp = halt(ins, 3);
+			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		} else {
+			put_stack(stack_index, 0, n8 / t8);
 		}
 		/* t=T;n=N;        SET(2,-1) if(!t) HALT(3) PUT(0, n / t) break; */
 	}
@@ -1119,8 +1107,11 @@ uint1_t eval_opcode(
 		n16 = n2_register(stack_index);
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
-		else {
-			// TODO: implement
+		else if (t16 == 0) {
+			eval_opcode_tmp = halt(ins, 3);
+			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		} else {
+			put2_stack(stack_index, 0, n16 / t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) if(!t) HALT(3) PUT2(0, n / t) break; */
 	}
@@ -1132,7 +1123,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, n8 & t8);
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n & t) break; */
 	}
 	else if (opcode == 0x3C /*  */) {
 		t16 = t2_register(stack_index);
@@ -1142,7 +1132,6 @@ uint1_t eval_opcode(
 		else {
 			put2_stack(stack_index, 0, n16 & t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n & t) break; */
 	}
 	else if (opcode == 0x1D /* ORA */) {
 		t8 = t_register(stack_index);
@@ -1152,7 +1141,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, n8 | t8);
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n | t) break; */
 	}
 	else if (opcode == 0x3D /*  */) {
 		t16 = t2_register(stack_index);
@@ -1162,7 +1150,6 @@ uint1_t eval_opcode(
 		else {
 			put2_stack(stack_index, 0, n16 | t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n | t) break; */
 	}
 	else if (opcode == 0x1E /* EOR */) {
 		t8 = t_register(stack_index);
@@ -1172,7 +1159,6 @@ uint1_t eval_opcode(
 		else {
 			put_stack(stack_index, 0, n8 ^ t8);
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n ^ t) break; */
 	}
 	else if (opcode == 0x3E /*  */) {
 		t16 = t2_register(stack_index);
@@ -1182,7 +1168,6 @@ uint1_t eval_opcode(
 		else {
 			put2_stack(stack_index, 0, n16 ^ t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n ^ t) break; */
 	}
 	else if (opcode == 0x1F /* SFT */) {
 		t8 = t_register(stack_index);
@@ -1190,7 +1175,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, (n8 >> (t8 & 0x0F)) << (t8 >> 4));
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
@@ -1200,7 +1185,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 3, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, (n16 >> (t8 & 0x0F)) << (t8 >> 4));
 		}
 		/* t=T;n=H2;       SET(3,-1) PUT2(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
