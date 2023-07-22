@@ -6,7 +6,7 @@
 // RULES:
 // - cannot write to a global variable from more than one function (unless you use clock domain crossing)
 // - no switch statements (C AST node cannot be parsed to logic)
-// only one return per function
+// - only one return per function
 // - no ++ or -- operators
 
 // NOTES
@@ -1050,7 +1050,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, n8 + t8);
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n + t) break; */
 	}
@@ -1060,7 +1060,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, n16 + t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n + t) break; */
 	}
@@ -1070,7 +1070,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, n8 - t8);
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n - t) break; */
 	}
@@ -1080,7 +1080,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, n16 - t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n - t) break; */
 	}
@@ -1090,7 +1090,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, n8 * t8);
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n * t) break; */
 	}
@@ -1100,7 +1100,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, n16 * t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n * t) break; */
 	}
@@ -1130,7 +1130,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, n8 & t8);
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n & t) break; */
 	}
@@ -1140,7 +1140,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, n16 & t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n & t) break; */
 	}
@@ -1150,7 +1150,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, n8 | t8);
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n | t) break; */
 	}
@@ -1160,7 +1160,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, n16 | t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n | t) break; */
 	}
@@ -1170,7 +1170,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put_stack(stack_index, 0, n8 ^ t8);
 		}
 		/* t=T;n=N;        SET(2,-1) PUT(0, n ^ t) break; */
 	}
@@ -1180,7 +1180,7 @@ uint1_t eval_opcode(
 		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
 		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
 		else {
-			// TODO: implement
+			put2_stack(stack_index, 0, n16 ^ t16);
 		}
 		/* t=T2;n=N2;      SET(4,-2) PUT2(0, n ^ t) break; */
 	}
