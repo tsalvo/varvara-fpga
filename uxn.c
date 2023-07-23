@@ -400,9 +400,14 @@ void stack_pointer_move(uint1_t stack_index, uint8_t adjustment, uint1_t is_nega
 }
 
 uint16_t peek2_ram(uint16_t address) {
-	uint16_t mem0 = (uint16_t)(main_ram_read(address));
-	uint16_t mem1 = (uint16_t)(main_ram_read(address + 1));
-	return (mem0 << 8) | mem1;
+	static int32_t mem0; 
+	static uint16_t mem1; 
+	static uint16_t result; 
+	// cast to int32 to silence warning about integer promotion during bit shift
+	mem0 = (int32_t)(main_ram_read(address));
+	mem1 = (uint16_t)(main_ram_read(address + 1));
+	result = (uint16_t)(mem0 << 8) | mem1;
+	return result;
 }
 
 void poke2_ram(uint16_t address, uint16_t value) {
@@ -412,15 +417,24 @@ void poke2_ram(uint16_t address, uint16_t value) {
 
 uint16_t peek2_stack(uint1_t stack_index, uint8_t address) {
 	// stack_index: 0 = working stack, 1 = return stack
-	uint16_t mem0 = (uint16_t)(stack_data_get(stack_index, address));
-	uint16_t mem1 = (uint16_t)(stack_data_get(stack_index, address + 1));
-	return (mem0 << 8) | mem1;
+	static int32_t mem0; 
+	static uint16_t mem1; 
+	static uint16_t result;
+	// cast to int32 to silence warning about integer promotion during bit shift
+	mem0 = (int32_t)(stack_data_get(stack_index, address));
+	mem1 = (uint16_t)(stack_data_get(stack_index, address + 1));
+	result = (uint16_t)(mem0 << 8) | mem1;
+	return result;
 }
 
 uint16_t peek2_dev(uint8_t address) {
-	uint16_t mem0 = (uint16_t)(device_ram_read(address));
-	uint16_t mem1 = (uint16_t)(device_ram_read(address + 1));
-	return (mem0 << 8) | mem1;
+	static int32_t mem0; 
+	static uint16_t mem1; 
+	static uint16_t result;
+	mem0 = (int32_t)(device_ram_read(address));
+	mem1 = (uint16_t)(device_ram_read(address + 1));
+	result = (uint16_t)(mem0 << 8) | mem1;
+	return result;
 }
 
 uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr)
