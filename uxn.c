@@ -440,24 +440,24 @@ uint16_t peek2_dev(uint8_t address) {
 uint8_t uxn_halt(uint8_t instr, uint8_t err, uint16_t addr)
 {
 	// TODO: implement
-	static uint16_t uxn_halt_handler;
-	static uint8_t uxn_halt_ret_value;
-	uxn_halt_handler = peek2_dev(0);
-	uxn_halt_ret_value = 0;
-	if (uxn_halt_handler) {
+	static uint16_t halt_handler;
+	static uint8_t result;
+	halt_handler = peek2_dev(0);
+	result = 0;
+	if (halt_handler) {
 		stack_pointer_set(0, 4);
 		stack_data_set(0, 0, (uint8_t)(addr >> 8));
 		stack_data_set(0, 1, (uint8_t)(addr & 0x00FF));
 		stack_data_set(0, 2, instr);
 		stack_data_set(0, 3, err);
-		// uxn_halt_ret_value = uxn_eval(uxn_halt_handler); // TODO: recursion?
+		// result = uxn_eval(halt_handler); // TODO: recursion?
 	} else {
 		// system_inspect(u);
 		// fprintf(stderr, "%s %s, by %02x at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], instr, addr);
-		uxn_halt_ret_value = 0;
+		result = 0;
 	}
 	
-	return uxn_halt_ret_value;
+	return result;
 }
 
 uint8_t halt(uint8_t ins, uint8_t err) {
@@ -467,73 +467,73 @@ uint8_t halt(uint8_t ins, uint8_t err) {
 }
 
 uint8_t push2_stack(uint1_t stack_index, uint8_t ins, uint16_t value) {
-	static uint16_t push2_tmp = 0;
-	static uint8_t push2_ret_value = 0;
-	static uint1_t push2_halt_return = 0;
+	static uint16_t tmp = 0;
+	static uint8_t result = 0;
+	static uint1_t halt_return = 0;
 	
 	if (stack_pointer_get(stack_index) > 253) {
-		push2_ret_value = halt(ins, 2);
-		push2_halt_return = 1;
+		result = halt(ins, 2);
+		halt_return = 1;
 	} else {
-		push2_ret_value = 0;
-		push2_halt_return = 0;
+		result = 0;
+		halt_return = 0;
 	}
 	
-	if (push2_halt_return == 0) {
-		push2_tmp = value;
-		stack_data_set(stack_index, stack_pointer_get(stack_index), (uint8_t)(push2_tmp >> 8));
-		stack_data_set(stack_index, stack_pointer_get(stack_index) + 1, (uint8_t)(push2_tmp));
+	if (halt_return == 0) {
+		tmp = value;
+		stack_data_set(stack_index, stack_pointer_get(stack_index), (uint8_t)(tmp >> 8));
+		stack_data_set(stack_index, stack_pointer_get(stack_index) + 1, (uint8_t)(tmp));
 		stack_pointer_move(stack_index, 2, 0);
 	}
 	
-	return push2_ret_value;
+	return result;
 }
 
 uint8_t push_stack(uint1_t stack_index, uint8_t ins, uint8_t value) {
 	
-	static uint8_t push_ret_value;
-	static uint1_t push_halt_return;
+	static uint8_t result;
+	static uint1_t halt_return;
 	
 	if (stack_pointer_get(stack_index) > 254) {
-		push_ret_value = halt(ins, 2);
-		push_halt_return = 1;
+		result = halt(ins, 2);
+		halt_return = 1;
 	} else {
-		push_ret_value = 0;
-		push_halt_return = 0;
+		result = 0;
+		halt_return = 0;
 	}
 	
-	if (push_halt_return == 0) {
+	if (halt_return == 0) {
 		stack_data_set(stack_index, stack_pointer_get(stack_index), value);
 		stack_pointer_move(stack_index, 1, 0);
 	}
 	
-	return push_ret_value;
+	return result;
 }
 
 uint8_t set(uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add) {
 	// SET(mul, add) { if(mul > s->ptr) HALT(1) tmp = (mul & k) + add + s->ptr; if(tmp > 254) HALT(2) s->ptr = tmp; }
 	// Example: SET(2,1)
-	static uint8_t set_ret_value, set_tmp;
-	static uint1_t set_halt_return;
+	static uint8_t result, set_tmp;
+	static uint1_t halt_return;
 	if (mul > stack_pointer_get(stack_index)) {
-		set_ret_value = halt(ins, 1);
-		set_halt_return = 1;
+		result = halt(ins, 1);
+		halt_return = 1;
 	} else {
-		set_ret_value = 0;
-		set_halt_return = 0;
+		result = 0;
+		halt_return = 0;
 	}
 	
 	set_tmp = (mul & k) + add + stack_pointer_get(stack_index);
 	if (set_tmp > 254) {
-		set_ret_value = halt(ins, 2);
-		set_halt_return = 1;
+		result = halt(ins, 2);
+		halt_return = 1;
 	}
 	
-	if (set_halt_return == 0) {
+	if (halt_return == 0) {
 		stack_pointer_set(stack_index, set_tmp);
 	}
 	
-	return set_ret_value;
+	return result;
 }
 
 void put_stack(uint1_t stack_index, uint8_t offset, uint8_t value) {
@@ -711,88 +711,88 @@ uint1_t eval_opcode(
 	uint8_t ins,
 	uint8_t k
 ) {
-	static uint8_t 	t8, n8, l8, eval_opcode_tmp;
-	static uint16_t t16, n16, l16, eval_opcode_tmp16;
-	static uint1_t eval_opcode_ret_value;
+	static uint8_t 	t8, n8, l8, tmp8;
+	static uint16_t t16, n16, l16, tmp16;
+	static uint1_t result;
 	
-	eval_opcode_ret_value = 0;
+	result = 0;
 	
 	if (opcode == 0x00      /* BRK */) {
-		eval_opcode_ret_value = 1;
+		result = 1;
 	}
 	else if (opcode == 0xFF /* JCI */) {
 		stack_pointer_move(stack_index, 1, 1);
-		eval_opcode_tmp = stack_data_get(stack_index, stack_pointer_get(stack_index));
-		eval_opcode_tmp16 = (eval_opcode_tmp == 0) ? 0 : peek2_ram(pc_get() + 2);
-		pc_add(eval_opcode_tmp16);
+		tmp8 = stack_data_get(stack_index, stack_pointer_get(stack_index));
+		tmp16 = (tmp8 == 0) ? 0 : peek2_ram(pc_get() + 2);
+		pc_add(tmp16);
 	}
 	else if (opcode == 0xFE /* JMI */) {    
 		pc_add(peek2_ram(pc_get()) + 2);
 	}
 	else if (opcode == 0xFD /* JSI */) {
-		eval_opcode_tmp = push2_stack(1, ins, pc_get() + 2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = push2_stack(1, ins, pc_get() + 2);
+		if (tmp8 > 0) { result = 1; }
 		else { pc_add(peek2_ram(pc_get()) + 2); }
 	}
 	else if (opcode == 0xFC /* LIT */) {
-		eval_opcode_tmp = push_stack(stack_index, ins, main_ram_read(pc_get()));
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = push_stack(stack_index, ins, main_ram_read(pc_get()));
+		if (tmp8 > 0) { result = 1; }
 		else { pc_add(1); }
 	}
 	else if (opcode == 0xFB /* LIT2 */) {
-		eval_opcode_tmp16 = peek2_ram(pc_get());
-		eval_opcode_tmp = push2_stack(stack_index, ins, eval_opcode_tmp16);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp16 = peek2_ram(pc_get());
+		tmp8 = push2_stack(stack_index, ins, tmp16);
+		if (tmp8 > 0) { result = 1; }
 		else { pc_add(2); }
 	}
 	else if (opcode == 0xFA /* LITr */) {
-		eval_opcode_tmp = push_stack(stack_index, ins, main_ram_read(pc_get()));
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = push_stack(stack_index, ins, main_ram_read(pc_get()));
+		if (tmp8 > 0) { result = 1; }
 		else { pc_add(1); }
 	}
 	else if (opcode == 0xF9 /* LIT2r */) {
-		eval_opcode_tmp16 = peek2_ram(pc_get());
-		eval_opcode_tmp = push2_stack(stack_index, ins, eval_opcode_tmp16);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp16 = peek2_ram(pc_get());
+		tmp8 = push2_stack(stack_index, ins, tmp16);
+		if (tmp8 > 0) { result = 1; }
 		else { pc_add(2); }
 	}
 	else if (opcode == 0x01 /* INC */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 0);
+		if (tmp8 > 0) { result = 1; }
 		else { put_stack(stack_index, 0, t8 + 1); }
 	}
 	else if (opcode == 0x21 /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, 0);
+		if (tmp8 > 0) { result = 1; }
 		else { put2_stack(stack_index, 0, t16 + 1); }
 	}
 	else if (opcode == 0x02 /* POP */) {
-		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, -1);
+		if (tmp8 > 0) { result = 1; }
 	}
 	else if (opcode == 0x22 /*  */) {
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 	}
 	else if (opcode == 0x03 /* NIP */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else { put_stack(stack_index, 0, t8); }
 	}
 	else if (opcode == 0x23 /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else { put2_stack(stack_index, 0, t16); }
 	}
 	else if (opcode == 0x04 /* SWP */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8);
 			put_stack(stack_index, 1, t8);
@@ -801,8 +801,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x24 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index); 
-		eval_opcode_tmp = set(stack_index, ins, k, 4, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16);
 			put2_stack(stack_index, 2, t16);  
@@ -812,8 +812,8 @@ uint1_t eval_opcode(
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
 		l8 = l_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, l8);
 			put_stack(stack_index, 1, t8);
@@ -824,8 +824,8 @@ uint1_t eval_opcode(
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
 		l16 = l2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 6, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 6, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, l16);
 			put2_stack(stack_index, 2, t16);
@@ -834,8 +834,8 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0x06 /* DUP */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, t8);
 			put_stack(stack_index, 1, t8);
@@ -843,8 +843,8 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0x26 /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, 2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, 2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, t16);
 			put2_stack(stack_index, 2, t16);    
@@ -853,8 +853,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x07 /* OVR */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, 1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, 1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8);
 			put_stack(stack_index, 1, t8);
@@ -864,8 +864,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x27 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, 2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, 2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16);
 			put2_stack(stack_index, 2, t16);
@@ -875,8 +875,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x08 /* EQU */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 == t8 ? 1 : 0);
 		}
@@ -884,8 +884,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x28 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 == t16 ? 1 : 0);
 		}
@@ -893,8 +893,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x09 /* NEQ */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 == t8 ? 0 : 1);
 		}
@@ -902,8 +902,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x29 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 == t16 ? 0 : 1);
 		}
@@ -911,8 +911,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x0A /* GTH */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 > t8 ? 1 : 0);
 		}
@@ -920,8 +920,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x2A /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 > t16 ? 1 : 0);
 		}
@@ -929,8 +929,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x0B /* LTH */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 < t8 ? 1 : 0);
 		}
@@ -938,24 +938,24 @@ uint1_t eval_opcode(
 	else if (opcode == 0x2B /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 < t16 ? 1 : 0);
 		}
 	}
 	else if (opcode == 0x0C /* JMP */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			pc_add_s8((int8_t)(t8));
 		}
 	}
 	else if (opcode == 0x2C /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			pc_set(t16);
 		}
@@ -963,8 +963,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x0D /* JCN */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else if (n8 > 0) {
 			pc_add_s8((int8_t)(t8));
 		}
@@ -972,19 +972,19 @@ uint1_t eval_opcode(
 	else if (opcode == 0x2D /*  */) {
 		t16 = t2_register(stack_index);
 		n8 = l_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, -3);
+		if (tmp8 > 0) { result = 1; }
 		else if (n8 > 0) {
 			pc_set(t16);
 		}
 	}
 	else if (opcode == 0x0E /* JSR */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
-			eval_opcode_tmp = push2_stack(1, ins, pc_get());
-			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			tmp8 = push2_stack(1, ins, pc_get());
+			if (tmp8 > 0) { result = 1; }
 			else {
 				pc_add_s8((int8_t)(t8));
 			}
@@ -992,11 +992,11 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0x2E /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
-			eval_opcode_tmp = push2_stack(1, ins, pc_get());
-			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			tmp8 = push2_stack(1, ins, pc_get());
+			if (tmp8 > 0) { result = 1; }
 			else {
 				pc_set(t16);
 			}
@@ -1004,27 +1004,27 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0x0F /* STH */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
-			eval_opcode_tmp = push_stack(ins & 0x40 ? 0 : 1, ins, t8);
-			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			tmp8 = push_stack(ins & 0x40 ? 0 : 1, ins, t8);
+			if (tmp8 > 0) { result = 1; }
 		}
 	}
 	else if (opcode == 0x2F /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
-			eval_opcode_tmp = push2_stack(ins & 0x40 ? 0 : 1, ins, t16);
-			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			tmp8 = push2_stack(ins & 0x40 ? 0 : 1, ins, t16);
+			if (tmp8 > 0) { result = 1; }
 		}
 	}
 	else if (opcode == 0x10 /* LDZ */) {
 		t8 = t_register(stack_index);
 		t16 = (uint16_t)(t8);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, main_ram_read(t16));
 		}
@@ -1032,8 +1032,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x30 /*  */) {
 		t8 = t_register(stack_index);
 		t16 = (uint16_t)(t8);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, peek2_ram(t16));
 		}
@@ -1042,8 +1042,8 @@ uint1_t eval_opcode(
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
 		t16 = (uint16_t)(t8);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			main_ram_write(t16, n8);
 		}
@@ -1052,16 +1052,16 @@ uint1_t eval_opcode(
 		t8 = t_register(stack_index);
 		t16 = (uint16_t)(t8);
 		n16 = h2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			poke2_ram(t16, n16);
 		}
 	}
 	else if (opcode == 0x12 /* LDR */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			t16 = pc_get() + ((int8_t)(t8));
 			put_stack(stack_index, 0, main_ram_read(t16));
@@ -1069,8 +1069,8 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0x32 /*  */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			t16 = pc_get() + ((int8_t)(t8));
 			put2_stack(stack_index, 0, peek2_ram(t16));
@@ -1079,8 +1079,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x13 /* STR */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			t16 = pc_get() + ((int8_t)(t8));
 			main_ram_write(t16, n8);
@@ -1089,8 +1089,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x33 /*  */) {
 		t8 = t_register(stack_index);
 		n16 = h2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			t16 = pc_get() + ((int8_t)(t8));
 			poke2_ram(t16, n16);
@@ -1098,16 +1098,16 @@ uint1_t eval_opcode(
 	}
 	else if (opcode == 0x14 /* LDA */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, main_ram_read(t16));
 		}
 	}
 	else if (opcode == 0x34 /*  */) {
 		t16 = t2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 9, peek2_ram(t16));
 		}
@@ -1115,8 +1115,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x15 /* STA */) {
 		t16 = t2_register(stack_index);
 		n8 = l_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			main_ram_write(t16, n8);
 		}
@@ -1124,24 +1124,24 @@ uint1_t eval_opcode(
 	else if (opcode == 0x35 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -4);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -4);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			poke2_ram(t16, n16);
 		}
 	}
 	else if (opcode == 0x16 /* DEI */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 0);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 0);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			dei(stack_index, 0, t8);
 		}
 	}
 	else if (opcode == 0x36 /*  */) {
 		t8 = t_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 1, 1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 1, 1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			dei(stack_index, 1, t8);
 			dei(stack_index, 0, t8 + 1);
@@ -1150,30 +1150,28 @@ uint1_t eval_opcode(
 	else if (opcode == 0x17 /* DEO */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			deo(t8, n8);
 		}
-		/* t=T;n=N;        SET(2,-2) DEO(t, n) break; */
 	}
 	else if (opcode == 0x37 /*  */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
 		l8 = l_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, -3);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, -3);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			deo(t8, l8);
 			deo(t8 + 1, n8);
 		}
-		/* t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO(t + 1, n) break; */
 	}
 	else if (opcode == 0x18 /* ADD */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 + t8);
 		}
@@ -1181,8 +1179,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x38 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 + t16);
 		}
@@ -1190,8 +1188,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x19 /* SUB */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 - t8);
 		}
@@ -1199,8 +1197,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x39 /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 - t16);
 		}
@@ -1208,8 +1206,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x1A /* MUL */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 * t8);
 		}
@@ -1217,8 +1215,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x3A /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 * t16);
 		}
@@ -1226,34 +1224,32 @@ uint1_t eval_opcode(
 	else if (opcode == 0x1B /* DIV */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else if (t8 == 0) {
-			eval_opcode_tmp = halt(ins, 3);
-			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			tmp8 = halt(ins, 3);
+			if (tmp8 > 0) { result = 1; }
 		} else {
 			put_stack(stack_index, 0, n8 / t8);
 		}
-		/* t=T;n=N;        SET(2,-1) if(!t) HALT(3) PUT(0, n / t) break; */
 	}
 	else if (opcode == 0x3B /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else if (t16 == 0) {
-			eval_opcode_tmp = halt(ins, 3);
-			if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+			tmp8 = halt(ins, 3);
+			if (tmp8 > 0) { result = 1; }
 		} else {
 			put2_stack(stack_index, 0, n16 / t16);
 		}
-		/* t=T2;n=N2;      SET(4,-2) if(!t) HALT(3) PUT2(0, n / t) break; */
 	}
 	else if (opcode == 0x1C /* AND */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 & t8);
 		}
@@ -1261,8 +1257,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x3C /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 & t16);
 		}
@@ -1270,8 +1266,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x1D /* ORA */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 | t8);
 		}
@@ -1279,8 +1275,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x3D /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 | t16);
 		}
@@ -1288,8 +1284,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x1E /* EOR */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, n8 ^ t8);
 		}
@@ -1297,8 +1293,8 @@ uint1_t eval_opcode(
 	else if (opcode == 0x3E /*  */) {
 		t16 = t2_register(stack_index);
 		n16 = n2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 4, -2);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 4, -2);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, n16 ^ t16);
 		}
@@ -1306,52 +1302,50 @@ uint1_t eval_opcode(
 	else if (opcode == 0x1F /* SFT */) {
 		t8 = t_register(stack_index);
 		n8 = n_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 2, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 2, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put_stack(stack_index, 0, (n8 >> (t8 & 0x0F)) << (t8 >> 4));
 		}
-		/* t=T;n=N;        SET(2,-1) PUT(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
 	else if (opcode == 0x3F /*  */) {
 		t8 = t_register(stack_index);
 		n16 = h2_register(stack_index);
-		eval_opcode_tmp = set(stack_index, ins, k, 3, -1);
-		if (eval_opcode_tmp > 0) { eval_opcode_ret_value = 1; }
+		tmp8 = set(stack_index, ins, k, 3, -1);
+		if (tmp8 > 0) { result = 1; }
 		else {
 			put2_stack(stack_index, 0, (n16 >> (t8 & 0x0F)) << (t8 >> 4));
 		}
-		/* t=T;n=H2;       SET(3,-1) PUT2(0, n >> (t & 0xf) << (t >> 4)) break; */
 	}
 	
-	return eval_opcode_ret_value;
+	return result;
 }
 
 #pragma MAIN_MHZ uxn_eval 1.0
 uint1_t uxn_eval() {
 
 	static uint8_t k, opc, ins;
-	static uint1_t s, uxn_eval_should_return, uxn_eval_ret_value;
+	static uint1_t s, should_return, result;
 
-	uxn_eval_ret_value = 0;
-	uxn_eval_should_return = 0;
+	result = 0;
+	should_return = 0;
 
 	if(pc_get() == 0) {
-		uxn_eval_should_return = 1;
+		should_return = 1;
 	}
 	
 	if (device_ram_read(15) != 0) {
-		uxn_eval_should_return = 1;
+		should_return = 1;
 	}
 	
-	if (!uxn_eval_should_return) {
-		ins = main_ram_read(pc_get()) & 0xff;
+	if (!should_return) {
+		ins = main_ram_read(pc_get()) & 0xFF;
 		pc_add(1);
-		k = ins & 0x80 ? 0xff : 0;
+		k = ins & 0x80 ? 0xFF : 0x00;
 		s = ins & 0x40 ? 1 : 0;
-		opc = !(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f;	
-		uxn_eval_should_return = eval_opcode(s, opc, ins, k);
+		opc = !(ins & 0x1F) ? (0 - (ins >> 5)) & 0xFF : ins & 0x3F;	
+		should_return = eval_opcode(s, opc, ins, k);
 	}
 	
-	return uxn_eval_ret_value;
+	return result;
 }
