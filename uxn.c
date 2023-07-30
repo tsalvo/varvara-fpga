@@ -16,22 +16,19 @@
 #pragma MAIN_MHZ uxn_eval 1.0
 uint1_t uxn_eval() {
 
-	static uint8_t k, opc, ins;
-	static uint1_t s, should_return, result;
+	static uint1_t s, pc_nonzero, system_state_zero, should_eval, result;
+	static uint8_t k, opc, ins, system_state;
+	static uint16_t pc;
 
 	result = 0;
-	should_return = 0;
-
-	if(pc_get() == 0) {
-		should_return = 1;
-	}
+	pc = pc_get();
+	pc_nonzero = pc == 0 ? 0 : 1;
+	system_state = device_ram_read(15);
+	system_state_zero = system_state == 0 ? 1 : 0;
+	should_eval = pc_nonzero & system_state_zero;
 	
-	if (device_ram_read(15) != 0) {
-		should_return = 1;
-	}
-	
-	if (!should_return) {
-		ins = main_ram_read(pc_get()) & 0xFF;
+	if (should_eval) {
+		ins = main_ram_read(pc) & 0xFF;
 		pc_add(1);
 		k = ins & 0x80 ? 0xFF : 0x00;
 		s = ins & 0x40 ? 1 : 0;

@@ -21,6 +21,17 @@ uint8_t datetime_dei(uint8_t addr) {
 }
 
 uint8_t uxn_dei(uint8_t addr) {
+	/*
+	Varvara
+	00  system	    80	controller
+	10  console     90	mouse
+	20  screen      a0	file
+	30  audio	    b0
+	40              c0	datetime
+	50              d0	Reserved
+	60              e0
+	70  	        f0
+	*/
 	static uint8_t d;
 	static uint8_t result;
 	d = addr & 0xF0;
@@ -81,6 +92,17 @@ void file_deo(uint1_t file_index, uint8_t d, uint8_t p) {
 
 void uxn_deo(uint8_t addr)
 {
+	/*
+	Varvara
+	00  system	    80	controller
+	10  console     90	mouse
+	20  screen      a0	file
+	30  audio	    b0
+	40              c0	datetime
+	50              d0	Reserved
+	60              e0
+	70  	        f0
+	*/
 	static uint8_t port;
 	static uint8_t device_index;
 	static uint1_t port_range_palette_lo;
