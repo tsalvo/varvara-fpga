@@ -11,8 +11,8 @@
 // Declare Working Stack RAM (256 bytes)
 // dual port, first port is read+write,
 // second port is read only
-// 0 cycle(s) of latency
-DECL_RAM_DP_RW_R_0(
+// 1 cycle(s) of latency
+DECL_RAM_DP_RW_R_1(
   uint8_t,    // Element type
   stack_w_ram, // RAM function name
   256,        // Number of elements
@@ -22,8 +22,8 @@ DECL_RAM_DP_RW_R_0(
 // Declare Return Stack RAM (256 bytes)
 // dual port, first port is read+write,
 // second port is read only
-// 0 cycle(s) of latency
-DECL_RAM_DP_RW_R_0(
+// 1 cycle(s) of latency
+DECL_RAM_DP_RW_R_1(
   uint8_t,    // Element type
   stack_r_ram, // RAM function name
   256,        // Number of elements
@@ -41,89 +41,77 @@ DECL_RAM_DP_RW_R_0(
   RAM_INIT_INT_ZEROS // Initial value VHDL string, from ram.h
 )
 
+
 uint8_t stack_w_ram_read(uint8_t address) {
-	static uint32_t stack_w_r_rdaddr = 0; // Read address
-	static uint32_t stack_w_r_rwaddr = 0; // Write+read address
-	static uint8_t stack_w_r_wdata = 0; // Write data, start writing zeros
+	static uint32_t stack_w_r_rdaddr; // Read address
 	stack_w_r_rdaddr = (uint32_t)(address);
 	
-	  // The RAM instance
-	  uint1_t stack_w_r_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t stack_w_r_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t stack_w_r_rd_valid = 1; // Always have valid RAM inputs
-	  stack_w_ram_outputs_t stack_w_r_ram_out = stack_w_ram(
-		stack_w_r_rwaddr,
-		stack_w_r_wdata,
-		stack_w_r_wr_en,
-		stack_w_r_rw_valid,
-		stack_w_r_rdaddr,
-		stack_w_r_rd_valid
+	stack_w_ram_outputs_t stack_w_r_ram_out = stack_w_ram(
+		0,                 // read-write_addr
+		0,                 // write data
+		0,                 // write enable (RW port always writing (not reading))
+		0,                 // valid read-write input
+		0,                 // read-write (read) enable 0
+		stack_w_r_rdaddr,  // read address
+		1,                 // valid read input
+		1				   // read enable 1
 	);
 		
 	return stack_w_r_ram_out.rd_data1;
 }
 
 void stack_w_ram_write(uint8_t address, uint8_t value) {
-	static uint32_t stack_w_w_rdaddr = 0; // Read address
-	static uint32_t stack_w_w_rwaddr = 0; // Write+read address
-	static uint8_t stack_w_w_wdata = 0;   // Write data
+	static uint32_t stack_w_w_rwaddr; // Write+read address
+	static uint8_t stack_w_w_wdata; // Write data
 	stack_w_w_rwaddr = (uint32_t)(address);
 	stack_w_w_wdata = value;
 	
-	  // The RAM instance
-	  uint1_t stack_w_w_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t stack_w_w_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t stack_w_w_rd_valid = 1; // Always have valid RAM inputs
-	  stack_w_ram_outputs_t stack_w_w_ram_out = stack_w_ram(
-		stack_w_w_rwaddr,
-		stack_w_w_wdata,
-		stack_w_w_wr_en,
-		stack_w_w_rw_valid,
-		stack_w_w_rdaddr,
-		stack_w_w_rd_valid
+	// The RAM instance
+	stack_w_ram_outputs_t stack_w_r_ram_out = stack_w_ram(
+		stack_w_w_rwaddr,   // read-write_addr
+		stack_w_w_wdata,    // write data
+		1,                  // write enable (RW port always writing (not reading))
+		1,                  // valid read-write input
+		0,                  // read-write (read) enable 0
+		0,                  // read address
+		1,                  // valid read input
+		0				    // read enable 1
 	);
 }
 
 uint8_t stack_r_ram_read(uint8_t address) {
-	static uint32_t stack_r_r_rdaddr = 0; // Read address
-	static uint32_t stack_r_r_rwaddr = 0; // Write+read address
-	static uint8_t  stack_r_r_wdata = 0;  // Write data, start writing zeros
+	static uint32_t stack_r_r_rdaddr; // Read address
 	stack_r_r_rdaddr = (uint32_t)(address);
 	
-	  // The RAM instance
-	  uint1_t stack_r_r_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t stack_r_r_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t stack_r_r_rd_valid = 1; // Always have valid RAM inputs
-	  stack_r_ram_outputs_t stack_r_r_ram_out = stack_r_ram(
-		stack_r_r_rwaddr,
-		stack_r_r_wdata,
-		stack_r_r_wr_en,
-		stack_r_r_rw_valid,
-		stack_r_r_rdaddr,
-		stack_r_r_rd_valid
+	stack_r_ram_outputs_t stack_r_r_ram_out = stack_r_ram(
+		0,                 // read-write_addr
+		0,                 // write data
+		0,                 // write enable (RW port always writing (not reading))
+		0,                 // valid read-write input
+		0,                 // read-write (read) enable 0
+		stack_r_r_rdaddr,  // read address
+		1,                 // valid read input
+		1				   // read enable 1
 	);
 		
 	return stack_r_r_ram_out.rd_data1;
 }
 
 void stack_r_ram_write(uint8_t address, uint8_t value) {
-	static uint32_t stack_r_w_rdaddr = 0; // Read address
-	static uint32_t stack_r_w_rwaddr = 0; // Write+read address
-	static uint8_t  stack_r_w_wdata = 0;  // Write data
+	static uint32_t stack_r_w_rwaddr; // Write+read address
+	static uint8_t stack_r_w_wdata; // Write data
 	stack_r_w_rwaddr = (uint32_t)(address);
 	stack_r_w_wdata = value;
 	
-	  // The RAM instance
-	  uint1_t stack_r_w_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t stack_r_w_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t stack_r_w_rd_valid = 1; // Always have valid RAM inputs
-	  stack_r_ram_outputs_t stack_r_w_ram_out = stack_r_ram(
-		stack_r_w_rwaddr,
-		stack_r_w_wdata,
-		stack_r_w_wr_en,
-		stack_r_w_rw_valid,
-		stack_r_w_rdaddr,
-		stack_r_w_rd_valid
+	stack_r_ram_outputs_t stack_r_w_ram_out = stack_r_ram(
+		stack_r_w_rwaddr,   // read-write_addr
+		stack_r_w_wdata,    // write data
+		1,                  // write enable (RW port always writing (not reading))
+		1,                  // valid read-write input
+		0,                  // read-write (read) enable 0
+		0,                  // read address
+		1,                  // valid read input
+		0				    // read enable 1
 	);
 }
 
@@ -320,14 +308,12 @@ uint8_t set(uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add
 }
 
 void put_stack(uint1_t stack_index, uint8_t offset, uint8_t value) {
-	// PUT(o, v) { s->dat[(Uint8)(s->ptr - 1 - (o))] = (v); }
 	static uint8_t put_tmp;
 	put_tmp = stack_pointer_get(stack_index) - 1 - offset;
 	stack_data_set(stack_index, put_tmp, value);
 }
 
 void put2_stack(uint1_t stack_index, uint8_t offset, uint16_t value) {
-	// PUT2(o, v) { tmp = (v); s->dat[(Uint8)(s->ptr - o - 2)] = tmp >> 8; s->dat[(Uint8)(s->ptr - o - 1)] = tmp; }
 	static uint16_t put2_tmp;
 	static uint8_t put2_tmp8;
 	put2_tmp8 = stack_pointer_get(stack_index) - offset - 2;

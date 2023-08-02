@@ -6,8 +6,8 @@
 // Declare Main RAM (64KB)
 // dual port, first port is read+write,
 // second port is read only
-// 0 cycle(s) of latency
-DECL_RAM_DP_RW_R_0(
+// 1 cycle(s) of latency
+DECL_RAM_DP_RW_R_1(
   uint8_t,  // Element type
   main_ram, // RAM function name
   65536,    // Number of elements
@@ -15,45 +15,40 @@ DECL_RAM_DP_RW_R_0(
 )
 
 uint8_t main_ram_read(uint16_t address) {
-	static uint32_t main_r_rdaddr = 0; // Read address
-	static uint32_t main_r_rwaddr = 0; // Write+read address
-	static uint8_t  main_r_wdata = 0;  // Write data, start writing zeros
-	main_r_rdaddr = (uint32_t)(address);
+	static uint32_t main_r_rdaddr;       // Read address
+	main_r_rdaddr = (uint32_t)(address); // read 
 	
-	  // The RAM instance
-	  uint1_t main_r_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t main_r_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t main_r_rd_valid = 1; // Always have valid RAM inputs
-	  main_ram_outputs_t main_r_ram_out = main_ram(
-		main_r_rwaddr, 
-		main_r_wdata, 
-		main_r_wr_en, 
-		main_r_rw_valid, 
-		main_r_rdaddr, 
-		main_r_rd_valid
+	// The RAM instance
+	main_ram_outputs_t main_r_ram_out = main_ram(
+		0,              // read-write_addr
+		0,              // write data
+		0,              // write enable (RW port always writing (not reading))
+		0,              // valid read-write input
+		0,              // read-write (read) enable 0
+		main_r_rdaddr,  // read address
+		1,              // valid read input
+		1				// read enable 1
 	);
 		
 	return main_r_ram_out.rd_data1;
 }
 
 void main_ram_write(uint16_t address, uint8_t value) {
-	static uint32_t main_w_rdaddr = 0; // Read address
 	static uint32_t main_w_rwaddr = 0; // Write+read address
 	static uint8_t  main_w_wdata = 0;  // Write data
 	main_w_rwaddr = (uint32_t)(address);
 	main_w_wdata = value;
 	
-	  // The RAM instance
-	  uint1_t main_w_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t main_w_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t main_w_rd_valid = 1; // Always have valid RAM inputs
-	  main_ram_outputs_t main_w_ram_out = main_ram(
-		main_w_rwaddr,
-		main_w_wdata,
-		main_w_wr_en,
-		main_w_rw_valid,
-		main_w_rdaddr,
-		main_w_rd_valid
+	// The RAM instance
+	main_ram_outputs_t main_w_ram_out = main_ram(
+		main_w_rwaddr,   // read-write_addr
+		main_w_wdata,    // write data
+		1,               // write enable (RW port always writing (not reading))
+		1,               // valid read-write input
+		0,               // read-write (read) enable 0
+		0,               // read address
+		1,               // valid read input
+		0				 // read enable 1
 	);
 }
 

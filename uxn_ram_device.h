@@ -7,7 +7,7 @@
 // dual port, first port is read+write,
 // second port is read only
 // 0 cycle(s) of latency
-DECL_RAM_DP_RW_R_0(
+DECL_RAM_DP_RW_R_1(
   uint8_t,    // Element type
   device_ram, // RAM function name
   256,        // Number of elements
@@ -15,45 +15,39 @@ DECL_RAM_DP_RW_R_0(
 )
 
 uint8_t device_ram_read(uint8_t address) {
-	static uint32_t device_r_rdaddr = 0; // Read address
-	static uint32_t device_r_rwaddr = 0; // Write+read address
-	static uint8_t  device_r_wdata = 0;  // Write data, start writing zeros
+	static uint32_t device_r_rdaddr; // Read address
 	device_r_rdaddr = (uint32_t)(address);
 	
-	  // The RAM instance
-	  uint1_t device_r_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t device_r_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t device_r_rd_valid = 1; // Always have valid RAM inputs
-	  device_ram_outputs_t device_r_ram_out = device_ram(
-		device_r_rwaddr,
-		device_r_wdata,
-		device_r_wr_en,
-		device_r_rw_valid,
-		device_r_rdaddr,
-		device_r_rd_valid
+	device_ram_outputs_t device_r_ram_out = device_ram(
+		0,                 // read-write_addr
+		0,                 // write data
+		0,                 // write enable (RW port always writing (not reading))
+		0,                 // valid read-write input
+		0,                 // read-write (read) enable 0
+		device_r_rdaddr,   // read address
+		1,                 // valid read input
+		1				   // read enable 1
 	);
 		
 	return device_r_ram_out.rd_data1;
 }
 
 void device_ram_write(uint8_t address, uint8_t value) {
-	static uint32_t device_w_rdaddr = 0; // Read address
-	static uint32_t device_w_rwaddr = 0; // Write+read address
-	static uint8_t device_w_wdata = 0; // Write data
+	static uint32_t device_w_rwaddr; // Write+read address
+	static uint8_t device_w_wdata; // Write data
 	device_w_rwaddr = (uint32_t)(address);
 	device_w_wdata = value;
 	
-	  // The RAM instance
-	  uint1_t device_w_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t device_w_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t device_w_rd_valid = 1; // Always have valid RAM inputs
-	  device_ram_outputs_t device_w_ram_out = device_ram(
-		device_w_rwaddr,
-		device_w_wdata,
-		device_w_wr_en,
-		device_w_rw_valid,
-		device_w_rdaddr,
-		device_w_rd_valid
+	// The RAM instance
+	device_ram_outputs_t device_w_ram_out = device_ram(
+		device_w_rwaddr,   // read-write_addr
+		device_w_wdata,    // write data
+		1,                  // write enable (RW port always writing (not reading))
+		1,                  // valid read-write input
+		0,                  // read-write (read) enable 0
+		0,                  // read address
+		1,                  // valid read input
+		0				    // read enable 1
 	);
 }
 

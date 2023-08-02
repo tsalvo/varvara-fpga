@@ -59,30 +59,30 @@ void dei(uint1_t stack_index, uint8_t stack_offset, uint8_t addr) {
 	put_stack(stack_index, stack_offset, value);
 }
 
-void system_deo(uint8_t d, uint8_t port) {
-	if (port == 0x03) {
+void system_deo(uint8_t d, uint8_t device_port) {
+	if (device_port == 0x03) {
 		// TODO: implement
 		// system_cmd(u->ram, PEEK2(d + 2));
 	} 
-	else if (port == 0x05) {
+	else if (device_port == 0x05) {
 		// TODO: implement
 		// system_friend(u->ram, PEEK2(d + 4));
 	} 
-	else if (port == 0x0E) {
+	else if (device_port == 0x0E) {
 		// TODO: implement
 		// system_friend(u->ram, PEEK2(d + 4));
 	}
 }
 
-void console_deo(uint8_t d, uint8_t port) {
+void console_deo(uint8_t d, uint8_t device_port) {
 	// TODO: implement
 }
 
-void screen_deo(uint8_t d, uint8_t port) {
+void screen_deo(uint8_t d, uint8_t device_port) {
 	// TODO: implement
 }
 
-void screen_palette(uint8_t port) {
+void screen_palette(uint8_t device_port) {
 	// TODO: implement
 }
 
@@ -103,16 +103,16 @@ void uxn_deo(uint8_t addr)
 	60              e0
 	70  	        f0
 	*/
-	static uint8_t port;
+	static uint8_t device_port;
 	static uint8_t device_index;
 	static uint1_t port_range_palette_lo;
 	static uint1_t port_range_palette_hi;
-	port = addr & 0x0F;
+	device_port = addr & 0x0F;
 	device_index = addr & 0xF0;
 	if (device_index == 0x00) { // system
-		system_deo(device_ram_read(device_index), port);
-		port_range_palette_lo = port > 0x07 ? 1 : 0;
-		port_range_palette_hi = port < 0x0E ? 1 : 0;
+		system_deo(device_ram_read(device_index), device_port);
+		port_range_palette_lo = device_port > 0x07 ? 1 : 0;
+		port_range_palette_hi = device_port < 0x0E ? 1 : 0;
 		if (port_range_palette_lo & port_range_palette_hi) {
 			// set system palette colors
 			//----------------------------------
@@ -126,16 +126,16 @@ void uxn_deo(uint8_t addr)
 		}
 	}
 	else if (device_index == 0x10) { // console
-		console_deo(device_ram_read(device_index), port);
+		console_deo(device_ram_read(device_index), device_port);
 	}
 	else if (device_index == 0x20) { // screen
-		screen_deo(device_ram_read(device_index), port);
+		screen_deo(device_ram_read(device_index), device_port);
 	}
 	else if (device_index == 0xA0) { // file 1
-		file_deo(0, device_ram_read(device_index), port);
+		file_deo(0, device_ram_read(device_index), device_port);
 	}
 	else if (device_index == 0xB0) { // file 2
-		file_deo(1, device_ram_read(device_index), port);
+		file_deo(1, device_ram_read(device_index), device_port);
 	}
 }
 
