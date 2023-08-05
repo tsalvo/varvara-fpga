@@ -6,6 +6,8 @@
 #pragma once
 #include "uxn_ram_device.h"
 #pragma once
+#include "uxn_ram_screen.h"
+#pragma once
 #include "uxn_stack.h" 
 
 uint8_t screen_dei(uint8_t addr) {

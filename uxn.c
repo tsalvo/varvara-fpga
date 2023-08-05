@@ -2,6 +2,8 @@
 #include "intN_t.h"   // intN_t types for any N
 
 #include "uxn_opcodes.h"
+#include "uxn_ram_screen.h"
+#include <stdint.h>
 
 // RULES:
 // - cannot write to a global variable from more than one function (unless you use clock domain crossing)
@@ -14,15 +16,14 @@
 
 // Top-level module
 #pragma MAIN_MHZ uxn_eval 12.287999
-uint8_t uxn_eval() {
-	static uint8_t led_error = 0b00010000;
-	static uint8_t led_blink = 0b00001000;
-	static uint8_t led_r = 0b00000100;
-	static uint8_t led_g = 0b00000010;
-	static uint8_t led_b = 0b00000001;
-	static uint8_t result = 0;
+uint16_t uxn_eval(uint16_t input) {
+	static uint12_t palette_color_values[4] = {0x000, 0x444, 0x888, 0xCCC};
+	
+	static uint16_t result;
+	static uint2_t current_pixel_palette_color;
+	static uint17_t pixel_counter; // 320*240, max = 76799
 	static uint32_t counter;
-	static uint1_t s, pc_nonzero, system_state_zero, should_eval, error;
+	static uint1_t s, pc_nonzero, system_state_zero, should_eval, error, is_pixel;
 	static uint8_t k, opc, ins, system_state;
 	static uint16_t pc;
 
@@ -42,40 +43,22 @@ uint8_t uxn_eval() {
 		error = eval_opcode(s, opc, ins, k);
 	}
 	
-	// test blinking LEDs
+	current_pixel_palette_color = pixel_palette_color(pixel_counter);
+	result = (uint16_t)(palette_color_values[current_pixel_palette_color]);
+	
+	// pixel clock counter
+	if (pixel_counter == 76800 - 1) {
+		pixel_counter = 0;
+	} else {
+		pixel_counter += 1;
+	}
+	
+	// Clock Counter
 	if (counter == (12287999 - 1)) { // If reached 1 second
-		
-		result = result ^ led_blink;
-		result = result ^ led_r;
-		result = result ^ led_g;
-		result = result ^ led_b;
 		counter = 0; // Reset counter
 	} else {
 		counter += 1;
 	}
-	
-	if (counter == (9216000 - 1)) { // If reached 0.75 second 
-		result = result ^ led_b;
-	}
-	
-	if (counter == (6144000 - 1)) { // If reached 0.5 second 
-		result = result ^ led_r;
-		result = result ^ led_b;
-	}
-	
-	if (counter == (4096000 - 1)) { // If reached 0.333 second 
-		result = result ^ led_g;
-	}
-	
-	if (counter == (8192000 - 1)) { // If reached 0.666 second 
-		result = result ^ led_g;
-	}
-	
-	if (counter == (3072000 - 1)) { // If reached 0.25 second 
-		result = result ^ led_b;
-	}
-	
-	result = (result & 0b00001111) | (error ? led_error : 0x00);
 	
 	return result;
 }
