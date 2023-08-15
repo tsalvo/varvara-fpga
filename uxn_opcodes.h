@@ -45,7 +45,7 @@ uint1_t opc_jsi(uint8_t ins) {
 uint1_t opc_lit(uint1_t stack_index, uint8_t ins) {
 	static uint8_t tmp8;
 	static uint1_t result;
-	tmp8 = push_stack(stack_index, ins, main_ram_read(pc_get()));
+	tmp8 = push_stack(stack_index, ins, peek_ram(pc_get()));
 	if (tmp8 > 0) { result = 1; }
 	else { pc_add(1); result = 0; }
 	return result;
@@ -65,7 +65,7 @@ uint1_t opc_lit2(uint1_t stack_index, uint8_t ins) {
 uint1_t opc_litr(uint1_t stack_index, uint8_t ins) {
 	static uint8_t tmp8;
 	static uint1_t result;
-	tmp8 = push_stack(stack_index, ins, main_ram_read(pc_get()));
+	tmp8 = push_stack(stack_index, ins, peek_ram(pc_get()));
 	if (tmp8 > 0) { result = 1; }
 	else { pc_add(1); result = 0; }
 	return result;
@@ -515,7 +515,7 @@ uint1_t opc_ldz(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	tmp8 = set(stack_index, ins, k, 1, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, main_ram_read(t16));
+		put_stack(stack_index, 0, peek_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -546,7 +546,7 @@ uint1_t opc_stz(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	tmp8 = set(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		main_ram_write(t16, n8);
+		poke_ram(t16, n8);
 		result = 0;
 	}
 	return result;
@@ -577,7 +577,7 @@ uint1_t opc_ldr(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	if (tmp8 > 0) { result = 1; }
 	else {
 		t16 = pc_get() + ((int8_t)(t8));
-		put_stack(stack_index, 0, main_ram_read(t16));
+		put_stack(stack_index, 0, peek_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -608,7 +608,7 @@ uint1_t opc_str(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	if (tmp8 > 0) { result = 1; }
 	else {
 		t16 = pc_get() + ((int8_t)(t8));
-		main_ram_write(t16, n8);
+		poke_ram(t16, n8);
 		result = 0;
 	}
 	return result;
@@ -638,7 +638,7 @@ uint1_t opc_lda(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	tmp8 = set(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, main_ram_read(t16));
+		put_stack(stack_index, 0, peek_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -667,7 +667,7 @@ uint1_t opc_sta(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	tmp8 = set(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		main_ram_write(t16, n8);
+		poke_ram(t16, n8);
 		result = 0;
 	}
 	return result;

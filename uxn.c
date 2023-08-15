@@ -33,7 +33,7 @@ uint16_t uxn_eval(uint16_t input) {
 	should_eval = pc_nonzero & system_state_zero;
 	
 	if (should_eval) {
-		ins = main_ram_read(pc) & 0xFF;
+		ins = peek_ram(pc) & 0xFF;
 		pc_add(1);
 		k = ins & 0x80 ? 0xFF : 0x00;
 		s = ins & 0x40 ? 1 : 0;
