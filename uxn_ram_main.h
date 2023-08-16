@@ -60,15 +60,15 @@ void poke2_ram(uint16_t address, uint16_t value) {
 	value0 = (uint8_t)(value >> 8);
 	value1 = (uint8_t)(value);
 	main_ram_update(address, value0, 1, 0, 0, 0);
-	main_ram_update(address +1, value1, 1, 0, 0, 0);
+	main_ram_update(address + 1, value1, 1, 0, 0, 0);
 }
 
 uint8_t peek_ram(uint16_t address) {
 	static uint16_t ram_read;
-	ram_read = main_ram_update(0, 0, 0, address, 0, 0);
+	ram_read = main_ram_update(0, 0, 0, 0, address, 1);
 	return (uint8_t)(ram_read);
 }
 
 uint16_t peek2_ram(uint16_t address) {
-	return main_ram_update(address, 0, 0, address + 1, 0, 0);
+	return main_ram_update(address, 0, 0, 1, address + 1, 1);
 }

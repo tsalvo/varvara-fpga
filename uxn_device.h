@@ -46,7 +46,7 @@ uint8_t uxn_dei(uint8_t addr) {
 		result = datetime_dei(addr);
 	} 
 	else {
-		result = device_ram_read(addr);
+		result = peek_dev(addr);
 	}
 	
 	return result;
@@ -57,7 +57,7 @@ void dei(uint1_t stack_index, uint8_t stack_offset, uint8_t addr) {
 	static uint16_t is_event; 
 	static uint8_t value;
 	is_event = (dei_mask[value >> 4] >> (addr & 0x0F)) & 0x0001;
-	value = is_event ? uxn_dei(addr) : device_ram_read(addr);
+	value = is_event ? uxn_dei(addr) : peek_dev(addr);
 	put_stack(stack_index, stack_offset, value);
 }
 
@@ -112,7 +112,7 @@ void uxn_deo(uint8_t addr)
 	device_port = addr & 0x0F;
 	device_index = addr & 0xF0;
 	if (device_index == 0x00) { // system
-		system_deo(device_ram_read(device_index), device_port);
+		system_deo(peek_dev(device_index), device_port);
 		port_range_palette_lo = device_port > 0x07 ? 1 : 0;
 		port_range_palette_hi = device_port < 0x0E ? 1 : 0;
 		if (port_range_palette_lo & port_range_palette_hi) {
@@ -124,27 +124,27 @@ void uxn_deo(uint8_t addr)
 			// #f07f .System/r DEO2
 			// #f0e0 .System/g DEO2
 			// #f0c0 .System/b DEO2
-			screen_palette(device_ram_read(0x08));
+			screen_palette(peek_dev(0x08));
 		}
 	}
 	else if (device_index == 0x10) { // console
-		console_deo(device_ram_read(device_index), device_port);
+		console_deo(peek_dev(device_index), device_port);
 	}
 	else if (device_index == 0x20) { // screen
-		screen_deo(device_ram_read(device_index), device_port);
+		screen_deo(peek_dev(device_index), device_port);
 	}
 	else if (device_index == 0xA0) { // file 1
-		file_deo(0, device_ram_read(device_index), device_port);
+		file_deo(0, peek_dev(device_index), device_port);
 	}
 	else if (device_index == 0xB0) { // file 2
-		file_deo(1, device_ram_read(device_index), device_port);
+		file_deo(1, peek_dev(device_index), device_port);
 	}
 }
 
 void deo(uint8_t device_address, uint8_t value) {
 	// #define DEO(a, b) { u->dev[(a)] = (b); if((deo_mask[(a) >> 4] >> ((a) & 0xf)) & 0x1) uxn_deo(u, (a)); }
 	static uint16_t deo_mask[16] = {0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
-	device_ram_write(device_address, value);
+	poke_dev(device_address, value);
 	if ((deo_mask[(device_address) >> 4] >> ((device_address) & 0x0F)) & 0x0001) {
 		uxn_deo(device_address); 
 	}

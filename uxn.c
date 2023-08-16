@@ -28,7 +28,7 @@ uint16_t uxn_eval(uint16_t input) {
 	error = 0;
 	pc = pc_get();
 	pc_nonzero = pc == 0 ? 0 : 1;
-	system_state = device_ram_read(15);
+	system_state = peek_dev(15);
 	system_state_zero = system_state == 0 ? 1 : 0;
 	should_eval = pc_nonzero & system_state_zero;
 	
