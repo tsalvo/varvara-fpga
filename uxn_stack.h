@@ -115,47 +115,39 @@ uint16_t stack_r_ram_update(
 	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
 }
 
-uint8_t stack_ptr_ram_read(uint1_t stack_index) {
-	static uint32_t stack_p_r_rdaddr = 0; // Read address
-	static uint32_t stack_p_r_rwaddr = 0; // Write+read address
-	static uint8_t  stack_p_r_wdata = 0;  // Write data, start writing zeros
-	stack_p_r_rdaddr = (uint32_t)(stack_index);
+uint16_t stack_p_ram_update(
+	uint1_t address0, 
+	uint8_t write0_value,
+	uint1_t write0_enable,
+	uint1_t read0_enable,
+	uint1_t address1,
+	uint1_t read1_enable
+) {
+	static uint32_t rdaddr; // Read address
+	static uint32_t rwaddr; // Write+read address
+	static uint8_t wdata;   // Write data, start writing zeros
+	static uint8_t rdvalue0;
+	static uint8_t rdvalue1;
+	rwaddr = (uint32_t)(address0);
+	rdaddr = (uint32_t)(address1);
+	wdata = write0_value;
 	
-	  // The RAM instance
-	  uint1_t stack_p_r_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t stack_p_r_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t stack_p_r_rd_valid = 1; // Always have valid RAM inputs
-	  stack_p_ram_outputs_t stack_p_r_ram_out = stack_p_ram(
-		stack_p_r_rwaddr,
-		stack_p_r_wdata,
-		stack_p_r_wr_en,
-		stack_p_r_rw_valid,
-		stack_p_r_rdaddr,
-		stack_p_r_rd_valid
+	// The RAM instance
+	uint1_t rw_valid = 1; // Always have valid RAM inputs
+	uint1_t rd_valid = 1; // Always have valid RAM inputs
+	stack_p_ram_outputs_t stack_p_ram_out = stack_p_ram(
+		rwaddr,        // read-write_addr
+		write0_value,  // write data
+		write0_enable, // write enable (RW port always writing (not reading)),
+		rw_valid,      // valid read-write input
+		rdaddr,        // read address
+		rd_valid       // valid read input
 	);
 		
-	return stack_p_r_ram_out.rd_data1;
-}
-
-void stack_ptr_ram_write(uint1_t stack_index, uint8_t value) {
-	static uint32_t stack_p_w_rdaddr = 0; // Read address
-	static uint32_t stack_p_w_rwaddr = 0; // Write+read address
-	static uint8_t  stack_p_w_wdata = 0;  // Write data
-	stack_p_w_rwaddr = (uint32_t)(stack_index);
-	stack_p_w_wdata = value;
+	rdvalue0 = stack_p_ram_out.valid0 & read0_enable ? stack_p_ram_out.rd_data0 : 0;
+	rdvalue1 = stack_p_ram_out.valid1 & read1_enable ? stack_p_ram_out.rd_data1 : 0;
 	
-	  // The RAM instance
-	  uint1_t stack_p_w_wr_en = 1; // RW port always writing (not reading)
-	  uint1_t stack_p_w_rw_valid = 1; // Always have valid RAM inputs
-	  uint1_t stack_p_w_rd_valid = 1; // Always have valid RAM inputs
-	  stack_p_ram_outputs_t stack_p_w_ram_out = stack_p_ram(
-		stack_p_w_rwaddr,
-		stack_p_w_wdata,
-		stack_p_w_wr_en,
-		stack_p_w_rw_valid,
-		stack_p_w_rdaddr,
-		stack_p_w_rd_valid
-	);
+	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
 }
 
 uint8_t peek_stack_w(uint8_t address) {
@@ -217,11 +209,13 @@ uint16_t stack_data_get2(uint1_t stack_index, uint8_t address) {
 }
 
 void stack_pointer_set(uint1_t stack_index, uint8_t value) {
-	stack_ptr_ram_write(stack_index, value);
+	stack_p_ram_update(stack_index, value, 1, 0, 0, 0);
 }
 
 uint8_t stack_pointer_get(uint1_t stack_index) {
-	return stack_ptr_ram_read(stack_index);
+	static uint16_t ram_read;
+	ram_read = stack_p_ram_update(0, 0, 0, 0, stack_index, 1);
+	return (uint8_t)(ram_read);
 }
 
 void stack_pointer_move(uint1_t stack_index, uint8_t adjustment, uint1_t is_negative) {
