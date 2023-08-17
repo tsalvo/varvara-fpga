@@ -62,5 +62,5 @@ void poke_dev(uint8_t address, uint8_t value) {
 }
 
 uint16_t peek2_dev(uint8_t address) {
-	return main_ram_update(address, 0, 0, 1, address + 1, 1);
+	return device_ram_update(address, 0, 0, 1, address + 1, 1);
 }
