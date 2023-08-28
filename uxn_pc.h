@@ -19,7 +19,7 @@ uint16_t prog_ctr_ram_update(
 	uint1_t write0_enable,
 	uint1_t read1_enable
 ) {
-	static uint8_t wdata;   // Write data, start writing zeros
+	static uint16_t wdata;   // Write data, start writing zeros
 	static uint16_t rdvalue1;
 	wdata = write0_value;
 	
@@ -53,7 +53,14 @@ void pc_add(uint16_t adjustment) {
 	pc_set(current_prog_ctr + adjustment);
 }
 
-void pc_add_s8(int8_t adjustment) {
+void pc_add_s8(uint16_t pc, int8_t adjustment) {
+	static uint16_t new_prog_ctr;
+	new_prog_ctr = pc + adjustment;
+	pc_set(new_prog_ctr);
+}
+
+// TODO: remove eventually
+void pc_add_s8_old(int8_t adjustment) {
 	static uint16_t current_prog_ctr;
 	static uint16_t new_prog_ctr;
 	current_prog_ctr = pc_get();

@@ -21,7 +21,7 @@ uint1_t opc_brk() {
 uint1_t opc_jci(uint1_t stack_index) {
 	static uint8_t tmp8;
 	static uint16_t tmp16;
-	stack_pointer_move(stack_index, 1, 1);
+	stack_pointer_move_old(stack_index, 1, 1);
 	tmp8 = stack_data_get(stack_index, stack_pointer_get(stack_index));
 	tmp16 = (tmp8 == 0) ? 0 : peek2_ram(pc_get() + 2);
 	pc_add(tmp16);
@@ -85,10 +85,10 @@ uint1_t opc_lit2r(uint1_t stack_index, uint8_t ins) {
 uint1_t opc_inc(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, 0);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, 0);
 	if (tmp8 > 0) { result = 1; }
-	else { put_stack(stack_index, 0, t8 + 1); result = 0; }
+	else { put_stack_old(stack_index, 0, t8 + 1); result = 0; }
 	return result;
 }
 
@@ -96,8 +96,8 @@ uint1_t opc_inc2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, 0);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, 0);
 	if (tmp8 > 0) { result = 1; }
 	else { put2_stack(stack_index, 0, t16 + 1); result = 0; }
 	return result;
@@ -106,7 +106,7 @@ uint1_t opc_inc2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_pop(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t tmp8;
 	static uint1_t result;
-	tmp8 = set(stack_index, ins, k, 1, -1);
+	tmp8 = set_old(stack_index, ins, k, 1, -1);
 	if (tmp8 > 0) { result = 1; }
 	else { result = 0; }
 	return result;
@@ -115,7 +115,7 @@ uint1_t opc_pop(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_pop2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t tmp8;
 	static uint1_t result;
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else { result = 0; }
 	return result;
@@ -124,10 +124,10 @@ uint1_t opc_pop2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_nip(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
-	else { put_stack(stack_index, 0, t8); result = 0; }
+	else { put_stack_old(stack_index, 0, t8); result = 0; }
 	return result;
 }
 
@@ -135,8 +135,8 @@ uint1_t opc_nip2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else { put2_stack(stack_index, 0, t16); result = 0; }
 	return result;
@@ -145,13 +145,13 @@ uint1_t opc_nip2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_swp(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, 0);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8);
-		put_stack(stack_index, 1, t8);
+		put_stack_old(stack_index, 0, n8);
+		put_stack_old(stack_index, 1, t8);
 		result = 0;
 	}
 	return result;
@@ -161,9 +161,9 @@ uint1_t opc_swp2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index); 
-	tmp8 = set(stack_index, ins, k, 4, 0);
+	tmp8 = set_old(stack_index, ins, k, 4, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16);
@@ -176,15 +176,15 @@ uint1_t opc_swp2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_rot(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t l8, n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	l8 = l_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, 0);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	l8 = l_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 3, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, l8);
-		put_stack(stack_index, 1, t8);
-		put_stack(stack_index, 2, n8);
+		put_stack_old(stack_index, 0, l8);
+		put_stack_old(stack_index, 1, t8);
+		put_stack_old(stack_index, 2, n8);
 		result = 0; 
 	}
 	return result;
@@ -194,10 +194,10 @@ uint1_t opc_rot2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t l16, n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
 	l16 = l2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 6, 0);
+	tmp8 = set_old(stack_index, ins, k, 6, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, l16);
@@ -211,12 +211,12 @@ uint1_t opc_rot2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_dup(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, 1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, 1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, t8);
-		put_stack(stack_index, 1, t8);
+		put_stack_old(stack_index, 0, t8);
+		put_stack_old(stack_index, 1, t8);
 		result = 0;
 	}
 	return result;
@@ -226,8 +226,8 @@ uint1_t opc_dup2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, 2);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, 2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, t16);
@@ -240,14 +240,14 @@ uint1_t opc_dup2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_ovr(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, 1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, 1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8);
-		put_stack(stack_index, 1, t8);
-		put_stack(stack_index, 2, n8);
+		put_stack_old(stack_index, 0, n8);
+		put_stack_old(stack_index, 1, t8);
+		put_stack_old(stack_index, 2, n8);
 		result = 0;
 	}
 	return result;
@@ -257,9 +257,9 @@ uint1_t opc_ovr2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, 2);
+	tmp8 = set_old(stack_index, ins, k, 4, 2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16);
@@ -273,12 +273,12 @@ uint1_t opc_ovr2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_equ(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 == t8 ? 1 : 0);
+		put_stack_old(stack_index, 0, n8 == t8 ? 1 : 0);
 		result = 0;
 	}
 	return result;
@@ -288,9 +288,9 @@ uint1_t opc_equ2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -3);
+	tmp8 = set_old(stack_index, ins, k, 4, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 == t16 ? 1 : 0);
@@ -302,12 +302,12 @@ uint1_t opc_equ2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_neq(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 == t8 ? 0 : 1);
+		put_stack_old(stack_index, 0, n8 == t8 ? 0 : 1);
 		result = 0;
 	}
 	return result;
@@ -317,9 +317,9 @@ uint1_t opc_neq2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -3);
+	tmp8 = set_old(stack_index, ins, k, 4, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 == t16 ? 0 : 1);
@@ -331,12 +331,12 @@ uint1_t opc_neq2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_gth(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 > t8 ? 1 : 0);
+		put_stack_old(stack_index, 0, n8 > t8 ? 1 : 0);
 		result = 0;
 	}
 	return result;
@@ -346,9 +346,9 @@ uint1_t opc_gth2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -3);
+	tmp8 = set_old(stack_index, ins, k, 4, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 > t16 ? 1 : 0);
@@ -360,12 +360,12 @@ uint1_t opc_gth2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_lth(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 < t8 ? 1 : 0);
+		put_stack_old(stack_index, 0, n8 < t8 ? 1 : 0);
 		result = 0;
 	}
 	return result;
@@ -375,9 +375,9 @@ uint1_t opc_lth2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -3);
+	tmp8 = set_old(stack_index, ins, k, 4, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 < t16 ? 1 : 0);
@@ -389,11 +389,11 @@ uint1_t opc_lth2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_jmp(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, -1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		pc_add_s8((int8_t)(t8));
+		pc_add_s8_old((int8_t)(t8));
 		result = 0;
 	}
 	return result;
@@ -403,8 +403,8 @@ uint1_t opc_jmp2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		pc_set(t16);
@@ -416,12 +416,12 @@ uint1_t opc_jmp2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_jcn(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else if (n8 > 0) {
-		pc_add_s8((int8_t)(t8));
+		pc_add_s8_old((int8_t)(t8));
 		result = 0;
 	}
 	return result;
@@ -431,9 +431,9 @@ uint1_t opc_jcn2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t n8, tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	n8 = l_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, -3);
+	t16 = t2_register_old(stack_index);
+	n8 = l_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else if (n8 > 0) {
 		pc_set(t16);
@@ -445,14 +445,14 @@ uint1_t opc_jcn2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_jsr(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, -1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		tmp8 = push2_stack(1, ins, pc_get());
 		if (tmp8 > 0) { result = 1; }
 		else {
-			pc_add_s8((int8_t)(t8));
+			pc_add_s8_old((int8_t)(t8));
 			result = 0;
 		}
 	}
@@ -463,8 +463,8 @@ uint1_t opc_jsr2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		tmp8 = push2_stack(1, ins, pc_get());
@@ -480,8 +480,8 @@ uint1_t opc_jsr2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_sth(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, -1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		tmp8 = push_stack(ins & 0x40 ? 0 : 1, ins, t8);
@@ -495,8 +495,8 @@ uint1_t opc_sth2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		tmp8 = push2_stack(ins & 0x40 ? 0 : 1, ins, t16);
@@ -510,12 +510,12 @@ uint1_t opc_ldz(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
+	t8 = t_register_old(stack_index);
 	t16 = (uint16_t)(t8);
-	tmp8 = set(stack_index, ins, k, 1, 0);
+	tmp8 = set_old(stack_index, ins, k, 1, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, peek_ram(t16));
+		put_stack_old(stack_index, 0, peek_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -525,9 +525,9 @@ uint1_t opc_ldz2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
+	t8 = t_register_old(stack_index);
 	t16 = (uint16_t)(t8);
-	tmp8 = set(stack_index, ins, k, 1, 1);
+	tmp8 = set_old(stack_index, ins, k, 1, 1);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, peek2_ram(t16));
@@ -540,10 +540,10 @@ uint1_t opc_stz(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
 	t16 = (uint16_t)(t8);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		poke_ram(t16, n8);
@@ -556,10 +556,10 @@ uint1_t opc_stz2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
+	t8 = t_register_old(stack_index);
 	t16 = (uint16_t)(t8);
 	n16 = h2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, -3);
+	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		poke2_ram(t16, n16);
@@ -572,12 +572,12 @@ uint1_t opc_ldr(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, 0);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		t16 = pc_get() + ((int8_t)(t8));
-		put_stack(stack_index, 0, peek_ram(t16));
+		put_stack_old(stack_index, 0, peek_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -587,8 +587,8 @@ uint1_t opc_ldr2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, 1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, 1);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		t16 = pc_get() + ((int8_t)(t8));
@@ -602,9 +602,9 @@ uint1_t opc_str(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		t16 = pc_get() + ((int8_t)(t8));
@@ -618,9 +618,9 @@ uint1_t opc_str2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
+	t8 = t_register_old(stack_index);
 	n16 = h2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, -3);
+	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		t16 = pc_get() + ((int8_t)(t8));
@@ -634,11 +634,11 @@ uint1_t opc_lda(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, peek_ram(t16));
+		put_stack_old(stack_index, 0, peek_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -648,11 +648,11 @@ uint1_t opc_lda2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, 0);
+	t16 = t2_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 9, peek2_ram(t16));
+		put_stack_old(stack_index, 9, peek2_ram(t16));
 		result = 0;
 	}
 	return result;
@@ -662,9 +662,9 @@ uint1_t opc_sta(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t n8, tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
-	n8 = l_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, -3);
+	t16 = t2_register_old(stack_index);
+	n8 = l_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		poke_ram(t16, n8);
@@ -677,9 +677,9 @@ uint1_t opc_sta2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -4);
+	tmp8 = set_old(stack_index, ins, k, 4, -4);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		poke2_ram(t16, n16);
@@ -691,8 +691,8 @@ uint1_t opc_sta2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_dei(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, 0);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		dei(stack_index, 0, t8);
@@ -704,8 +704,8 @@ uint1_t opc_dei(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_dei2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 1, 1);
+	t8 = t_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 1, 1);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		dei(stack_index, 1, t8);
@@ -718,9 +718,9 @@ uint1_t opc_dei2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_deo(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -2);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		deo(t8, n8);
@@ -732,10 +732,10 @@ uint1_t opc_deo(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_deo2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t l8, n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	l8 = l_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, -3);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	l8 = l_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		deo(t8, l8);
@@ -748,12 +748,12 @@ uint1_t opc_deo2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_add(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 + t8);
+		put_stack_old(stack_index, 0, n8 + t8);
 		result = 0;
 	}
 	return result;
@@ -763,9 +763,9 @@ uint1_t opc_add2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 + t16);
@@ -777,12 +777,12 @@ uint1_t opc_add2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_sub(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 - t8);
+		put_stack_old(stack_index, 0, n8 - t8);
 		result = 0;
 	}
 	return result;
@@ -792,9 +792,9 @@ uint1_t opc_sub2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 - t16);
@@ -806,12 +806,12 @@ uint1_t opc_sub2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_mul(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 * t8);
+		put_stack_old(stack_index, 0, n8 * t8);
 		result = 0;
 	}
 	return result;
@@ -821,9 +821,9 @@ uint1_t opc_mul2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 * t16);
@@ -835,16 +835,16 @@ uint1_t opc_mul2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_div(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else if (t8 == 0) {
 		tmp8 = halt(ins, 3);
 		if (tmp8 > 0) { result = 1; }
 		else { result = 0; }
 	} else {
-		put_stack(stack_index, 0, n8 / t8);
+		put_stack_old(stack_index, 0, n8 / t8);
 		result = 0;
 	}
 	return result;
@@ -854,9 +854,9 @@ uint1_t opc_div2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else if (t16 == 0) {
 		tmp8 = halt(ins, 3);
@@ -872,12 +872,12 @@ uint1_t opc_div2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_and(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 & t8);
+		put_stack_old(stack_index, 0, n8 & t8);
 		result = 0;
 	}
 	return result;
@@ -887,9 +887,9 @@ uint1_t opc_and2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 & t16);
@@ -901,12 +901,12 @@ uint1_t opc_and2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_ora(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 | t8);
+		put_stack_old(stack_index, 0, n8 | t8);
 		result = 0;
 	}
 	return result;
@@ -916,9 +916,9 @@ uint1_t opc_ora2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 | t16);
@@ -930,12 +930,12 @@ uint1_t opc_ora2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_eor(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, n8 ^ t8);
+		put_stack_old(stack_index, 0, n8 ^ t8);
 		result = 0;
 	}
 	return result;
@@ -945,9 +945,9 @@ uint1_t opc_eor2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
 	static uint8_t tmp8;
 	static uint1_t result;
-	t16 = t2_register(stack_index);
+	t16 = t2_register_old(stack_index);
 	n16 = n2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 4, -2);
+	tmp8 = set_old(stack_index, ins, k, 4, -2);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, n16 ^ t16);
@@ -959,12 +959,12 @@ uint1_t opc_eor2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 uint1_t opc_sft(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
-	n8 = n_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 2, -1);
+	t8 = t_register_old(stack_index);
+	n8 = n_register_old(stack_index);
+	tmp8 = set_old(stack_index, ins, k, 2, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
-		put_stack(stack_index, 0, (n8 >> (t8 & 0x0F)) << (t8 >> 4));
+		put_stack_old(stack_index, 0, (n8 >> (t8 & 0x0F)) << (t8 >> 4));
 		result = 0;
 	}
 	return result;
@@ -974,9 +974,9 @@ uint1_t opc_sft2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16;
 	static uint8_t t8, tmp8;
 	static uint1_t result;
-	t8 = t_register(stack_index);
+	t8 = t_register_old(stack_index);
 	n16 = h2_register(stack_index);
-	tmp8 = set(stack_index, ins, k, 3, -1);
+	tmp8 = set_old(stack_index, ins, k, 3, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {
 		put2_stack(stack_index, 0, (n16 >> (t8 & 0x0F)) << (t8 >> 4));

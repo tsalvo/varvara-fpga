@@ -218,7 +218,8 @@ uint8_t stack_pointer_get(uint1_t stack_index) {
 	return (uint8_t)(ram_read);
 }
 
-void stack_pointer_move(uint1_t stack_index, uint8_t adjustment, uint1_t is_negative) {
+// TODO: deprecated
+void stack_pointer_move_old(uint1_t stack_index, uint8_t adjustment, uint1_t is_negative) {
 	static uint8_t stack_ptr_existing;
 	static uint8_t stack_ptr_new;
 	stack_ptr_existing = stack_pointer_get(stack_index);
@@ -281,7 +282,7 @@ uint8_t push2_stack(uint1_t stack_index, uint8_t ins, uint16_t value) {
 		tmp = value;
 		stack_data_set(stack_index, stack_pointer_get(stack_index), (uint8_t)(tmp >> 8));
 		stack_data_set(stack_index, stack_pointer_get(stack_index) + 1, (uint8_t)(tmp));
-		stack_pointer_move(stack_index, 2, 0);
+		stack_pointer_move_old(stack_index, 2, 0);
 	}
 	
 	return result;
@@ -302,13 +303,14 @@ uint8_t push_stack(uint1_t stack_index, uint8_t ins, uint8_t value) {
 	
 	if (halt_return == 0) {
 		stack_data_set(stack_index, stack_pointer_get(stack_index), value);
-		stack_pointer_move(stack_index, 1, 0);
+		stack_pointer_move_old(stack_index, 1, 0);
 	}
 	
 	return result;
 }
 
-uint8_t set(uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add) {
+// TODO: remove when no longer used
+uint8_t set_old(uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add) {
 	static uint8_t result, set_tmp;
 	static uint1_t halt_return;
 	if (mul > stack_pointer_get(stack_index)) {
@@ -332,7 +334,36 @@ uint8_t set(uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add
 	return result;
 }
 
-void put_stack(uint1_t stack_index, uint8_t offset, uint8_t value) {
+uint1_t set_will_fail(uint8_t sp, uint8_t k, uint8_t mul, int8_t add) {
+	static uint1_t condition0, condition1;
+	condition0 = mul > sp ? 1 : 0;
+	condition1 = (mul & k) + add + sp > 254 ? 1 : 0;
+	return condition0 | condition1;
+}
+
+uint1_t set_will_succeed(uint8_t sp, uint8_t k, uint8_t mul, int8_t add) {
+	static uint1_t condition0, condition1;
+	condition0 = mul > sp ? 0 : 1;
+	condition1 = (mul & k) + add + sp > 254 ? 0 : 1;
+	
+	return condition0 & condition1;
+}
+
+// TODO: replace set_old()
+// precondition: set_will_fail returned 0
+void set(uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k, uint8_t mul, int8_t add) {
+	static uint8_t result, set_tmp;
+	set_tmp = (mul & k) + add + sp;
+	stack_pointer_set(stack_index, set_tmp);
+}
+
+void put_stack(uint8_t sp, uint1_t stack_index, uint8_t offset, uint8_t value) {
+	static uint8_t put_tmp;
+	put_tmp = sp - 1 - offset;
+	stack_data_set(stack_index, put_tmp, value);
+}
+
+void put_stack_old(uint1_t stack_index, uint8_t offset, uint8_t value) {
 	static uint8_t put_tmp;
 	put_tmp = stack_pointer_get(stack_index) - 1 - offset;
 	stack_data_set(stack_index, put_tmp, value);
