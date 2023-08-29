@@ -14,10 +14,17 @@
 #pragma once
 #include "uxn_registers.h"
 
+// OPCODES
+// The short mode (2) operates on 16-bit shorts, instead of bytes.
+// The keep mode (k) operates without consuming items.
+// The return mode (r) operates on the return stack.
+
+// Break - Ends the evalutation of the current vector. This opcode has no modes.
 uint1_t opc_brk_phased() {
 	return 1;
 }
 
+// Jump Conditional Instant - Pops a byte from the working stack and if it is not zero, moves the PC to a relative address at a distance equal to the next short in memory, otherwise moves PC+2. This opcode has no modes.
 uint1_t opc_jci_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index) {
 	static uint8_t tmp8a, tmp8b;
 	static uint16_t tmp16a, tmp16b;
@@ -42,6 +49,7 @@ uint1_t opc_jci_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Jump Instant - Moves the PC to a relative address at a distance equal to the next short in memory. This opcode has no modes.
 uint1_t opc_jmi_phased(uint4_t phase, uint16_t pc, uint8_t sp) {
 	static uint16_t tmp16a, tmp16b;
 	static uint1_t result;
@@ -58,6 +66,7 @@ uint1_t opc_jmi_phased(uint4_t phase, uint16_t pc, uint8_t sp) {
 	return result;
 }
 
+// Jump Stash Return Instant - Pushes PC+2 to the return-stack and moves the PC to a relative address at a distance equal to the next short in memory. This opcode has no modes.
 uint1_t opc_jsi_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins) {
 	static uint8_t tmp8a;
 	static uint16_t tmp16a, tmp16b;
@@ -84,6 +93,7 @@ uint1_t opc_jsi_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Literal - Pushes the next bytes in memory, and moves the PC+2. The LIT opcode always has the keep mode active. Notice how the 0x00 opcode, with the keep bit toggled, is the location of the literal opcodes. To learn more, see literals.
 uint1_t opc_lit_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins) {
 	static uint8_t tmp8a, tmp8b;
 	static uint1_t result;
@@ -136,6 +146,7 @@ uint1_t opc_lit2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_in
 	return result;
 }
 
+// Increment - Increments the value at the top of the stack, by 1.
 uint1_t opc_inc_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8;
 	static uint1_t result;
@@ -162,6 +173,7 @@ uint1_t opc_inc_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Pop - Removes the value at the top of the stack.
 uint1_t opc_pop_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint1_t set_will_succeed, result;
 	if (phase == 0) {
@@ -177,6 +189,7 @@ uint1_t opc_pop_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Nip - Removes the second value from the stack. This is practical to convert a short into a byte.
 uint1_t opc_nip_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8;
 	static uint1_t result;
@@ -203,6 +216,7 @@ uint1_t opc_nip_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Swap - Exchanges the first and second values at the top of the stack.
 uint1_t opc_swp_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -235,6 +249,7 @@ uint1_t opc_swp_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Rotate - Rotates three values at the top of the stack, to the left, wrapping around.
 uint1_t opc_rot_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, l8;
 	static uint1_t result;
@@ -273,6 +288,7 @@ uint1_t opc_rot_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Duplicate - Duplicates the value at the top of the stack.
 uint1_t opc_dup_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8;
 	static uint1_t result;
@@ -302,6 +318,7 @@ uint1_t opc_dup_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Over - Duplicates the second value at the top of the stack.
 uint1_t opc_ovr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -337,6 +354,7 @@ uint1_t opc_ovr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Equal - Pushes 01 to the stack if the two values at the top of the stack are equal, 00 otherwise.
 uint1_t opc_equ_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -366,6 +384,7 @@ uint1_t opc_equ_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Not Equal - Pushes 01 to the stack if the two values at the top of the stack are not equal, 00 otherwise.
 uint1_t opc_neq_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -395,6 +414,7 @@ uint1_t opc_neq_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Greater Than - Pushes 01 to the stack if the second value at the top of the stack is greater than the value at the top of the stack, 00 otherwise.
 uint1_t opc_gth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -424,6 +444,7 @@ uint1_t opc_gth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Less Than - Pushes 01 to the stack if the second value at the top of the stack is lesser than the value at the top of the stack, 00 otherwise.
 uint1_t opc_lth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -453,6 +474,7 @@ uint1_t opc_lth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Jump - Moves the PC by a relative distance equal to the signed byte on the top of the stack, or to an absolute address in short mode.
 uint1_t opc_jmp_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
@@ -476,6 +498,7 @@ uint1_t opc_jmp_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Jump Conditional - If the byte preceding the address is not 00, moves the PC by a signed value equal to the byte on the top of the stack, or to an absolute address in short mode.
 uint1_t opc_jcn_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
@@ -503,6 +526,7 @@ uint1_t opc_jcn_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Jump Stash Return - Pushes the PC to the return-stack and moves the PC by a signed value equal to the byte on the top of the stack, or to an absolute address in short mode.
 uint1_t opc_jsr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
@@ -543,6 +567,7 @@ uint1_t opc_jsr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Stash - Moves the value at the top of the stack, to the return stack.
 uint1_t opc_sth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
@@ -575,13 +600,14 @@ uint1_t opc_sth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Load Zero-Page -  Pushes the value at an address within the first 256 bytes of memory, to the top of the stack.
 uint1_t opc_ldz_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t8;
 	static uint8_t ram8_at_tmp16, tmp16;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 1, 0);                
+		result = set_will_fail(sp, k, 1, 0);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -605,13 +631,14 @@ uint1_t opc_ldz_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Store Zero-Page - Writes a value to an address within the first 256 bytes of memory.
 uint1_t opc_stz_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t tmp16;
 	static uint8_t t8, n8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -2);                  
+		result = set_will_fail(sp, k, 2, -2);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -634,6 +661,7 @@ uint1_t opc_stz_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Load Relative - Pushes a value at a relative address in relation to the PC, within a range between -128 and +127 bytes, to the top of the stack.
 uint1_t opc_ldr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t8;
 	static uint8_t ram8_at_tmp16, tmp16;
@@ -664,13 +692,14 @@ uint1_t opc_ldr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Store Relative - Writes a value to a relative address in relation to the PC, within a range between -128 and +127 bytes.
 uint1_t opc_str_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t tmp16;
 	static uint8_t t8, n8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -2);                  
+		result = set_will_fail(sp, k, 2, -2);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -693,6 +722,7 @@ uint1_t opc_str_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Load Absolute - Pushes the value at a absolute address, to the top of the stack.
 uint1_t opc_lda_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t ram8_at_t16;
@@ -722,13 +752,14 @@ uint1_t opc_lda_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Store Absolute - Writes a value to a absolute address.
 uint1_t opc_sta_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t t16;
 	static uint8_t l8;
 	static uint1_t set_will_succeed, result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 3, -3);                  
+		result = set_will_fail(sp, k, 3, -3);
 	}
 	else if (phase == 1) {
 		t16 = t2_register(stack_index, sp); // START
@@ -753,12 +784,13 @@ uint1_t opc_sta_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Device Input - Pushes a value from the device page, to the top of the stack. The target device might capture the reading to trigger an I/O event.
 uint1_t opc_dei_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 1, 0);                  
+		result = set_will_fail(sp, k, 1, 0);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -800,6 +832,7 @@ uint1_t opc_dei_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Device Output - Writes a value to the device page. The target device might capture the writing to trigger an I/O event.
 uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
@@ -850,12 +883,13 @@ uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Add - Pushes the sum of the two values at the top of the stack.
 uint1_t opc_add_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -879,12 +913,13 @@ uint1_t opc_add_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Subtract - Pushes the difference of the first value minus the second, to the top of the stack.
 uint1_t opc_sub_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -908,12 +943,13 @@ uint1_t opc_sub_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Multiply - Pushes the product of the first and second values at the top of the stack.
 uint1_t opc_mul_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -937,12 +973,13 @@ uint1_t opc_mul_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Divide - Pushes the quotient of the first value over the second, to the top of the stack.
 uint1_t opc_div_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -969,12 +1006,13 @@ uint1_t opc_div_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// And - Pushes the result of the bitwise operation AND, to the top of the stack.
 uint1_t opc_and_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -998,12 +1036,13 @@ uint1_t opc_and_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Or - Pushes the result of the bitwise operation OR, to the top of the stack.
 uint1_t opc_ora_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -1027,12 +1066,13 @@ uint1_t opc_ora_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Exclusive Or - Pushes the result of the bitwise operation XOR, to the top of the stack.
 uint1_t opc_eor_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
@@ -1056,12 +1096,13 @@ uint1_t opc_eor_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+// Shift - Shifts the bits of the second value of the stack to the left or right, depending on the control value at the top of the stack. The high nibble of the control value indicates how many bits to shift left, and the low nibble how many bits to shift right. The rightward shift is done first.
 uint1_t opc_sft_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = set_will_fail(sp, k, 2, -1);                  
+		result = set_will_fail(sp, k, 2, -1);
 	}
 	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
