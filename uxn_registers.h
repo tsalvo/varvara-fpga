@@ -40,8 +40,12 @@ uint16_t t2_register(uint1_t stack_index, uint8_t stack_ptr) {
 	return peek2_stack(stack_index, stack_ptr - 2);
 }
 
-uint16_t n2_register(uint1_t stack_index) {
+uint16_t n2_register_old(uint1_t stack_index) {
 	return peek2_stack(stack_index, stack_pointer_get(stack_index) - 4);
+}
+
+uint16_t n2_register(uint1_t stack_index, uint8_t stack_ptr) {
+	return peek2_stack(stack_index, stack_ptr - 4);
 }
 
 uint16_t l2_register(uint1_t stack_index) {

@@ -218,7 +218,7 @@ uint8_t stack_pointer_get(uint1_t stack_index) {
 	return (uint8_t)(ram_read);
 }
 
-// TODO: deprecated
+// TODO: remove when no longer used
 void stack_pointer_move_old(uint1_t stack_index, uint8_t adjustment, uint1_t is_negative) {
 	static uint8_t stack_ptr_existing;
 	static uint8_t stack_ptr_new;
@@ -265,7 +265,8 @@ uint8_t halt(uint8_t ins, uint8_t err) {
 	return uxn_halt(ins, err, pc_get() - 1);
 }
 
-uint8_t push2_stack(uint1_t stack_index, uint8_t ins, uint16_t value) {
+// TODO: remove when no longer used
+uint8_t push2_stack_old(uint1_t stack_index, uint8_t ins, uint16_t value) {
 	static uint16_t tmp = 0;
 	static uint8_t result = 0;
 	static uint1_t halt_return = 0;
@@ -288,7 +289,8 @@ uint8_t push2_stack(uint1_t stack_index, uint8_t ins, uint16_t value) {
 	return result;
 }
 
-uint8_t push_stack(uint1_t stack_index, uint8_t ins, uint8_t value) {
+// TODO: remove when no longer used
+uint8_t push_stack_old(uint1_t stack_index, uint8_t ins, uint8_t value) {
 	
 	static uint8_t result;
 	static uint1_t halt_return;

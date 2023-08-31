@@ -257,6 +257,14 @@ uint1_t screen_deo_phased(uint4_t phase, uint8_t device_base_address, uint8_t de
 					poke_dev(device_base_address + 0x0B, (uint8_t)(y)); // START
 				}
 			}
+		}
+		else if (phase == 0x8) {
+			if (is_fill_mode) { // fill mode
+				
+			}
+			else { // pixel mode
+				
+			}
 			result = 1; // DONE
 		}
 	}
@@ -535,6 +543,23 @@ uint1_t deo_phased(uint4_t phase, uint8_t device_address, uint8_t value) {
 		}
 		else if (device_base_address == 0x20) { // screen
 			result = screen_deo_phased(0x7, device_base_address, device_port);
+		}
+		else if (device_base_address == 0xA0) { // file 1
+			
+		}
+		else if (device_base_address == 0xB0) { // file 2
+			
+		}
+	}
+	else if (phase == 0x9) {
+		if (device_base_address == 0x00) {		 // system
+			
+		}
+		else if (device_base_address == 0x10) { // console
+			
+		}
+		else if (device_base_address == 0x20) { // screen
+			result = screen_deo_phased(0x8, device_base_address, device_port);
 		}
 		else if (device_base_address == 0xA0) { // file 1
 			

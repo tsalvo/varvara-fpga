@@ -29,16 +29,16 @@ void step_cpu() {
 		eval_result = 0;
 		pc = pc_get(); // DONE
 		system_state = peek_dev(15); // START
-		sp0 = stack_pointer_get(0); // START
+		sp0 = stack_pointer_get(0); // DONE
+		sp1 = stack_pointer_get(1); // DONE
 		ins = peek_ram(pc) & 0xFF; // START
-		eval_result = 0;
 	}
 	else if (cpu_phase == 0x1) {
-		sp0 = stack_pointer_get(1); // DONE / START
 		ins = peek_ram(pc) & 0xFF; // DONE
 		system_state = peek_dev(15); // DONE
 		k = ins & 0x80 ? 0xFF : 0x00;
 		stack_index = ins & 0x40 ? 1 : 0;
+		sp = stack_index == 0 ? sp0 : sp1;
 		opc = !(ins & 0x1F) ? (0 - (ins >> 5)) & 0xFF : ins & 0x3F;
 		system_state_zero = system_state == 0 ? 1 : 0;
 		should_cpu_eval = pc_nonzero & system_state_zero;
@@ -46,49 +46,47 @@ void step_cpu() {
 		eval_result = ~should_cpu_eval;
 	}
 	else if (cpu_phase == 0x2) {
-		sp1 = stack_pointer_get(1); // DONE
-		sp = stack_index == 0 ? sp0 : sp1;
-		pc = pc_get();
-		eval_result = 0;
-	}
-	else if (cpu_phase == 0x3) {
+		pc += 1;
 		eval_result = eval_opcode_phased(0x0, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0x4) {
+	else if (cpu_phase == 0x3) {
 		eval_result = eval_opcode_phased(0x1, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0x5) {
+	else if (cpu_phase == 0x4) {
 		eval_result = eval_opcode_phased(0x2, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0x6) {
+	else if (cpu_phase == 0x5) {
 		eval_result = eval_opcode_phased(0x3, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0x7) {
+	else if (cpu_phase == 0x6) {
 		eval_result = eval_opcode_phased(0x4, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0x8) {
+	else if (cpu_phase == 0x7) {
 		eval_result = eval_opcode_phased(0x5, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0x9) {
+	else if (cpu_phase == 0x8) {
 		eval_result = eval_opcode_phased(0x6, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0xA) {
+	else if (cpu_phase == 0x9) {
 		eval_result = eval_opcode_phased(0x7, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0xB) {
+	else if (cpu_phase == 0xA) {
 		eval_result = eval_opcode_phased(0x8, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0xC) {
+	else if (cpu_phase == 0xB) {
 		eval_result = eval_opcode_phased(0x9, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0xD) {
+	else if (cpu_phase == 0xC) {
 		eval_result = eval_opcode_phased(0xA, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0xE) {
+	else if (cpu_phase == 0xD) {
 		eval_result = eval_opcode_phased(0xB, pc, sp, stack_index, opc, ins, k);
 	}
-	else if (cpu_phase == 0xF) {
+	else if (cpu_phase == 0xE) {
 		eval_result = eval_opcode_phased(0xC, pc, sp, stack_index, opc, ins, k);
+	}
+	else if (cpu_phase == 0xF) {
+		eval_result = eval_opcode_phased(0xD, pc, sp, stack_index, opc, ins, k);
 	}
 	
 	if (eval_result == 1) {

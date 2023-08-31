@@ -34,10 +34,9 @@ uint1_t opc_jci_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 		tmp8a = sp + 1;
 		tmp16a = pc + 2;
 		stack_pointer_set(stack_index, tmp8a); // START
-		tmp8b = stack_data_get(stack_index, tmp8a); // START
+		tmp8b = stack_data_get(stack_index, tmp8a); // DONE
 		tmp16b = peek2_ram(tmp16a); // START
 	} else if (phase == 1) {
-		tmp8b = stack_data_get(stack_index, tmp8a); // DONE
 		tmp16b = peek2_ram(tmp16a); // DONE
 	} else if (phase == 2) {
 		tmp16a = tmp8b == 0 ? 0 : tmp16b;
@@ -79,7 +78,7 @@ uint1_t opc_jsi_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 		tmp8a = sp + 2;
 		tmp16a = pc + 2;
 		tmp16b = peek2_ram(pc) + 2; // START
-		stack_pointer_set(stack_index, tmp8a); // START
+		stack_pointer_set(stack_index, tmp8a); // DONE
 		stack_data_set(stack_index, sp, (uint8_t)(tmp16a >> 8)); // START
 	} else if (phase == 2) {
 		tmp8a = stack_pointer_get(stack_index); // DONE
@@ -105,7 +104,7 @@ uint1_t opc_lit_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 		tmp8a = peek_ram(pc); // START
 		tmp8b = sp + 1;
 		pc_set(pc + 1); // START
-		stack_pointer_set(stack_index, tmp8b); // START
+		stack_pointer_set(stack_index, tmp8b); // DONE
 	}
 	else if (phase == 2) {
 		tmp8a = peek_ram(pc); // DONE
@@ -130,7 +129,7 @@ uint1_t opc_lit2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_in
 		tmp8a = sp + 2;
 		tmp16a = peek2_ram(pc); // START
 		pc_set(pc + 2); // START
-		stack_pointer_set(stack_index, tmp8a); // START
+		stack_pointer_set(stack_index, tmp8a); // DONE
 	}
 	else if (phase == 2) {
 		tmp16a = peek2_ram(pc); // DONE
@@ -354,6 +353,48 @@ uint1_t opc_ovr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+uint1_t opc_ovr2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
+	static uint16_t n16, t16;
+	static uint8_t tmp8;
+	static uint1_t result;
+	
+	if (phase == 0x0) {
+		result = set_will_fail(sp, k, 4, 2);		                   
+	}
+	else if (phase == 0x1) {
+		t16 = t2_register(stack_index, sp); // START
+	}
+	else if (phase == 0x2) {
+		t16 = n2_register(stack_index, sp); // DONE / START
+	}
+	else if (phase == 0x3) {
+		n16 = n2_register(stack_index, sp); // DONE / START
+	}
+	else if (phase == 0x4) {
+		stack_data_set(stack_index, sp - 2, (uint8_t)(n16 >> 8));
+	}
+	else if (phase == 0x5) {
+		stack_data_set(stack_index, sp - 1, (uint8_t)(n16));
+	}
+	else if (phase == 0x6) {
+		stack_data_set(stack_index, sp - 4, (uint8_t)(t16 >> 8));
+	}
+	else if (phase == 0x7) {
+		stack_data_set(stack_index, sp - 3, (uint8_t)(t16));
+	}
+	else if (phase == 0x8) {
+		stack_data_set(stack_index, sp - 6, (uint8_t)(n16 >> 8));
+	}
+	else if (phase == 0x9) {
+		stack_data_set(stack_index, sp - 5, (uint8_t)(n16));
+	}
+	else if (phase == 0xA) {
+		result = 1;
+	}
+	
+	return result;
+}
+
 // Equal - Pushes 01 to the stack if the two values at the top of the stack are equal, 00 otherwise.
 uint1_t opc_equ_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
@@ -544,24 +585,19 @@ uint1_t opc_jsr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 		set(sp, stack_index, ins, k, 1, -1); // START
 	}
 	else if (phase == 4) {
-		tmp8 = stack_pointer_get(1); // START
-	}
-	else if (phase == 5) {
 		tmp8 = stack_pointer_get(1); // DONE
 		result = tmp8 > 253;
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		stack_data_set(1, tmp8, (uint8_t)(pc >> 8)); // START
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		stack_data_set(1, tmp8 + 1, (uint8_t)(pc)); // START
 	}
-	else if (phase == 8) {
-		stack_pointer_set(1, tmp8 + 2); // START
+	else if (phase == 7) {
+		stack_pointer_set(1, tmp8 + 2); // DONE
 		pc_add_s8(pc, (int8_t)(t8)); // DONE
-	}
-	else if (phase == 9) {
-		result = 1; // DONE
+		result = 1;
 	}
 	
 	return result;
@@ -591,9 +627,7 @@ uint1_t opc_sth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 		stack_data_set(stack_index, sp, t8);
 	}
 	else if (phase == 6) {
-		stack_pointer_set(stack_index, sp + 1);
-	}
-	else if (phase == 7) {
+		stack_pointer_set(stack_index, sp + 1); // DONE
 		result = 1; // DONE
 	}
 
@@ -837,47 +871,48 @@ uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	static uint8_t n8, t8, tmp8;
 	static uint1_t result;
 	
-	if (phase == 0) {
+	if (phase == 0x0) {
 		result = set_will_fail(sp, k, 2, -2);
-	}
-	else if (phase == 1) {
 		t8 = t_register(stack_index, sp); // START
 	}
-	else if (phase == 2) {
+	else if (phase == 0x1) {
 		t8 = n_register(stack_index, sp); // DONE / START
 	}
-	else if (phase == 3) {
+	else if (phase == 0x2) {
 		n8 = n_register(stack_index, sp); // DONE
 	}
-	else if (phase == 4) {
+	else if (phase == 0x3) {
 		set(sp, stack_index, ins, k, 2, -2); // START
 	}
-	else if (phase == 5) {
+	else if (phase == 0x4) {
 		result = deo_phased(0x0, t8, n8);
 	}
-	else if (phase == 6) {
+	else if (phase == 0x5) {
 		result = deo_phased(0x1, t8, n8);
 	}
-	else if (phase == 7) {
+	else if (phase == 0x6) {
 		result = deo_phased(0x2, t8, n8);
 	}
-	else if (phase == 8) {
+	else if (phase == 0x7) {
 		result = deo_phased(0x3, t8, n8);
 	}
-	else if (phase == 9) {
+	else if (phase == 0x8) {
 		result = deo_phased(0x4, t8, n8);
 	}
-	else if (phase == 10) {
+	else if (phase == 0x9) {
 		result = deo_phased(0x5, t8, n8);
 	}
-	else if (phase == 11) {
+	else if (phase == 0xA) {
 		result = deo_phased(0x6, t8, n8);
 	}
-	else if (phase == 12) {
+	else if (phase == 0xB) {
 		result = deo_phased(0x7, t8, n8);
 	}
-	else if (phase == 13) {
+	else if (phase == 0xC) {
 		result = deo_phased(0x8, t8, n8);
+	}
+	else if (phase == 0xD) {
+		result = deo_phased(0x9, t8, n8);
 	}
 	
 	return result;
@@ -1162,7 +1197,7 @@ uint1_t eval_opcode_phased(
 	else if (opcode == 0x06 /* DUP   */) { result = opc_dup_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x26 /* DUP2  */) { result = 1; }
 	else if (opcode == 0x07 /* OVR   */) { result = opc_ovr_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x27 /* OVR2  */) { result = 1; }
+	else if (opcode == 0x27 /* OVR2  */) { result = opc_ovr2_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x08 /* EQU   */) { result = opc_equ_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x28 /* EQU2  */) { result = 1; }
 	else if (opcode == 0x09 /* NEQ   */) { result = opc_neq_phased(phase, pc, sp, stack_index, ins, k); }
