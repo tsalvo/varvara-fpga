@@ -196,7 +196,7 @@ uint1_t opc_rot2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint1_t result;
 	t16 = t2_register_old(stack_index);
 	n16 = n2_register_old(stack_index);
-	l16 = l2_register(stack_index);
+	l16 = l2_register_old(stack_index);
 	tmp8 = set_old(stack_index, ins, k, 6, 0);
 	if (tmp8 > 0) { result = 1; }
 	else {
@@ -558,7 +558,7 @@ uint1_t opc_stz2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint1_t result;
 	t8 = t_register_old(stack_index);
 	t16 = (uint16_t)(t8);
-	n16 = h2_register(stack_index);
+	n16 = h2_register_old(stack_index);
 	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
@@ -619,7 +619,7 @@ uint1_t opc_str2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
 	t8 = t_register_old(stack_index);
-	n16 = h2_register(stack_index);
+	n16 = h2_register_old(stack_index);
 	tmp8 = set_old(stack_index, ins, k, 3, -3);
 	if (tmp8 > 0) { result = 1; }
 	else {
@@ -975,7 +975,7 @@ uint1_t opc_sft2(uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8, tmp8;
 	static uint1_t result;
 	t8 = t_register_old(stack_index);
-	n16 = h2_register(stack_index);
+	n16 = h2_register_old(stack_index);
 	tmp8 = set_old(stack_index, ins, k, 3, -1);
 	if (tmp8 > 0) { result = 1; }
 	else {

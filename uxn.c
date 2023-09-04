@@ -1,6 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
+#include "uxn_rom.h"
 #include "uxn_opcodes_phased.h"
 
 // RULES:
@@ -15,10 +16,29 @@
 // https://github.com/JulianKemmerer/PipelineC/wiki/Automatically-Generated-Functionality#rams
 
 
+uint1_t step_boot() {
+	static uint16_t ram_address = 0x0100; // begin copying to RAM just after the zeropage
+	static uint8_t rom_index, rom_byte;
+	static uint1_t dummy_read_complete, read_complete, result;
+	
+	rom_byte = read_rom_byte();
+	
+	if (dummy_read_complete) { // assume 1 clock cycle latency
+		poke_ram(ram_address, rom_byte);
+		rom_index += 1;
+		ram_address += 1;
+		result = rom_index > 127;
+	} else {
+		dummy_read_complete = 1;
+	}
+	
+	return result;
+}
+
+
 // 16-bit input message format:
 // 0001 UDLR SSBA YXLR  Controls
 // 0010 ---- ---- -PHV  (P)Visible Pixel, (H)HBLANK, (V)VBLANK
-
 void step_cpu() {
 	static uint16_t pc;
 	static uint8_t sp, sp0, sp1, k, opc, ins, system_state;
@@ -43,10 +63,10 @@ void step_cpu() {
 		system_state_zero = system_state == 0 ? 1 : 0;
 		should_cpu_eval = pc_nonzero & system_state_zero;
 		pc_add((uint16_t)(should_cpu_eval)); // DONE
+		pc += 1;
 		eval_result = ~should_cpu_eval;
 	}
 	else if (cpu_phase == 0x2) {
-		pc += 1;
 		eval_result = eval_opcode_phased(0x0, pc, sp, stack_index, opc, ins, k);
 	}
 	else if (cpu_phase == 0x3) {
@@ -131,15 +151,19 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint32_t seconds_counter = 0;
 	static uint16_t result;
 	static uint2_t current_pixel_palette_color;
-	static uint1_t is_active_drawing_area;
+	static uint1_t is_active_drawing_area, is_booted;
 	input_code = (uint4_t)(input >> 12);
 	
 	if (input_code == 0x2) {
 		is_active_drawing_area = input >> 2 & 0x0001;
 	} 
 	
-	if (~is_active_drawing_area) {
-		step_cpu();
+	if (is_booted) {
+		if (~is_active_drawing_area) {
+			step_cpu();
+		}
+	} else {
+		is_booted = step_boot();
 	}
 	
 	current_pixel_palette_color = step_gpu(is_active_drawing_area, seconds_counter);

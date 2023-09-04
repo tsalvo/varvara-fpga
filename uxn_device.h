@@ -171,34 +171,23 @@ uint1_t screen_deo_phased(uint4_t phase, uint8_t device_base_address, uint8_t de
 	static uint16_t x, y;
 	static uint8_t draw_ctrl, color, auto_advance;
 	static uint1_t is_fill_mode, layer, is_x_valid, is_y_valid, result;
-	if (device_port == 0x03) { 	 // resize width
-		// unimplemented - static screen size
-		result = 1;
-	}
-	else if (device_port == 0x05) { // resize height
-		// unimplemented - static screen size
-		result = 1;
-	}
+	if (device_port == 0x03) { result = 1; /* resize width (unimplemented) */ }
+	else if (device_port == 0x05) { result = 1; /* resize height (unimplemented) */ }
 	else if (device_port == 0x0E) { // pixel draw / fill
 		if (phase == 0x0) {
 			result = 0;
-			x = peek2_dev(device_base_address + 0x08); // START
-		}
-		else if (phase == 0x1) {
-			x = peek2_dev(device_base_address + 0x0A); // DONE / START
-		}
-		else if (phase == 0x2) {
-			y = peek_dev(device_base_address + 0x0E); // DONE / START
+			x = x_get();
+			y = y_get();
 			is_x_valid = x < 320;
 			is_y_valid = y < 240;
+			draw_ctrl = peek_dev(device_base_address + 0x0E); // START
 		}
-		else if (phase == 0x3) {
-			draw_ctrl = peek_dev(device_base_address + 0x06);  // DONE / START
+		else if (phase == 0x1) {
+			draw_ctrl = peek_dev(device_base_address + 0x06); // DONE / START
 			color = draw_ctrl & 0x03;
 			is_fill_mode = draw_ctrl & 0x80;
 			layer = (draw_ctrl & 0x40) ? 1 : 0;
 			if (is_fill_mode) { // fill mode
-				
 				
 			}
 			else { // pixel mode
@@ -215,57 +204,20 @@ uint1_t screen_deo_phased(uint4_t phase, uint8_t device_base_address, uint8_t de
 				}
 			}
 		}
-		else if (phase == 0x4) {
+		else if (phase == 0x2) {
 			auto_advance = peek_dev(device_base_address + 0x06); // DONE
-			if (is_fill_mode) { // fill mode
-				
+			if (auto_advance & 0x01) {
+				x += 1;
+				x_set(x);
 			}
-			else { // pixel mode
-				if (auto_advance & 0x01) {
-					x += 1;
-					poke_dev(device_base_address + 0x08, (uint8_t)(x >> 8)); // START
-				}
-			}
-		}
-		else if (phase == 0x5) {
-			if (is_fill_mode) { // fill mode
-				
-			}
-			else { // pixel mode
-				if (auto_advance & 0x01) {
-					poke_dev(device_base_address + 0x09, (uint8_t)(x)); // START
-				}
+			
+			if (auto_advance & 0x02) {
+				y += 1;
+				y_set(y);
 			}
 		}
-		else if (phase == 0x6) {
-			if (is_fill_mode) { // fill mode
-				
-			}
-			else { // pixel mode
-				if (auto_advance & 0x02) {
-					y += 1;
-					poke_dev(device_base_address + 0x0A, (uint8_t)(y >> 8)); // START
-				}
-			}
-		}
-		else if (phase == 0x7) {
-			if (is_fill_mode) { // fill mode
-				
-			}
-			else { // pixel mode
-				if (auto_advance & 0x02) {
-					poke_dev(device_base_address + 0x0B, (uint8_t)(y)); // START
-				}
-			}
-		}
-		else if (phase == 0x8) {
-			if (is_fill_mode) { // fill mode
-				
-			}
-			else { // pixel mode
-				
-			}
-			result = 1; // DONE
+		else if (phase == 0x3) {
+			result = 1;
 		}
 	}
 	else if (device_port == 0x0F) { // sprite

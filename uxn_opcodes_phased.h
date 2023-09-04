@@ -188,6 +188,21 @@ uint1_t opc_pop_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+uint1_t opc_pop2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
+	static uint1_t set_will_succeed, result;
+	if (phase == 0) {
+		result = set_will_fail(sp, k, 2, -2);                  
+	}
+	else if (phase == 1) {
+		set(sp, stack_index, ins, k, 2, -2); // START
+	}
+	else if (phase == 2) {
+		result = 1; // DONE
+	}
+	
+	return result;
+}
+
 // Nip - Removes the second value from the stack. This is practical to convert a short into a byte.
 uint1_t opc_nip_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t t8;
@@ -531,6 +546,29 @@ uint1_t opc_jmp_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	else if (phase == 3) {
 		set(sp, stack_index, ins, k, 1, -1); // START
 		pc_add_s8(pc, (int8_t)(t8)); // DONE
+	}
+	else if (phase == 4) {
+		result = 1; // DONE
+	}
+	
+	return result;
+}
+
+uint1_t opc_jmp2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
+	static uint16_t t16;
+	static uint1_t result;
+	if (phase == 0) {
+		result = set_will_fail(sp, k, 2, -2);                
+	}
+	else if (phase == 1) {
+		t16 = t2_register(stack_index, sp); // START
+	}
+	else if (phase == 2) {
+		t16 = t2_register(stack_index, sp); // DONE
+	}
+	else if (phase == 3) {
+		set(sp, stack_index, ins, k, 2, -2); // START
+		pc_set(t16);
 	}
 	else if (phase == 4) {
 		result = 1; // DONE
@@ -918,6 +956,62 @@ uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 	return result;
 }
 
+uint1_t opc_deo2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
+	static uint8_t n8, t8, tmp8;
+	static uint8_t h16;
+	static uint1_t result;
+	
+	if (phase == 0x0) {
+		result = set_will_fail(sp, k, 3, -3);
+		t8 = t_register(stack_index, sp); // START t
+	}
+	else if (phase == 0x1) {
+		t8 = h2_register(stack_index, sp); // DONE t / START h2
+	}
+	else if (phase == 0x2) {
+		h16 = h2_register(stack_index, sp); // DONE h2 (a.k.a. [l8][n8])
+		l8 = (uint8_t)(h16 >> 8);
+		n8 = (uint8_t)(h16); 
+		result = deo_phased(0x0, t8, l8);
+	}
+	else if (phase == 0x3) {
+		set(sp, stack_index, ins, k, 3, -3); // START
+		result = deo_phased(0x1, t8, l8);
+	}
+	else if (phase == 0x4) {
+		result = deo_phased(0x2, t8, l8);
+	}
+	else if (phase == 0x5) {
+		result = deo_phased(0x3, t8, l8);
+	}
+	else if (phase == 0x6) {
+		result = deo_phased(0x4, t8, l8);
+	}
+	else if (phase == 0x7) {
+		result = deo_phased(0x5, t8, l8);
+	}
+	else if (phase == 0x8) {
+		result = deo_phased(0x0, t8 + 1, n8);
+	}
+	else if (phase == 0x9) {
+		result = deo_phased(0x1, t8 + 1, n8);
+	}
+	else if (phase == 0xA) {
+		result = deo_phased(0x2, t8 + 1, n8);
+	}
+	else if (phase == 0xB) {
+		result = deo_phased(0x3, t8 + 1, n8);
+	}
+	else if (phase == 0xC) {
+		result = deo_phased(0x4, t8 + 1, n8);
+	}
+	else if (phase == 0xD) {
+		result = deo_phased(0x5, t8 + 1, n8);
+	}
+	
+	return result;
+}
+
 // Add - Pushes the sum of the two values at the top of the stack.
 uint1_t opc_add_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8;
@@ -1187,7 +1281,7 @@ uint1_t eval_opcode_phased(
 	else if (opcode == 0x01 /* INC   */) { result = opc_inc_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x21 /* INC2  */) { result = 1; }
 	else if (opcode == 0x02 /* POP   */) { result = opc_pop_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x22 /* POP2  */) { result = 1; }
+	else if (opcode == 0x22 /* POP2  */) { result = opc_pop2_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x03 /* NIP   */) { result = opc_nip_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x23 /* NIP2  */) { result = 1; }
 	else if (opcode == 0x04 /* SWP   */) { result = opc_swp_phased(phase, pc, sp, stack_index, ins, k); }
@@ -1207,7 +1301,7 @@ uint1_t eval_opcode_phased(
 	else if (opcode == 0x0B /* LTH   */) { result = opc_lth_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x2B /* LTH2  */) { result = 1; }
 	else if (opcode == 0x0C /* JMP   */) { result = opc_jmp_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2C /* JMP2  */) { result = 1; }
+	else if (opcode == 0x2C /* JMP2  */) { result = opc_jmp2_phased(phase, pc, sp, stack_index, ins, k);}
 	else if (opcode == 0x0D /* JCN   */) { result = opc_jcn_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x2D /* JCN2  */) { result = 1; }
 	else if (opcode == 0x0E /* JSR   */) { result = opc_jsr_phased(phase, pc, sp, stack_index, ins, k); }
@@ -1229,7 +1323,7 @@ uint1_t eval_opcode_phased(
 	else if (opcode == 0x16 /* DEI   */) { result = opc_dei_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x36 /* DEI2  */) { result = 1; }
 	else if (opcode == 0x17 /* DEO   */) { result = opc_deo_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x37 /* DEO2  */) { result = 1; }
+	else if (opcode == 0x37 /* DEO2  */) { result = opc_deo2_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x18 /* ADD   */) { result = opc_add_phased(phase, pc, sp, stack_index, ins, k); }
 	else if (opcode == 0x38 /* ADD2  */) { result = 1; }
 	else if (opcode == 0x19 /* SUB   */) { result = opc_sub_phased(phase, pc, sp, stack_index, ins, k); }
