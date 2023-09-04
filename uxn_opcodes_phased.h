@@ -906,7 +906,7 @@ uint1_t opc_dei_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 // Device Output - Writes a value to the device page. The target device might capture the writing to trigger an I/O event.
 uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
-	static uint8_t n8, t8, tmp8;
+	static uint8_t n8, t8;
 	static uint1_t result;
 	
 	if (phase == 0x0) {
@@ -941,23 +941,14 @@ uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 		result = deo_phased(0x5, t8, n8);
 	}
 	else if (phase == 0xA) {
-		result = deo_phased(0x6, t8, n8);
-	}
-	else if (phase == 0xB) {
-		result = deo_phased(0x7, t8, n8);
-	}
-	else if (phase == 0xC) {
-		result = deo_phased(0x8, t8, n8);
-	}
-	else if (phase == 0xD) {
-		result = deo_phased(0x9, t8, n8);
+		result = 1;
 	}
 	
 	return result;
 }
 
 uint1_t opc_deo2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
-	static uint8_t n8, t8, tmp8;
+	static uint8_t n8, t8, l8;
 	static uint8_t h16;
 	static uint1_t result;
 	

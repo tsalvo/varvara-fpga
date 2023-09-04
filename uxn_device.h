@@ -369,155 +369,87 @@ uint1_t deo_phased(uint4_t phase, uint8_t device_address, uint8_t value) {
 	else if (phase == 0x1) {
 		result = ~((deo_mask[(device_address) >> 4] >> ((device_address) & 0x0F)) & 0x0001);
 		if (device_base_address == 0x00) {      // system
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x10) { // console
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x20) { // screen
 			result = screen_deo_phased(0x0, device_base_address, device_port);
 		}
 		else if (device_base_address == 0xA0) { // file 1
-			
+			result = 1;
 		}
 		else if (device_base_address == 0xB0) { // file 2
-			
+			result = 1;
 		}
 	}
 	else if (phase == 0x2) {
 		if (device_base_address == 0x00) {		 // system
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x10) { // console
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x20) { // screen
 			result = screen_deo_phased(0x1, device_base_address, device_port);
 		}
 		else if (device_base_address == 0xA0) { // file 1
-			
+			result = 1;
 		}
 		else if (device_base_address == 0xB0) { // file 2
-			
+			result = 1;
 		}
 	}
 	else if (phase == 0x3) {
 		if (device_base_address == 0x00) {		 // system
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x10) { // console
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x20) { // screen
 			result = screen_deo_phased(0x2, device_base_address, device_port);
 		}
 		else if (device_base_address == 0xA0) { // file 1
-			
+			result = 1;
 		}
 		else if (device_base_address == 0xB0) { // file 2
-			
+			result = 1;
 		}
 	}
 	else if (phase == 0x4) {
 		if (device_base_address == 0x00) {		 // system
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x10) { // console
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x20) { // screen
 			result = screen_deo_phased(0x3, device_base_address, device_port);
 		}
 		else if (device_base_address == 0xA0) { // file 1
-			
+			result = 1;
 		}
 		else if (device_base_address == 0xB0) { // file 2
-			
+			result = 1;
 		}
 	}
 	else if (phase == 0x5) {
 		if (device_base_address == 0x00) {		 // system
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x10) { // console
-			
+			result = 1;
 		}
 		else if (device_base_address == 0x20) { // screen
-			result = screen_deo_phased(0x4, device_base_address, device_port);
+			result = 1;
 		}
 		else if (device_base_address == 0xA0) { // file 1
-			
+			result = 1;
 		}
 		else if (device_base_address == 0xB0) { // file 2
-			
-		}
-	}
-	else if (phase == 0x6) {
-		if (device_base_address == 0x00) {		 // system
-			
-		}
-		else if (device_base_address == 0x10) { // console
-			
-		}
-		else if (device_base_address == 0x20) { // screen
-			result = screen_deo_phased(0x5, device_base_address, device_port);
-		}
-		else if (device_base_address == 0xA0) { // file 1
-			
-		}
-		else if (device_base_address == 0xB0) { // file 2
-			
-		}
-	}
-	else if (phase == 0x7) {
-		if (device_base_address == 0x00) {		 // system
-			
-		}
-		else if (device_base_address == 0x10) { // console
-			
-		}
-		else if (device_base_address == 0x20) { // screen
-			result = screen_deo_phased(0x6, device_base_address, device_port);
-		}
-		else if (device_base_address == 0xA0) { // file 1
-			
-		}
-		else if (device_base_address == 0xB0) { // file 2
-			
-		}
-	}
-	else if (phase == 0x8) {
-		if (device_base_address == 0x00) {		 // system
-			
-		}
-		else if (device_base_address == 0x10) { // console
-			
-		}
-		else if (device_base_address == 0x20) { // screen
-			result = screen_deo_phased(0x7, device_base_address, device_port);
-		}
-		else if (device_base_address == 0xA0) { // file 1
-			
-		}
-		else if (device_base_address == 0xB0) { // file 2
-			
-		}
-	}
-	else if (phase == 0x9) {
-		if (device_base_address == 0x00) {		 // system
-			
-		}
-		else if (device_base_address == 0x10) { // console
-			
-		}
-		else if (device_base_address == 0x20) { // screen
-			result = screen_deo_phased(0x8, device_base_address, device_port);
-		}
-		else if (device_base_address == 0xA0) { // file 1
-			
-		}
-		else if (device_base_address == 0xB0) { // file 2
-			
+			result = 1;
 		}
 	}
 	
