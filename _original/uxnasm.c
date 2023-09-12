@@ -498,8 +498,10 @@ int
 main(int argc, char *argv[])
 {
 	FILE *src, *dst;
-	if(argc < 3)
-		return !error("usage", "uxnasm input.tal output.rom");
+	if(argc == 1)
+		return error("usage", "uxnasm [-v] input.tal output.rom");
+	if(argv[1][0] == '-' && argv[1][1] == 'v')
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 8 Aug 2023.\n");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))

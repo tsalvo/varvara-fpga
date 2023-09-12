@@ -19,10 +19,7 @@
 // The keep mode (k) operates without consuming items.
 // The return mode (r) operates on the return stack.
 
-// Break - Ends the evalutation of the current vector. This opcode has no modes.
-uint1_t opc_brk_phased() {
-	return 1;
-}
+// Break - Ends the evaluation of the current vector. This opcode has no modes. always return 1
 
 // Jump Conditional Instant - Pops a byte from the working stack and if it is not zero, moves the PC to a relative address at a distance equal to the next short in memory, otherwise moves PC+2. This opcode has no modes.
 uint1_t opc_jci_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index) {
@@ -50,15 +47,15 @@ uint1_t opc_jci_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 // Jump Instant - Moves the PC to a relative address at a distance equal to the next short in memory. This opcode has no modes.
 uint1_t opc_jmi_phased(uint4_t phase, uint16_t pc, uint8_t sp) {
-	static uint16_t tmp16a, tmp16b;
+	static uint16_t tmp16a;
 	static uint1_t result;
 	if (phase == 0) {
 		result = 0;
-		tmp16a = pc + 2;
-		tmp16b = peek2_ram(tmp16a); // START
+		tmp16a = peek2_ram(pc); // START
 	} else if (phase == 1) {
-		tmp16b = peek2_ram(tmp16a); // DONE
-		pc_set(pc + tmp16b); // START
+		tmp16a = peek2_ram(pc); // DONE
+		tmp16a += 2;
+		pc_set(pc + tmp16a); // START
 	} else if (phase == 2) {
 		result = 1; // DONE
 	} 
@@ -66,27 +63,27 @@ uint1_t opc_jmi_phased(uint4_t phase, uint16_t pc, uint8_t sp) {
 }
 
 // Jump Stash Return Instant - Pushes PC+2 to the return-stack and moves the PC to a relative address at a distance equal to the next short in memory. This opcode has no modes.
-uint1_t opc_jsi_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins) {
-	static uint8_t tmp8a;
+uint1_t opc_jsi_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
+	static uint8_t sp_new;
 	static uint16_t tmp16a, tmp16b;
 	static uint1_t result;
 
 	if (phase == 0) {
-		result = sp > 253;
-	}
-	else if (phase == 1) {
-		tmp8a = sp + 2;
-		tmp16a = pc + 2;
-		tmp16b = peek2_ram(pc) + 2; // START
-		stack_pointer_set(stack_index, tmp8a); // DONE
-		stack_data_set(stack_index, sp, (uint8_t)(tmp16a >> 8)); // START
+		result = set_will_fail(sp, k, 0, 2);
+		tmp16b = peek2_ram(pc); // START
+	} else if (phase == 1) {
+		set(sp, stack_index, ins, k, 0, 2); // DONE
+		tmp16b = peek2_ram(pc); // DONE
 	} else if (phase == 2) {
-		tmp8a = stack_pointer_get(stack_index); // DONE
-		tmp16b = peek2_ram(pc) + 2; // DONE
-		stack_data_set(stack_index, sp + 1, (uint8_t)(tmp16a)); // START
-		pc_set(pc + tmp16b); // START
+		sp_new = stack_pointer_get(stack_index);
+		tmp16a = pc + 2;
+		tmp16b += 2;
+		stack_data_set(stack_index, sp_new - 2, (uint8_t)(tmp16a >> 8)); // START
 	} else if (phase == 3) {
-		result = 1; // DONE
+		stack_data_set(stack_index, sp_new - 1, (uint8_t)(tmp16a)); // START
+		pc_set(pc + tmp16b); // DONE
+	} else if (phase == 4) {
+		result = 1;
 	}
 	
 	return result;
@@ -94,54 +91,54 @@ uint1_t opc_jsi_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 // Literal - Pushes the next bytes in memory, and moves the PC+2. The LIT opcode always has the keep mode active. Notice how the 0x00 opcode, with the keep bit toggled, is the location of the literal opcodes. To learn more, see literals.
 uint1_t opc_lit_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins) {
-	static uint8_t tmp8a, tmp8b;
+	static uint8_t sp_new, tmp8a;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = sp > 254;
+		result = set_will_fail(sp, 0xFF, 0, 1);
+		tmp8a = peek_ram(pc); // START
 	}
 	else if (phase == 1) {
-		tmp8a = peek_ram(pc); // START
-		tmp8b = sp + 1;
-		pc_set(pc + 1); // START
-		stack_pointer_set(stack_index, tmp8b); // DONE
+		tmp8a = peek_ram(pc); // DONE
+		set(sp, stack_index, ins, 0xFF, 0, 1); // DONE
+		pc_set(pc + 1); // DONE
 	}
 	else if (phase == 2) {
-		tmp8a = peek_ram(pc); // DONE
-		stack_data_set(stack_index, sp, tmp8a); //START
+		sp_new = stack_pointer_get(stack_index);
+		stack_data_set(stack_index, sp_new - 1, tmp8a); // START
 	}
 	else if (phase == 3) {
-		result = 1; // DONE
+		result = 1;
 	}
 	
 	return result;
 }
 
 uint1_t opc_lit2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins) {
-	static uint8_t tmp8a;
+	static uint8_t sp_new;
 	static uint16_t tmp16a;
 	static uint1_t result;
 	
 	if (phase == 0) {
-		result = sp > 253;
+		result = set_will_fail(sp, 0xFF, 0, 2);
+		tmp16a = peek2_ram(pc); // START
 	}
 	else if (phase == 1) {
-		tmp8a = sp + 2;
-		tmp16a = peek2_ram(pc); // START
-		pc_set(pc + 2); // START
-		stack_pointer_set(stack_index, tmp8a); // DONE
+		tmp16a = peek2_ram(pc); // DONE
+		set(sp, stack_index, ins, 0xFF, 0, 2); // DONE
+		pc_set(pc + 2); // DONE
 	}
 	else if (phase == 2) {
-		tmp16a = peek2_ram(pc); // DONE
-		stack_data_set(stack_index, sp, (uint8_t)(tmp16a >> 8)); // START
+		sp_new = stack_pointer_get(stack_index); // DONE
+		stack_data_set(stack_index, sp_new - 2, (uint8_t)(tmp16a >> 8)); // START
 	}
 	else if (phase == 3) {
-		stack_data_set(stack_index, sp + 1, (uint8_t)(tmp16a)); // START
+		stack_data_set(stack_index, sp_new - 1, (uint8_t)(tmp16a)); // START
 	}
 	else if (phase == 4) {
-		result = 1; // DONE
+		result = 1;
 	}
-	
+
 	return result;
 }
 
@@ -370,20 +367,20 @@ uint1_t opc_ovr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 uint1_t opc_ovr2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint16_t n16, t16;
-	static uint8_t tmp8;
 	static uint1_t result;
-	
+
 	if (phase == 0x0) {
-		result = set_will_fail(sp, k, 4, 2);		                   
+		result = set_will_fail(sp, k, 4, 2);	
+		t16 = t2_register(stack_index, sp); // START	                   
 	}
 	else if (phase == 0x1) {
-		t16 = t2_register(stack_index, sp); // START
-	}
-	else if (phase == 0x2) {
 		t16 = n2_register(stack_index, sp); // DONE / START
 	}
-	else if (phase == 0x3) {
+	else if (phase == 0x2) {
 		n16 = n2_register(stack_index, sp); // DONE / START
+	}
+	else if (phase == 0x3) {
+		set(sp, stack_index, ins, k, 4, 2); // START
 	}
 	else if (phase == 0x4) {
 		stack_data_set(stack_index, sp - 2, (uint8_t)(n16 >> 8));
@@ -674,8 +671,8 @@ uint1_t opc_sth_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 // Load Zero-Page -  Pushes the value at an address within the first 256 bytes of memory, to the top of the stack.
 uint1_t opc_ldz_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
-	static uint16_t t8;
-	static uint8_t ram8_at_tmp16, tmp16;
+	static uint16_t tmp16;
+	static uint8_t ram8_at_tmp16, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
@@ -735,8 +732,8 @@ uint1_t opc_stz_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 // Load Relative - Pushes a value at a relative address in relation to the PC, within a range between -128 and +127 bytes, to the top of the stack.
 uint1_t opc_ldr_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
-	static uint16_t t8;
-	static uint8_t ram8_at_tmp16, tmp16;
+	static uint16_t tmp16;
+	static uint8_t ram8_at_tmp16, t8;
 	static uint1_t result;
 	
 	if (phase == 0) {
@@ -949,7 +946,7 @@ uint1_t opc_deo_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_ind
 
 uint1_t opc_deo2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_index, uint8_t ins, uint8_t k) {
 	static uint8_t n8, t8, l8;
-	static uint8_t h16;
+	static uint16_t h16;
 	static uint1_t result;
 	
 	if (phase == 0x0) {
@@ -957,29 +954,35 @@ uint1_t opc_deo2_phased(uint4_t phase, uint16_t pc, uint8_t sp, uint1_t stack_in
 		t8 = t_register(stack_index, sp); // START t
 	}
 	else if (phase == 0x1) {
-		t8 = h2_register(stack_index, sp); // DONE t / START h2
+		t8 = h2_register(stack_index, sp); // DONE t / START h2 (a.k.a. [l8][n8])
 	}
 	else if (phase == 0x2) {
 		h16 = h2_register(stack_index, sp); // DONE h2 (a.k.a. [l8][n8])
 		l8 = (uint8_t)(h16 >> 8);
 		n8 = (uint8_t)(h16); 
-		result = deo_phased(0x0, t8, l8);
+		deo_phased(0x0, t8, l8);
+		result = 0;
 	}
 	else if (phase == 0x3) {
 		set(sp, stack_index, ins, k, 3, -3); // START
-		result = deo_phased(0x1, t8, l8);
+		deo_phased(0x1, t8, l8);
+		result = 0;
 	}
 	else if (phase == 0x4) {
-		result = deo_phased(0x2, t8, l8);
+		deo_phased(0x2, t8, l8);
+		result = 0;
 	}
 	else if (phase == 0x5) {
-		result = deo_phased(0x3, t8, l8);
+		deo_phased(0x3, t8, l8);
+		result = 0;
 	}
 	else if (phase == 0x6) {
-		result = deo_phased(0x4, t8, l8);
+		deo_phased(0x4, t8, l8);
+		result = 0;
 	}
 	else if (phase == 0x7) {
-		result = deo_phased(0x5, t8, l8);
+		deo_phased(0x5, t8, l8);
+		result = 0;
 	}
 	else if (phase == 0x8) {
 		result = deo_phased(0x0, t8 + 1, n8);
@@ -1251,86 +1254,84 @@ uint1_t eval_opcode_phased(
 	uint16_t pc,
 	uint8_t sp,
 	uint1_t stack_index,
-	uint8_t opcode,
+	uint12_t opc,
 	uint8_t ins,
 	uint8_t k
 ) {
-	static uint8_t 	t8, n8, l8, tmp8;
-	static uint16_t t16, n16, l16, tmp16;
-	static uint1_t result;
+	static uint1_t opc_result;
 	
-	result = 0;
+	opc_result = 0;
 	
-	if      (opcode == 0x00 /* BRK   */) { result = opc_brk_phased(); }
-	else if (opcode == 0xFF /* JCI   */) { result = opc_jci_phased(phase, pc, sp, stack_index); }
-	else if (opcode == 0xFE /* JMI   */) { result = opc_jmi_phased(phase, pc, sp); }
-	else if (opcode == 0xFD /* JSI   */) { result = opc_jsi_phased(phase, pc, sp, stack_index, ins); }
-	else if (opcode == 0xFC /* LIT   */) { result = opc_lit_phased(phase, pc, sp, stack_index, ins); }
-	else if (opcode == 0xFB /* LIT2  */) { result = opc_lit2_phased(phase, pc, sp, stack_index, ins); }
-	else if (opcode == 0xFA /* LITr  */) { result = opc_lit_phased(phase, pc, sp, stack_index, ins); }
-	else if (opcode == 0xF9 /* LIT2r */) { result = opc_lit2_phased(phase, pc, sp, stack_index, ins); }
-	else if (opcode == 0x01 /* INC   */) { result = opc_inc_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x21 /* INC2  */) { result = 1; }
-	else if (opcode == 0x02 /* POP   */) { result = opc_pop_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x22 /* POP2  */) { result = opc_pop2_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x03 /* NIP   */) { result = opc_nip_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x23 /* NIP2  */) { result = 1; }
-	else if (opcode == 0x04 /* SWP   */) { result = opc_swp_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x24 /* SWP2  */) { result = 1; }
-	else if (opcode == 0x05 /* ROT   */) { result = opc_rot_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x25 /* ROT2  */) { result = 1; }
-	else if (opcode == 0x06 /* DUP   */) { result = opc_dup_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x26 /* DUP2  */) { result = 1; }
-	else if (opcode == 0x07 /* OVR   */) { result = opc_ovr_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x27 /* OVR2  */) { result = opc_ovr2_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x08 /* EQU   */) { result = opc_equ_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x28 /* EQU2  */) { result = 1; }
-	else if (opcode == 0x09 /* NEQ   */) { result = opc_neq_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x29 /* NEQ2  */) { result = 1; }
-	else if (opcode == 0x0A /* GTH   */) { result = opc_gth_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2A /* GHT2  */) { result = 1; }
-	else if (opcode == 0x0B /* LTH   */) { result = opc_lth_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2B /* LTH2  */) { result = 1; }
-	else if (opcode == 0x0C /* JMP   */) { result = opc_jmp_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2C /* JMP2  */) { result = opc_jmp2_phased(phase, pc, sp, stack_index, ins, k);}
-	else if (opcode == 0x0D /* JCN   */) { result = opc_jcn_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2D /* JCN2  */) { result = 1; }
-	else if (opcode == 0x0E /* JSR   */) { result = opc_jsr_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2E /* JSR2  */) { result = 1; }
-	else if (opcode == 0x0F /* STH   */) { result = opc_sth_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x2F /* STH2  */) { result = 1; }
-	else if (opcode == 0x10 /* LDZ   */) { result = opc_ldz_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x30 /* LDZ2  */) { result = 1; }
-	else if (opcode == 0x11 /* STZ   */) { result = opc_stz_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x31 /* STZ2  */) { result = 1; }
-	else if (opcode == 0x12 /* LDR   */) { result = opc_ldr_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x32 /* LDR2  */) { result = 1; }
-	else if (opcode == 0x13 /* STR   */) { result = opc_str_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x33 /* STR2  */) { result = 1; }
-	else if (opcode == 0x14 /* LDA   */) { result = opc_lda_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x34 /* LDA2  */) { result = 1; }
-	else if (opcode == 0x15 /* STA   */) { result = opc_sta_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x35 /* STA2  */) { result = 1; }
-	else if (opcode == 0x16 /* DEI   */) { result = opc_dei_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x36 /* DEI2  */) { result = 1; }
-	else if (opcode == 0x17 /* DEO   */) { result = opc_deo_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x37 /* DEO2  */) { result = opc_deo2_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x18 /* ADD   */) { result = opc_add_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x38 /* ADD2  */) { result = 1; }
-	else if (opcode == 0x19 /* SUB   */) { result = opc_sub_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x39 /* SUB2  */) { result = 1; }
-	else if (opcode == 0x1A /* MUL   */) { result = opc_mul_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x3A /* MUL2  */) { result = 1; }
-	else if (opcode == 0x1B /* DIV   */) { result = opc_div_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x3B /* DIV2  */) { result = 1; }
-	else if (opcode == 0x1C /* AND   */) { result = opc_and_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x3C /* AND2  */) { result = 1; }
-	else if (opcode == 0x1D /* ORA   */) { result = opc_ora_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x3D /* ORA2  */) { result = 1; }
-	else if (opcode == 0x1E /* EOR   */) { result = opc_eor_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x3E /* EOR2  */) { result = 1; }
-	else if (opcode == 0x1F /* SFT   */) { result = opc_sft_phased(phase, pc, sp, stack_index, ins, k); }
-	else if (opcode == 0x3F /* SFT2  */) { result = 1; }
+	if      (opc == 0x000 /* BRK   */) { opc_result = 1; }
+	else if (opc == 0x200 /* JCI   */) { opc_result = opc_jci_phased(phase, pc, sp, stack_index); }
+	else if (opc == 0x400 /* JMI   */) { opc_result = opc_jmi_phased(phase, pc, sp); }
+	else if (opc == 0x600 /* JSI   */) { opc_result = opc_jsi_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x800 /* LIT   */) { opc_result = opc_lit_phased(phase, pc, sp, stack_index, ins); }
+	else if (opc == 0xA00 /* LIT2  */) { opc_result = opc_lit2_phased(phase, pc, sp, stack_index, ins); }
+	else if (opc == 0xC00 /* LITr  */) { opc_result = opc_lit_phased(phase, pc, sp, stack_index, ins); }
+	else if (opc == 0xE00 /* LIT2r */) { opc_result = opc_lit2_phased(phase, pc, sp, stack_index, ins); }
+	else if (opc == 0x001 /* INC   */) { opc_result = opc_inc_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x021 /* INC2  */) { opc_result = 1; }
+	else if (opc == 0x002 /* POP   */) { opc_result = opc_pop_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x022 /* POP2  */) { opc_result = opc_pop2_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x003 /* NIP   */) { opc_result = opc_nip_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x023 /* NIP2  */) { opc_result = 1; }
+	else if (opc == 0x004 /* SWP   */) { opc_result = opc_swp_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x024 /* SWP2  */) { opc_result = 1; }
+	else if (opc == 0x005 /* ROT   */) { opc_result = opc_rot_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x025 /* ROT2  */) { opc_result = 1; }
+	else if (opc == 0x006 /* DUP   */) { opc_result = opc_dup_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x026 /* DUP2  */) { opc_result = 1; }
+	else if (opc == 0x007 /* OVR   */) { opc_result = opc_ovr_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x027 /* OVR2  */) { opc_result = opc_ovr2_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x008 /* EQU   */) { opc_result = opc_equ_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x028 /* EQU2  */) { opc_result = 1; }
+	else if (opc == 0x009 /* NEQ   */) { opc_result = opc_neq_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x029 /* NEQ2  */) { opc_result = 1; }
+	else if (opc == 0x00A /* GTH   */) { opc_result = opc_gth_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x02A /* GHT2  */) { opc_result = 1; }
+	else if (opc == 0x00B /* LTH   */) { opc_result = opc_lth_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x02B /* LTH2  */) { opc_result = 1; }
+	else if (opc == 0x00C /* JMP   */) { opc_result = opc_jmp_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x02C /* JMP2  */) { opc_result = opc_jmp2_phased(phase, pc, sp, stack_index, ins, k);}
+	else if (opc == 0x00D /* JCN   */) { opc_result = opc_jcn_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x02D /* JCN2  */) { opc_result = 1; }
+	else if (opc == 0x00E /* JSR   */) { opc_result = opc_jsr_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x02E /* JSR2  */) { opc_result = 1; }
+	else if (opc == 0x00F /* STH   */) { opc_result = opc_sth_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x02F /* STH2  */) { opc_result = 1; }
+	else if (opc == 0x010 /* LDZ   */) { opc_result = opc_ldz_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x030 /* LDZ2  */) { opc_result = 1; }
+	else if (opc == 0x011 /* STZ   */) { opc_result = opc_stz_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x031 /* STZ2  */) { opc_result = 1; }
+	else if (opc == 0x012 /* LDR   */) { opc_result = opc_ldr_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x032 /* LDR2  */) { opc_result = 1; }
+	else if (opc == 0x013 /* STR   */) { opc_result = opc_str_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x033 /* STR2  */) { opc_result = 1; }
+	else if (opc == 0x014 /* LDA   */) { opc_result = opc_lda_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x034 /* LDA2  */) { opc_result = 1; }
+	else if (opc == 0x015 /* STA   */) { opc_result = opc_sta_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x035 /* STA2  */) { opc_result = 1; }
+	else if (opc == 0x016 /* DEI   */) { opc_result = opc_dei_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x036 /* DEI2  */) { opc_result = 1; }
+	else if (opc == 0x017 /* DEO   */) { opc_result = opc_deo_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x037 /* DEO2  */) { opc_result = opc_deo2_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x018 /* ADD   */) { opc_result = opc_add_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x038 /* ADD2  */) { opc_result = 1; }
+	else if (opc == 0x019 /* SUB   */) { opc_result = opc_sub_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x039 /* SUB2  */) { opc_result = 1; }
+	else if (opc == 0x01A /* MUL   */) { opc_result = opc_mul_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x03A /* MUL2  */) { opc_result = 1; }
+	else if (opc == 0x01B /* DIV   */) { opc_result = opc_div_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x03B /* DIV2  */) { opc_result = 1; }
+	else if (opc == 0x01C /* AND   */) { opc_result = opc_and_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x03C /* AND2  */) { opc_result = 1; }
+	else if (opc == 0x01D /* ORA   */) { opc_result = opc_ora_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x03D /* ORA2  */) { opc_result = 1; }
+	else if (opc == 0x01E /* EOR   */) { opc_result = opc_eor_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x03E /* EOR2  */) { opc_result = 1; }
+	else if (opc == 0x01F /* SFT   */) { opc_result = opc_sft_phased(phase, pc, sp, stack_index, ins, k); }
+	else if (opc == 0x03F /* SFT2  */) { opc_result = 1; }
 	
-	return result;
+	return opc_result;
 }

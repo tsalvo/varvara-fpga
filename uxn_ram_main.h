@@ -26,6 +26,7 @@ uint16_t main_ram_update(
 	static uint8_t wdata;   // Write data, start writing zeros
 	static uint8_t rdvalue0;
 	static uint8_t rdvalue1;
+	static uint16_t result;
 	rwaddr = (uint32_t)(address0);
 	wdata = write0_value;
 	rdaddr = (uint32_t)(address1);
@@ -47,7 +48,11 @@ uint16_t main_ram_update(
 	rdvalue0 = ram_out.valid0 & read0_enable ? ram_out.rd_data0 : 0;
 	rdvalue1 = ram_out.valid1 & read1_enable ? ram_out.rd_data1 : 0;
 	
-	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
+	result = (uint16_t)(rdvalue0);
+	result <<= 8;
+	result |= ((uint16_t)(rdvalue1));
+	
+	return result;
 }
 
 void poke_ram(uint16_t address, uint8_t value) {

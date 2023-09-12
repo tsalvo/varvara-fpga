@@ -9,6 +9,10 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+#define CONTROL_VERSION 1
+#define CONTROL_DEIMASK 0x0000
+#define CONTROL_DEOMASK 0x0000
+
 void controller_down(Uxn *u, Uint8 *d, Uint8 mask);
 void controller_up(Uxn *u, Uint8 *d, Uint8 mask);
 void controller_key(Uxn *u, Uint8 *d, Uint8 key);

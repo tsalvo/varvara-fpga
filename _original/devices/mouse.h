@@ -9,6 +9,10 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+#define MOUSE_VERSION 1
+#define MOUSE_DEIMASK 0x0000
+#define MOUSE_DEOMASK 0x0000
+
 void mouse_down(Uxn *u, Uint8 *d, Uint8 mask);
 void mouse_up(Uxn *u, Uint8 *d, Uint8 mask);
 void mouse_pos(Uxn *u, Uint8 *d, Uint16 x, Uint16 y);

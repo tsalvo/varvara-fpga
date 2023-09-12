@@ -3,6 +3,7 @@
 
 #include "uxn.h"
 #include "devices/system.h"
+#include "devices/console.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
 
@@ -17,13 +18,11 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-Uint16 deo_mask[] = {0xc028, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
-Uint16 dei_mask[] = {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
-
 Uint8
 emu_dei(Uxn *u, Uint8 addr)
 {
 	switch(addr & 0xf0) {
+	case 0x00: return system_dei(u, addr);
 	case 0xc0: return datetime_dei(u, addr);
 	}
 	return u->dev[addr];
@@ -41,30 +40,46 @@ emu_deo(Uxn *u, Uint8 addr)
 	}
 }
 
+static void
+emu_run(Uxn *u)
+{
+	while(!u->dev[0x0f]) {
+		int c = fgetc(stdin);
+		if(c == EOF) { console_input(u, 0x00, CONSOLE_END); break; }
+		console_input(u, (Uint8)c, CONSOLE_STD);
+	}
+}
+
+static int
+emu_end(Uxn *u)
+{
+	free(u->ram);
+	return u->dev[0x0f] & 0x7f;
+}
+
 int
 main(int argc, char **argv)
 {
 	Uxn u;
 	int i = 1;
 	if(i == argc)
-		return system_error("usage", "uxncli file.rom [args..]");
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
-		return system_error("Boot", "Failed");
-	if(!system_load(&u, argv[i++]))
-		return system_error("Load", "Failed");
+		return system_error("usage", "uxncli [-v] file.rom [args..]");
+	/* Connect Varvara */
+	system_connect(0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
+	system_connect(0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
+	system_connect(0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
+	/* Read flags */
+	if(argv[i][0] == '-' && argv[i][1] == 'v')
+		return system_version("Uxncli - Console Varvara Emulator", "5 Sep 2023");
+	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
+		return system_error("Init", "Failed to initialize uxn.");
+	/* Game Loop */
 	u.dev[0x17] = argc - i;
 	if(uxn_eval(&u, PAGE_PROGRAM)) {
-		for(; i < argc; i++) {
-			char *p = argv[i];
-			while(*p) console_input(&u, *p++, CONSOLE_ARG);
-			console_input(&u, '\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
-		}
-		while(!u.dev[0x0f]) {
-			int c = fgetc(stdin);
-			if(c == EOF) break;
-			console_input(&u, (Uint8)c, CONSOLE_STD);
-		}
+		console_listen(&u, i, argc, argv);
+		emu_run(&u);
 	}
-	free(u.ram);
-	return u.dev[0x0f] & 0x7f;
+	return emu_end(&u);
 }

@@ -18,12 +18,14 @@ uint16_t screen_xy_ram_update(
 	uint1_t write0_address,
 	uint16_t write0_value,
 	uint1_t write0_enable,
+	uint1_t read1_address,
 	uint1_t read1_enable
 ) {
-	static uint32_t rwaddr0;
+	static uint32_t rwaddr0, rdaddr1;
 	static uint16_t wdata;   // Write data, start writing zeros
 	static uint16_t rdvalue1;
 	rwaddr0 = (uint32_t)(write0_address);
+	rdaddr1 = (uint32_t)(read1_address);
 	wdata = write0_value;
 	
 	// The RAM instance
@@ -34,7 +36,7 @@ uint16_t screen_xy_ram_update(
 		write0_value,  // write data
 		write0_enable, // write enable (RW port always writing (not reading)),
 		rw_valid,      // valid read-write input
-		0,        	   // read address
+		rdaddr1,        	   // read address
 		rd_valid       // valid read input
 	);
 		
@@ -43,19 +45,19 @@ uint16_t screen_xy_ram_update(
 }
 
 uint16_t x_get() {
-	return screen_xy_ram_update(0, 0, 0, 1);
+	return screen_xy_ram_update(0, 0, 0, 0, 1);
 }
 
 void x_set(uint16_t value) {
-	screen_xy_ram_update(0, value, 1, 0);
+	screen_xy_ram_update(0, value, 1, 0, 0);
 }
 
 uint16_t y_get() {
-	return screen_xy_ram_update(1, 0, 0, 1);
+	return screen_xy_ram_update(0, 0, 0, 1, 1);
 }
 
 void y_set(uint16_t value) {
-	screen_xy_ram_update(1, value, 1, 0);
+	screen_xy_ram_update(1, value, 1, 0, 0);
 }
 
 
@@ -83,6 +85,7 @@ uint16_t device_ram_update(
 	static uint8_t wdata;   // Write data, start writing zeros
 	static uint8_t rdvalue0;
 	static uint8_t rdvalue1;
+	static uint16_t result;
 	rwaddr = (uint32_t)(address0);
 	rdaddr = (uint32_t)(address1);
 	wdata = write0_value;
@@ -104,7 +107,11 @@ uint16_t device_ram_update(
 	rdvalue0 = device_ram_out.valid0 & read0_enable ? device_ram_out.rd_data0 : 0;
 	rdvalue1 = device_ram_out.valid1 & read1_enable ? device_ram_out.rd_data1 : 0;
 	
-	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
+	result = (uint16_t)(rdvalue0);
+	result <<= 8;
+	result |= ((uint16_t)(rdvalue1));
+	
+	return result;
 }
 
 uint8_t peek_dev(uint8_t address) {

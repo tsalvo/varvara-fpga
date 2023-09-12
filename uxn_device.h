@@ -173,6 +173,58 @@ uint1_t screen_deo_phased(uint4_t phase, uint8_t device_base_address, uint8_t de
 	static uint1_t is_fill_mode, layer, is_x_valid, is_y_valid, result;
 	if (device_port == 0x03) { result = 1; /* resize width (unimplemented) */ }
 	else if (device_port == 0x05) { result = 1; /* resize height (unimplemented) */ }
+	else if (device_port == 0x08) { // set X (high byte)
+		if (phase == 0x0) {
+			result = 0;
+			x = peek2_dev(device_base_address + 0x08); // START
+		}
+		else if (phase == 0x1) {
+			x = peek2_dev(device_base_address + 0x08); // DONE
+			x_set(x); // DONE
+		}
+		else if (phase == 0x2) {
+			result = 1;
+		}
+	}
+	else if (device_port == 0x09) { // set X (low byte)
+		if (phase == 0x0) {
+			result = 0;
+			x = peek2_dev(device_base_address + 0x08); // START
+		}
+		else if (phase == 0x1) {
+			x = peek2_dev(device_base_address + 0x08); // DONE
+			x_set(x);
+		}
+		else if (phase == 0x2) {
+			result = 1;
+		}
+	}
+	else if (device_port == 0x0A) { // set Y (high byte)
+		if (phase == 0x0) {
+			result = 0;
+			y = peek2_dev(device_base_address + 0x0A); // START
+		}
+		else if (phase == 0x1) {
+			y = peek2_dev(device_base_address + 0x0A); // DONE
+			y_set(y); // DONE
+		}
+		else if (phase == 0x2) {
+			result = 1;
+		} 
+	}
+	else if (device_port == 0x0B) { // set Y (low byte)
+		if (phase == 0x0) {
+			result = 0;
+			y = peek2_dev(device_base_address + 0x0A); // START
+		}
+		else if (phase == 0x1) {
+			y = peek2_dev(device_base_address + 0x0A); // DONE
+			y_set(y); // DONE
+		}
+		else if (phase == 0x2) {
+			result = 1;
+		} 
+	}
 	else if (device_port == 0x0E) { // pixel draw / fill
 		if (phase == 0x0) {
 			result = 0;
@@ -367,7 +419,8 @@ uint1_t deo_phased(uint4_t phase, uint8_t device_address, uint8_t value) {
 		poke_dev(device_address, value); // START
 	}
 	else if (phase == 0x1) {
-		result = ~((deo_mask[(device_address) >> 4] >> ((device_address) & 0x0F)) & 0x0001);
+		// TODO: determine if we really need this
+		// result = ~((deo_mask[(device_address) >> 4] >> ((device_address) & 0x0F)) & 0x0001);
 		if (device_base_address == 0x00) {      // system
 			result = 1;
 		}

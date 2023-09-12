@@ -9,11 +9,15 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define FILE_VERSION 1
-#define FILE_DEIMASK 0x0000
-#define FILE_DEOMASK 0xa260
+#define CONSOLE_VERSION 1
+#define CONSOLE_DEIMASK 0x0000
+#define CONSOLE_DEOMASK 0x0300
 
-#define POLYFILEY 2
-#define DEV_FILE0 0xa
+#define CONSOLE_STD 0x1
+#define CONSOLE_ARG 0x2
+#define CONSOLE_EOA 0x3
+#define CONSOLE_END 0x4
 
-void file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port);
+int console_input(Uxn *u, char c, int type);
+void console_listen(Uxn *u, int i, int argc, char **argv);
+void console_deo(Uint8 *d, Uint8 port);

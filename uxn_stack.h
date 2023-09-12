@@ -54,6 +54,7 @@ uint16_t stack_w_ram_update(
 	static uint8_t wdata;   // Write data, start writing zeros
 	static uint8_t rdvalue0;
 	static uint8_t rdvalue1;
+	static uint16_t result;
 	rwaddr = (uint32_t)(address0);
 	rdaddr = (uint32_t)(address1);
 	wdata = write0_value;
@@ -75,7 +76,11 @@ uint16_t stack_w_ram_update(
 	rdvalue0 = stack_w_ram_out.valid0 & read0_enable ? stack_w_ram_out.rd_data0 : 0;
 	rdvalue1 = stack_w_ram_out.valid1 & read1_enable ? stack_w_ram_out.rd_data1 : 0;
 	
-	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
+	result = (uint16_t)(rdvalue0);
+	result <<= 8;
+	result |= ((uint16_t)(rdvalue1));
+	
+	return result;
 }
 
 uint16_t stack_r_ram_update(
@@ -91,6 +96,7 @@ uint16_t stack_r_ram_update(
 	static uint8_t wdata;   // Write data, start writing zeros
 	static uint8_t rdvalue0;
 	static uint8_t rdvalue1;
+	static uint16_t result;
 	rwaddr = (uint32_t)(address0);
 	rdaddr = (uint32_t)(address1);
 	wdata = write0_value;
@@ -112,7 +118,11 @@ uint16_t stack_r_ram_update(
 	rdvalue0 = stack_r_ram_out.valid0 & read0_enable ? stack_r_ram_out.rd_data0 : 0;
 	rdvalue1 = stack_r_ram_out.valid1 & read1_enable ? stack_r_ram_out.rd_data1 : 0;
 	
-	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
+	result = (uint16_t)(rdvalue0);
+	result <<= 8;
+	result |= ((uint16_t)(rdvalue1));
+	
+	return result;
 }
 
 uint16_t stack_p_ram_update(
@@ -128,6 +138,7 @@ uint16_t stack_p_ram_update(
 	static uint8_t wdata;   // Write data, start writing zeros
 	static uint8_t rdvalue0;
 	static uint8_t rdvalue1;
+	static uint16_t result;
 	rwaddr = (uint32_t)(address0);
 	rdaddr = (uint32_t)(address1);
 	wdata = write0_value;
@@ -147,7 +158,11 @@ uint16_t stack_p_ram_update(
 	rdvalue0 = stack_p_ram_out.valid0 & read0_enable ? stack_p_ram_out.rd_data0 : 0;
 	rdvalue1 = stack_p_ram_out.valid1 & read1_enable ? stack_p_ram_out.rd_data1 : 0;
 	
-	return (uint16_t)((rdvalue0 << 8) | rdvalue1);
+	result = (uint16_t)(rdvalue0);
+	result <<= 8;
+	result |= ((uint16_t)(rdvalue1));
+	
+	return result;
 }
 
 uint8_t peek_stack_w(uint8_t address) {
