@@ -73,8 +73,8 @@ uint16_t stack_w_ram_update(
 		read1_enable	   // read enable 1
 	);
 		
-	rdvalue0 = stack_w_ram_out.valid0 & read0_enable ? stack_w_ram_out.rd_data0 : 0;
-	rdvalue1 = stack_w_ram_out.valid1 & read1_enable ? stack_w_ram_out.rd_data1 : 0;
+	rdvalue0 = /*stack_w_ram_out.valid0 & */read0_enable ? stack_w_ram_out.rd_data0 : 0;
+	rdvalue1 = /*stack_w_ram_out.valid1 & */read1_enable ? stack_w_ram_out.rd_data1 : 0;
 	
 	result = (uint16_t)(rdvalue0);
 	result <<= 8;
@@ -115,8 +115,8 @@ uint16_t stack_r_ram_update(
 		read1_enable	   // read enable 1
 	);
 		
-	rdvalue0 = stack_r_ram_out.valid0 & read0_enable ? stack_r_ram_out.rd_data0 : 0;
-	rdvalue1 = stack_r_ram_out.valid1 & read1_enable ? stack_r_ram_out.rd_data1 : 0;
+	rdvalue0 = /*stack_r_ram_out.valid0 & */read0_enable ? stack_r_ram_out.rd_data0 : 0;
+	rdvalue1 = /*stack_r_ram_out.valid1 & */read1_enable ? stack_r_ram_out.rd_data1 : 0;
 	
 	result = (uint16_t)(rdvalue0);
 	result <<= 8;
@@ -155,8 +155,8 @@ uint16_t stack_p_ram_update(
 		rd_valid       // valid read input
 	);
 		
-	rdvalue0 = stack_p_ram_out.valid0 & read0_enable ? stack_p_ram_out.rd_data0 : 0;
-	rdvalue1 = stack_p_ram_out.valid1 & read1_enable ? stack_p_ram_out.rd_data1 : 0;
+	rdvalue0 = /*stack_p_ram_out.valid0 & */read0_enable ? stack_p_ram_out.rd_data0 : 0;
+	rdvalue1 = /*stack_p_ram_out.valid1 & */read1_enable ? stack_p_ram_out.rd_data1 : 0;
 	
 	result = (uint16_t)(rdvalue0);
 	result <<= 8;

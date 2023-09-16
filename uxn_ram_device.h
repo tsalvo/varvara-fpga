@@ -104,8 +104,8 @@ uint16_t device_ram_update(
 		read1_enable	   // read enable 1
 	);
 		
-	rdvalue0 = device_ram_out.valid0 & read0_enable ? device_ram_out.rd_data0 : 0;
-	rdvalue1 = device_ram_out.valid1 & read1_enable ? device_ram_out.rd_data1 : 0;
+	rdvalue0 = /*device_ram_out.valid0 & */read0_enable ? device_ram_out.rd_data0 : 0;
+	rdvalue1 = /*device_ram_out.valid1 & */read1_enable ? device_ram_out.rd_data1 : 0;
 	
 	result = (uint16_t)(rdvalue0);
 	result <<= 8;

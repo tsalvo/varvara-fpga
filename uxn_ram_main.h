@@ -45,8 +45,8 @@ uint16_t main_ram_update(
 		read1_enable
 	);
 
-	rdvalue0 = ram_out.valid0 & read0_enable ? ram_out.rd_data0 : 0;
-	rdvalue1 = ram_out.valid1 & read1_enable ? ram_out.rd_data1 : 0;
+	rdvalue0 = /*ram_out.valid0 & */read0_enable ? ram_out.rd_data0 : 0;
+	rdvalue1 = /*ram_out.valid1 & */read1_enable ? ram_out.rd_data1 : 0;
 	
 	result = (uint16_t)(rdvalue0);
 	result <<= 8;

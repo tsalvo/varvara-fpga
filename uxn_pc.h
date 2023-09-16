@@ -35,7 +35,7 @@ uint16_t prog_ctr_ram_update(
 		rd_valid       // valid read input
 	);
 		
-	rdvalue1 = prog_ctr_ram_out.valid1 & read1_enable ? prog_ctr_ram_out.rd_data1 : 0;
+	rdvalue1 = /*prog_ctr_ram_out.valid1 & */read1_enable ? prog_ctr_ram_out.rd_data1 : 0;
 	return rdvalue1;
 }
 
