@@ -17,37 +17,39 @@ DECL_RAM_DP_RW_R_1(
 )
 
 uint2_t background_vram_update(
-	uint32_t write_address0, 
-	uint2_t write_value0,
-	uint1_t write_enable0,
-	uint1_t read_enable0,
-	uint32_t read_address1
+	uint32_t write0_address, 
+	uint2_t write0_value,
+	uint1_t write0_enable,
+	uint32_t read1_address,
+	uint1_t read1_enable
 ) {
-	static uint32_t rdaddr; // Read address
-	static uint32_t rwaddr; // Write+read address
-    static uint2_t wdata;   // Write data, start writing zeros
-	rwaddr = write_address0;
-	wdata = write_value0;
-	rdaddr = read_address1;
+	static uint32_t rdaddr = 0; // Read address
+	static uint32_t rwaddr = 0; // Write+read address
+    static uint2_t wdata = 0;   // Write data, start writing zeros
+	static uint2_t bg_vram_result = 0;
+	rwaddr = write0_address;
+	wdata = write0_value;
+	rdaddr = read1_address;
 
 	// The RAM instance
-	uint1_t wr_en = write_enable0;
-	uint1_t rw_valid = 1;
-	uint1_t rw_out_en = read_enable0; 
-	uint1_t rd_valid = 1; // Always have valid RAM inputs
-	uint1_t rd_out_en = 1; // Always ready for RAM outputs
-	background_vram_outputs_t ram_out = background_vram(
+	uint1_t rw_valid = write0_enable;
+	uint1_t rd_valid = read1_enable; 
+	background_vram_outputs_t bg_vram_out = background_vram(
 		rwaddr, 
 		wdata, 
-		wr_en, 
+		write0_enable, 
 		rw_valid, 
-		rw_out_en, 
+		0, // read0 enable
 		rdaddr, 
 		rd_valid, 
-		rd_out_en
+		read1_enable // read1 enable
 	);
+	
+	bg_vram_result = bg_vram_out.rd_data1;
+		
+	printf("  VRAM rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, (uint4_t)(wdata), rdaddr, read1_enable, (uint4_t)(bg_vram_result));
 
 	// second port always reading
 	// connected to output
-	return ram_out.rd_data1;
+	return bg_vram_result;
 }

@@ -67,6 +67,8 @@ uint8_t read_rom_byte(uint8_t read_address)
 	  0, 		// write value
 	  0			// write enable
   );
+  
+  printf("  ROM read address = 0x%X, read value = 0x%X\n", rdaddr, rdata);
 
   return rdata;
 }

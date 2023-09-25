@@ -32,8 +32,8 @@ uint16_t main_ram_update(
 	rdaddr = (uint32_t)(address1);
 
 	// The RAM instance
-	uint1_t rw_valid = 1; // Always have valid RAM inputs
-	uint1_t rd_valid = 1; // Always have valid RAM inputs
+	uint1_t rw_valid = read0_enable | write0_enable;
+	uint1_t rd_valid = read1_enable; 
 	main_ram_outputs_t ram_out = main_ram(
 		rwaddr, 
 		wdata, 
@@ -45,35 +45,14 @@ uint16_t main_ram_update(
 		read1_enable
 	);
 
-	rdvalue0 = /*ram_out.valid0 & */read0_enable ? ram_out.rd_data0 : 0;
-	rdvalue1 = /*ram_out.valid1 & */read1_enable ? ram_out.rd_data1 : 0;
+	rdvalue0 = ram_out.valid0 & read0_enable ? ram_out.rd_data0 : 0;
+	rdvalue1 = ram_out.valid1 & read1_enable ? ram_out.rd_data1 : 0;
 	
 	result = (uint16_t)(rdvalue0);
 	result <<= 8;
 	result |= ((uint16_t)(rdvalue1));
 	
+	printf("  Main RAM rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read0_enable = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, wdata, rdaddr, read0_enable, read1_enable, result);
+	
 	return result;
-}
-
-void poke_ram(uint16_t address, uint8_t value) {
-	main_ram_update(address, value, 1, 0, 0, 0);
-}
-
-void poke2_ram(uint16_t address, uint16_t value) {
-	static uint8_t value0;
-	static uint8_t value1;
-	value0 = (uint8_t)(value >> 8);
-	value1 = (uint8_t)(value);
-	main_ram_update(address, value0, 1, 0, 0, 0);
-	main_ram_update(address + 1, value1, 1, 0, 0, 0);
-}
-
-uint8_t peek_ram(uint16_t address) {
-	static uint16_t ram_read;
-	ram_read = main_ram_update(0, 0, 0, 0, address, 1);
-	return (uint8_t)(ram_read);
-}
-
-uint16_t peek2_ram(uint16_t address) {
-	return main_ram_update(address, 0, 0, 1, address + 1, 1);
 }
