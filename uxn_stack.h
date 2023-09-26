@@ -66,7 +66,7 @@ uint16_t stack_w_ram_update(
 	result <<= 8;
 	result |= ((uint16_t)(rdvalue1));
 	
-	printf("  Stack W rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read0_enable = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, wdata, rdaddr, read0_enable, read1_enable, result);
+	printf("     Stack W rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read0_enable = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, wdata, rdaddr, read0_enable, read1_enable, result);
 	
 	
 	return result;
@@ -111,7 +111,7 @@ uint16_t stack_r_ram_update(
 	result <<= 8;
 	result |= ((uint16_t)(rdvalue1));
 	
-	printf("  Stack R rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read0_enable = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, wdata, rdaddr, read0_enable, read1_enable, result);
+	printf("     Stack R rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read0_enable = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, wdata, rdaddr, read0_enable, read1_enable, result);
 	
 	return result;
 }

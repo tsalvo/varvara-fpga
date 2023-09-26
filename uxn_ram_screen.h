@@ -47,7 +47,7 @@ uint2_t background_vram_update(
 	
 	bg_vram_result = bg_vram_out.rd_data1;
 		
-	printf("  VRAM rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, (uint4_t)(wdata), rdaddr, read1_enable, (uint4_t)(bg_vram_result));
+	printf("     VRAM rwaddr = 0x%X, write0_enable = 0x%X, wdata = 0x%X, rdaddr = 0x%X, read1_enable = 0x%X, result = 0x%X\n", rwaddr, write0_enable, (uint4_t)(wdata), rdaddr, read1_enable, (uint4_t)(bg_vram_result));
 
 	// second port always reading
 	// connected to output

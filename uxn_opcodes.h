@@ -64,7 +64,7 @@ opcode_result_t jci(uint8_t phase, uint1_t stack_index, uint16_t pc, uint8_t sp,
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
-		printf("            JCI\n");
+		printf("************\n**** JCI ***\n************\n");
 		result.is_stack_write = 0;
 		result.is_stack_read = 1;
 		result.stack_address = sp - 1; // get T
@@ -103,7 +103,7 @@ opcode_result_t jsi(uint8_t phase, uint1_t stack_index, uint16_t pc, uint8_t sp,
 	static uint16_t tmp16 = 0;
 	static opcode_result_t result;
 	if (phase == 0) {
-		printf("            JSI\n");
+		printf("************\n**** JSI ***\n************\n");
 		result.is_sp_updated = 1;
 		result.sp = sp + 2; 		// shift(2)
 		tmp16 = pc + 2;
@@ -164,6 +164,7 @@ opcode_result_t lit(uint8_t phase, uint1_t stack_index, uint16_t pc, uint8_t sp,
 	static opcode_result_t result;
 	
 	if (phase == 0) {
+		printf("************\n**** LIT ***\n************\n");
 		result.is_sp_updated = 1;
 		result.sp = sp + 1; 		// shift(1)
 		result.is_opc_done = 0;
@@ -199,9 +200,7 @@ opcode_result_t lit(uint8_t phase, uint1_t stack_index, uint16_t pc, uint8_t sp,
 		result.pc = 0; 
 		result.is_opc_done = 1;
 	}
-	
-	printf("            LIT  phase 0x%X, sp = 0x%X, pc = 0x%X, previous_ram_read = 0x%X, tmp8 = 0x%X\n", phase, sp, pc, previous_ram_read, lit_tmp8);
-	
+		
 	return result;
 }
 
@@ -211,6 +210,7 @@ opcode_result_t lit2(uint8_t phase, uint1_t stack_index, uint16_t pc, uint8_t sp
 	static opcode_result_t result;
 	
 	if (phase == 0) {
+		printf("************\n*** LIT2 ***\n************\n");
 		result.is_sp_updated = 1;
 		result.sp = sp + 2; 		// shift(2)
 		result.is_opc_done = 0;
@@ -262,9 +262,7 @@ opcode_result_t lit2(uint8_t phase, uint1_t stack_index, uint16_t pc, uint8_t sp
 		result.stack_address = 0;
 		result.is_opc_done = 1;
 	}
-	
-	printf("            LIT2 phase 0x%X, sp = 0x%X, pc = 0x%X, previous_ram_read = 0x%X, tmp16 = 0x%X\n", phase, sp, pc, previous_ram_read, lit2_tmp16);
-	
+		
 	return result;
 }
 
@@ -273,7 +271,7 @@ opcode_result_t pop(uint8_t phase, uint1_t stack_index, uint8_t ins, uint16_t pc
 	static int8_t tmp8;
 	static opcode_result_t result;
 	if (phase == 0) {
-		printf("            POP\n");
+		printf("************\n**** POP ***\n************\n");
 		result.is_sp_updated = 1;
 		result.sp = (ins & 0x80) ? sp : sp - 1; // x=1;y=(-1); shift amount = ((ins & 0x80) ? x + y : y) ====> 0 or -1
 		result.is_opc_done = 0;
@@ -291,8 +289,7 @@ opcode_result_t pop2(uint8_t phase, uint1_t stack_index, uint8_t ins, uint16_t p
 	// SET(2,-2)
 	static opcode_result_t result;
 	if (phase == 0) {
-		printf("            POP2\n");
-		// set_sp(2, -2, ins, stack_index);
+		printf("************\n*** POP2 ***\n************\n");		// set_sp(2, -2, ins, stack_index);
 		result.is_sp_updated = 1;
 		result.sp = (ins & 0x80) ? sp : sp - 2; // x=2;y=(-2); shift amount = ((ins & 0x80) ? x + y : y) ====> 0 or -2
 		result.is_opc_done = 0;
@@ -311,7 +308,7 @@ opcode_result_t ovr2(uint8_t phase, uint1_t stack_index, uint8_t ins, uint16_t p
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
-		printf("            OVR2\n");
+		printf("************\n*** OVR2 ***\n************\n");
 		result.is_stack_write = 0;
 		result.is_stack_read = 1;
 		result.stack_address = sp - 2; // get T2 (byte 1 of 2)
@@ -406,7 +403,7 @@ opcode_result_t deo(uint8_t phase, uint1_t stack_index, uint8_t ins, uint16_t pc
 	static opcode_result_t result;
 	static device_out_result_t device_out_result;
 	if (phase == 0) {
-		printf("            DEO\n");
+		printf("************\n**** DEO ***\n************\n");
 		result.is_stack_write = 0;
 		result.is_stack_read = 1;
 		result.stack_address = sp - 1; // get T
@@ -431,7 +428,6 @@ opcode_result_t deo(uint8_t phase, uint1_t stack_index, uint8_t ins, uint16_t pc
 		result.sp = (ins & 0x80) ? sp : sp - 2; // x=2;y=(-2); shift amount = ((ins & 0x80) ? x + y : y) ====> 0 or -2
 	}
 	else {
-		printf("                DEO (t8, n8) => (0x%X, 0x%X) phase 0x%X\n", t8, n8, phase - 5);
 		result.is_sp_updated = 0;
 		device_out_result = device_out(t8, n8, phase - 5, previous_device_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
@@ -455,7 +451,7 @@ opcode_result_t deo2(uint8_t phase, uint1_t stack_index, uint8_t ins, uint16_t p
 	static opcode_result_t result;
 	static device_out_result_t device_out_result;
 	if (phase == 0) {
-		printf("            DEO2\n");
+		printf("************\n*** DEO2 ***\n************\n");
 		result.is_stack_write = 0;
 		result.is_stack_read = 1;
 		result.stack_address = sp - 1; // get T
@@ -713,7 +709,6 @@ eval_opcode_result_t eval_opcode_phased(
 	opc_eval_result.vram_address = opc_result.vram_address;
 	opc_eval_result.vram_value = opc_result.vram_value;
 	opc_eval_result.is_opc_done = opc_result.is_opc_done;
-	printf("   EVAL OPCODE DONE: is_vram_write = 0x%X, vram_address = 0x%X, vram_value = 0x%X\n", opc_result.is_vram_write, opc_result.vram_address, opc_result.vram_value);
 	
 	return opc_eval_result;
 }

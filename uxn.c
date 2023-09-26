@@ -160,7 +160,7 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint2_t vram_value = 0;
 	input_code = input >> 12;
 	
-	printf("CLOCK: 0x%X, is_vram_write = 0x%X, vram_address = 0x%X, vram_value = 0x%X\n", main_clock_cycle, is_vram_write, vram_address, vram_value);
+	printf("CLOCK: 0x%X\n", main_clock_cycle);
 	
 	if (input_code == 0x2) {
 		is_active_drawing_area = input >> 2 & 0x0001;
@@ -176,7 +176,6 @@ uint16_t uxn_eval(uint16_t input) {
 			is_vram_write = cpu_step_result.is_vram_write;
 			vram_address = cpu_step_result.vram_address;
 			vram_value = cpu_step_result.vram_value;
-			printf("  CPU STEP DONE: 0x%X, is_vram_write = 0x%X, vram_address = 0x%X, vram_value = 0x%X\n", main_clock_cycle, is_vram_write, vram_address, vram_value);
 		}
 	} else {
 		boot_step_result_t boot_step_result = step_boot();
