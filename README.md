@@ -1,5 +1,5 @@
 # uxn-fpga
-implementation of Varvara / UXN in FPGA
+Very early work in progress implementation of Varvara / UXN in FPGA using PipelineC. Currently hard-coded to run a mandelbrot set drawing ROM. Intended for importing into openfpga-uxn core for Analogue Pocket.
 
 simulation:
 ghdl -i --std=08 --work=work [sequence of vhd files] # import
