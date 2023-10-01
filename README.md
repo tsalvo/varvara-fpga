@@ -1,5 +1,5 @@
 # uxn-fpga
-Very early work in progress implementation of [Varvara / UXN](https://100r.co/site/uxn.html) by hundredrabbits in FPGA using PipelineC. Currently hard-coded to run a mandelbrot set drawing ROM. Intended for importing into the [openfpga-uxn](https://github.com/tsalvo/openfpga-uxn) core for Analogue Pocket.
+Very early work in progress implementation of [Varvara / UXN](https://100r.co/site/uxn.html) by hundredrabbits in FPGA using [PipelineC](https://github.com/JulianKemmerer/PipelineC). Currently hard-coded to run a mandelbrot set drawing ROM. Intended for importing into the [openfpga-uxn](https://github.com/tsalvo/openfpga-uxn) core for Analogue Pocket.
 
 build into VHDL files (for later importing into openfpga-uxn project):
 `pipelinec uxn.c`
