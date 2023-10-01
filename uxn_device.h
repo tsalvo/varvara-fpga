@@ -150,6 +150,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x0D) { // END
 		if (device_port == 0xE) { // PIXEL
+			result.is_deo_done = ((y * 320) + x) > 76799 ? 1 : 0; 
 			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x26;
 		} else {

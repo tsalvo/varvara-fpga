@@ -24,8 +24,8 @@ typedef struct boot_step_result_t {
 } boot_step_result_t;
 
 boot_step_result_t step_boot() {
-	static uint16_t ram_address = 0xFE; // first ROM byte goes to RAM 0x0100, but keep the RAM address behind by 1 due to latency, and 1 more behind due to early ram_address incrementing
-	static uint8_t rom_address = 0, rom_byte = 0;
+	static uint16_t ram_address = 0xFE, rom_address = 0; // first ROM byte goes to RAM 0x0100, but keep the RAM address behind by 1 due to latency, and 1 more behind due to early ram_address incrementing
+	static uint8_t rom_byte = 0;
 	static uint1_t boot_phase = 0, is_finished = 0;
 	
 	if (boot_phase == 0) {
@@ -38,7 +38,7 @@ boot_step_result_t step_boot() {
 		printf("    STEP BOOT: Phase 1, ROM Address:  0x%X, ROM Byte = 0x%X ...\n", rom_address, rom_byte);
 		rom_address += 1;
 		ram_address += 1;
-		is_finished = rom_address > 127;
+		is_finished = rom_address > 1023;
 	}
 	
 	boot_step_result_t boot_result = {boot_phase, is_finished, rom_byte, ram_address}; // max init
@@ -56,11 +56,6 @@ typedef struct cpu_step_result_t {
 	uint1_t is_vram_write;
 	uint32_t vram_address;
 	uint2_t vram_value;
-	
-	uint1_t is_pc_updated;
-	uint16_t pc;
-	
-	uint1_t is_ins_done;
 } cpu_step_result_t;
 
 cpu_step_result_t step_cpu(uint8_t ram_read_value) {
@@ -69,7 +64,7 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	static uint8_t step_cpu_phase = 0x00;
 	static uint1_t is_ins_done = 0;
 	static eval_opcode_result_t eval_opcode_result;
-	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0};
 	if (step_cpu_phase == 0x00) {
 		// pc = pc_get(); // DONE
 		is_ins_done = 0;
@@ -92,12 +87,11 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	}
 	else {
 		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 3, ins, pc, ram_read_value);
-		cpu_step_result.is_pc_updated = eval_opcode_result.is_pc_updated;
+		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.pc : pc;
 		cpu_step_result.is_ram_read = eval_opcode_result.is_ram_read;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.ram_address = eval_opcode_result.ram_addr;
 		cpu_step_result.ram_value = eval_opcode_result.ram_value;
-		cpu_step_result.pc = eval_opcode_result.pc;
 		cpu_step_result.is_vram_write = eval_opcode_result.is_vram_write;
 		cpu_step_result.vram_address = eval_opcode_result.vram_address;
 		cpu_step_result.vram_value = eval_opcode_result.vram_value;
