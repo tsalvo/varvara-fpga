@@ -38,7 +38,7 @@ boot_step_result_t step_boot() {
 		printf("    STEP BOOT: Phase 1, ROM Address:  0x%X, ROM Byte = 0x%X ...\n", rom_address, rom_byte);
 		rom_address += 1;
 		ram_address += 1;
-		is_finished = rom_address > 1023;
+		is_finished = rom_address > 511;
 	}
 	
 	boot_step_result_t boot_result = {boot_phase, is_finished, rom_byte, ram_address}; // max init
