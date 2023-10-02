@@ -161,16 +161,14 @@ uint16_t uxn_eval(uint16_t input) {
 	} 
 	
 	if (is_booted) {
-		if (!is_active_drawing_area) {
-			cpu_step_result_t cpu_step_result = step_cpu(ram_read_value);
-			is_ram_read = cpu_step_result.is_ram_read;
-			is_ram_write = cpu_step_result.is_ram_write;
-			ram_address = cpu_step_result.ram_address;
-			ram_write_value = cpu_step_result.ram_value;
-			is_vram_write = cpu_step_result.is_vram_write;
-			vram_address = cpu_step_result.vram_address;
-			vram_value = cpu_step_result.vram_value;
-		}
+		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value);
+		is_ram_read = cpu_step_result.is_ram_read;
+		is_ram_write = cpu_step_result.is_ram_write;
+		ram_address = cpu_step_result.ram_address;
+		ram_write_value = cpu_step_result.ram_value;
+		is_vram_write = cpu_step_result.is_vram_write;
+		vram_address = cpu_step_result.vram_address;
+		vram_value = cpu_step_result.vram_value;
 	} else {
 		boot_step_result_t boot_step_result = step_boot();
 		is_ram_read = 0;
