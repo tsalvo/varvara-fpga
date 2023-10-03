@@ -66,15 +66,12 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	static eval_opcode_result_t eval_opcode_result;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0};
 	if (step_cpu_phase == 0x00) {
-		// pc = pc_get(); // DONE
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // START
 		cpu_step_result.is_ram_read = 1;
 		printf("    STEP CPU: Phase = 0x%X, PC = 0x%X \n", step_cpu_phase, pc);
 	}
 	else if (step_cpu_phase == 0x01) {
-		// pc = prog_ctr_update(pc, 0); // DONE
-		// ins = peek_ram(pc); START
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // DONE
 		cpu_step_result.is_ram_read = 1;

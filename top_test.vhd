@@ -8,7 +8,7 @@ end entity;
 architecture sim of top_test is
 	  signal test_clk    : std_logic := '0';
 	  signal test_input : unsigned(15 downto 0) := x"0000";
-	constant clk_period : time := 813 ns;
+	constant clk_period : time := 22 ns;
 begin
 	-- The Device Under Test (DUT)
 	i_top : entity work.top
