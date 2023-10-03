@@ -3,8 +3,8 @@
 #pragma once
 #include "ram.h"      // PipelineC RAM declarations
 
-// 320 x 240
-#define SCREEN_RAM_SIZE 76800
+// 800 x 720
+#define SCREEN_RAM_SIZE 576000
 // Declare Screen RAM
 // dual port, first port is read+write,
 // second port is read only
