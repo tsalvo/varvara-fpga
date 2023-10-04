@@ -626,6 +626,54 @@ opcode_result_t jmp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	return result;
 }
 
+opcode_result_t jcn2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
+	// t=T2;n=L;       SET(3,-3) if(n) pc = t;
+	static uint16_t t16;
+	static uint8_t n8;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n*** JCN2 ***\n************\n");
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
+		result.is_opc_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 2; 
+	}
+	else if (phase == 2) {
+		t16 = (uint16_t)(previous_stack_read);
+		t16 <<= 8;
+		result.stack_address_sp_offset = 1; // get T2 (byte 2 of 2)
+	}
+	else if (phase == 3) {
+		result.stack_address_sp_offset = 1; 
+	}
+	else if (phase == 4) {
+		t16 |= ((uint16_t)(previous_stack_read));
+		result.stack_address_sp_offset = 3; // get L
+	}
+	else if (phase == 5) {
+		result.stack_address_sp_offset = 3;
+	} 
+	else if (phase == 6) {
+		n8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3;y=(-3); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
+	}
+	else if (phase == 7) {
+		result.is_sp_shift = 0;
+		result.is_pc_updated = n8 == 0 ? 0 : 1;
+		result.pc = n8 == 0 ? 0 : t16; // if(n) pc = t;
+	}
+	else if (phase == 8) {
+		result.is_pc_updated = 0;
+		result.is_opc_done = 1;
+	}
+	
+	return result;
+}
+
 opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	// t=T2;           SET(2,-2) FLIP SHIFT(2) T2_(pc) pc = t;
 	static uint16_t t16;
@@ -2704,7 +2752,7 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x00C /* JMP   */) { opc_result = jmp(phase, ins, pc, stack_read_value); }
 	else if (opc == 0x02C /* JMP2  */) { opc_result = jmp2(phase, ins, stack_read_value); }
 	else if (opc == 0x00D /* JCN   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
-	else if (opc == 0x02D /* JCN2  */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
+	else if (opc == 0x02D /* JCN2  */) { opc_result = jcn2(phase, ins, stack_read_value); }
 	else if (opc == 0x00E /* JSR   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
 	else if (opc == 0x02E /* JSR2  */) { opc_result = jsr2(phase, ins, stack_read_value); }
 	else if (opc == 0x00F /* STH   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
