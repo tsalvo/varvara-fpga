@@ -1,5 +1,6 @@
 #pragma once
 #include "uintN_t.h"  // uintN_t types for any N
+#include <stdint.h>
 #pragma once
 #include "ram.h"      // PipelineC RAM declarations
 
@@ -9,6 +10,14 @@
 #include "uxn_ram_screen.h"
 #pragma once
 #include "uxn_stack.h" 
+
+typedef struct device_in_result_t {
+	uint1_t is_device_ram_read;
+	uint8_t device_ram_address;
+	
+	uint8_t dei_value;
+	uint1_t is_dei_done;
+} device_in_result_t;
 
 typedef struct device_out_result_t {
 	uint1_t is_device_ram_write;
@@ -224,6 +233,17 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 	}
 	else {
 		result = emu_deo(device_index, device_port, phase - 2, previous_device_ram_read);
+	}
+	
+	return result;
+}
+
+device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+	static device_in_result_t result = {0, 0, 0, 0};
+	
+	if (phase == 0) {
+		result.dei_value = 0;
+		result.is_dei_done = 1;
 	}
 	
 	return result;

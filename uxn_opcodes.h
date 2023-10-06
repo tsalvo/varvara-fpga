@@ -447,6 +447,116 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	return result;
 }
 
+opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
+	// t=T;            SET(1, 0) T = DEI(t);
+	static uint1_t has_written_to_t;
+	static uint8_t t8, tmp8;
+	static device_in_result_t device_in_result;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n**** DEI ***\n************\n");
+		has_written_to_t = 0;
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 1; // get T
+		result.is_opc_done = 0;
+		device_in_result.is_dei_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 1; // get T
+	}
+	else if (phase == 2) {
+		t8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 1 : 0; // x=1;y=0; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 1 or 0
+	}
+	else {
+		result.is_sp_shift = 0;
+		if (~device_in_result.is_dei_done) {
+			device_in_result = device_in(t8, phase - 3, previous_device_ram_read);
+			result.is_device_ram_read = device_in_result.is_device_ram_read;
+			result.device_ram_address = device_in_result.device_ram_address;
+		} else {
+			if (~has_written_to_t) {
+				result.is_device_ram_read = 0;
+				result.is_stack_write = 1;
+				result.stack_address_sp_offset = 1;
+				result.stack_value = device_in_result.dei_value;
+				has_written_to_t = 1;
+			} else {
+				result.is_stack_write = 0;
+				result.is_opc_done = 1;
+			}
+		}
+	}
+	
+	return result;
+}
+
+opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
+	// t=T;            SET(1, 1) T = DEI(t + 1); N = DEI(t);
+	static uint8_t t8, current_dei_phase, dei_param;
+	static uint1_t is_first_dei_done, is_second_dei_done, has_written_to_t, has_written_to_n;
+	static device_in_result_t device_in_result;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n*** DEI2 ***\n************\n");
+		has_written_to_t = 0;
+		has_written_to_n = 0;
+		is_first_dei_done = 0;
+		is_second_dei_done = 0;
+		current_dei_phase = 0;
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 1; // get T
+		result.is_opc_done = 0;
+		device_in_result.is_dei_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 1; // get T
+	}
+	else if (phase == 2) {
+		t8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 2 : 1; // x=1;y=1; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 1 or 0
+	}
+	else {
+		result.is_sp_shift = 0;
+		dei_param = is_first_dei_done ? t8 + 1 : t8;
+		if (~is_first_dei_done | (has_written_to_t & ~is_second_dei_done)) {
+			device_in_result = device_in(dei_param, current_dei_phase, previous_device_ram_read);
+			result.is_device_ram_read = device_in_result.is_device_ram_read;
+			result.device_ram_address = device_in_result.device_ram_address;
+			result.is_stack_write = 0;
+			current_dei_phase += 1;
+			if (~is_first_dei_done & device_in_result.is_dei_done) {
+				is_first_dei_done = 1;
+			} else if (device_in_result.is_dei_done) {
+				is_second_dei_done = 1;
+			}
+		}
+		else if (~has_written_to_t) {
+			current_dei_phase = 0;
+			result.is_stack_write = 1;
+			result.stack_address_sp_offset = 1;
+			result.stack_value = device_in_result.dei_value;
+			has_written_to_t = 1;
+		}
+		else if (~has_written_to_n) {
+			result.is_stack_write = 1;
+			result.stack_address_sp_offset = 2;
+			result.stack_value = device_in_result.dei_value;
+			has_written_to_n = 1;
+		}
+		else {
+			result.is_stack_write = 0;
+			result.is_opc_done = 1;
+		}
+	}
+	
+	return result;
+}
+
 opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
 	// t=T;n=N;        SET(2,-2) DEO(t, n)
 	static uint8_t t8, n8;
@@ -531,7 +641,6 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	}
 	else {
 		result.is_sp_shift = 0;
-		result.sp_relative_shift = 0;
 		deo_param0 = is_second_deo ? t8 + 1 : t8;
 		deo_param1 = is_second_deo ? n8 : l8;
 		device_out_result = device_out(deo_param0, deo_param1, current_deo_phase, previous_device_ram_read);
@@ -3271,8 +3380,8 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x034 /* LDA2  */) { opc_result = lda2(phase, ins, stack_read_value, previous_ram_read); }
 	else if (opc == 0x015 /* STA   */) { opc_result = sta(phase, ins, stack_read_value); }
 	else if (opc == 0x035 /* STA2  */) { opc_result = sta2(phase, ins, stack_read_value); }
-	else if (opc == 0x016 /* DEI   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
-	else if (opc == 0x036 /* DEI2  */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
+	else if (opc == 0x016 /* DEI   */) { opc_result = dei(phase, ins, stack_read_value, device_ram_read_value); }
+	else if (opc == 0x036 /* DEI2  */) { opc_result = dei2(phase, ins, stack_read_value, device_ram_read_value); }
 	else if (opc == 0x017 /* DEO   */) { opc_result = deo(phase, ins, stack_read_value, device_ram_read_value); }
 	else if (opc == 0x037 /* DEO2  */) { opc_result = deo2(phase, ins, stack_read_value, device_ram_read_value); }
 	else if (opc == 0x018 /* ADD   */) { opc_result = add(phase, ins, stack_read_value); }
