@@ -626,6 +626,45 @@ opcode_result_t jmp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	return result;
 }
 
+opcode_result_t jcn(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_stack_read) {
+	// t=T;n=N;        SET(2,-2) if(n) pc += (Sint8)t;
+	static uint8_t t8, n8;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n**** JCN ***\n************\n");
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 1; // get T
+		result.is_opc_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 1; 
+	}
+	else if (phase == 2) {
+		t8 = previous_stack_read;
+		result.stack_address_sp_offset = 2; // get N
+	}
+	else if (phase == 3) {
+		result.stack_address_sp_offset = 2;
+	}
+	else if (phase == 4) {
+		n8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2;y=(-2); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
+	}
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
+		result.is_pc_updated = 1;
+		result.pc = n8 == 0 ? pc : pc + (int8_t)(t8); // if(n) pc += (Sint8)t;
+	}
+	else if (phase == 6) {
+		result.is_pc_updated = 0;
+		result.is_opc_done = 1;
+	}
+	
+	return result;
+}
+
 opcode_result_t jcn2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	// t=T2;n=L;       SET(3,-3) if(n) pc = t;
 	static uint16_t t16;
@@ -1599,7 +1638,47 @@ opcode_result_t ldz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	return result;
 }
 
-opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_ram_read) {
+opcode_result_t stz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
+	// t=T;n=N;        SET(2,-2) ram[t] = n;
+	static uint8_t t8, n8;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n**** STZ ***\n************\n");
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 1; // get T
+		result.is_opc_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 1; 
+	}
+	else if (phase == 2) {
+		t8 = previous_stack_read;
+		result.stack_address_sp_offset = 2; // get N
+	}
+	else if (phase == 3) {
+		result.stack_address_sp_offset = 2;
+	}
+	else if (phase == 4) {
+		n8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2;y=(-2); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
+	}
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
+		result.is_ram_write = 1;
+		result.ram_addr = (uint16_t)(t8);
+		result.ram_value = n8; // set first byte of n16 to ram address t8 
+	}
+	else if (phase == 6) {
+		result.is_ram_write = 0;
+		result.is_opc_done = 1;
+	}
+	
+	return result;
+}
+
+opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	// t=T;n=H2;       SET(3,-3) rr = ram + t; POKE2(rr, n)
 	static uint8_t t8;
 	static uint16_t n16;
@@ -1647,6 +1726,48 @@ opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	}
 	else if (phase == 9) {
 		result.is_ram_write = 0;
+		result.is_opc_done = 1;
+	}
+	
+	return result;
+}
+
+opcode_result_t ldr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_stack_read, uint8_t previous_ram_read) {
+	// t=T;            SET(1, 0) T = ram[pc + (Sint8)t];
+	static uint8_t t8, tmp8;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n**** LDR ***\n************\n");
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 1; // get T
+		result.is_opc_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 1; 
+	}
+	else if (phase == 2) {
+		t8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 1 : 0; // x=1y=0; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 1 or 0
+	}
+	else if (phase == 3) {
+		result.is_sp_shift = 0;
+		result.is_ram_read = 1;
+		result.ram_addr = pc + (int8_t)(t8); // peek RAM at address equal to  PC + T 
+	}
+	else if (phase == 3) {
+		result.ram_addr = pc + (int8_t)(t8);
+	}
+	else if (phase == 4) {
+		tmp8 = previous_ram_read;
+		result.is_ram_read = 0;
+		result.is_stack_write = 1;
+		result.stack_address_sp_offset = 1;
+		result.stack_value = tmp8;	// set T
+	}
+	else if (phase == 5) {
+		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
 	
@@ -1708,12 +1829,51 @@ opcode_result_t ldr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	return result;
 }
 
-opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_stack_read, uint8_t previous_ram_read) {
+opcode_result_t str1(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_stack_read) {
+	// t=T;n=N;        SET(2,-2) ram[pc + (Sint8)t] = n;
+	static uint8_t t8, n8;
+	static opcode_result_t result;
+	if (phase == 0) {
+		printf("************\n**** STR ***\n************\n");
+		result.is_stack_read = 1;
+		result.stack_address_sp_offset = 1; // get T
+		result.is_opc_done = 0;
+	}
+	else if (phase == 1) {
+		result.stack_address_sp_offset = 1; 
+	}
+	else if (phase == 2) {
+		t8 = previous_stack_read;
+		result.stack_address_sp_offset = 2; // get N
+	}
+	else if (phase == 3) {
+		result.stack_address_sp_offset = 2;
+	}
+	else if (phase == 4) {
+		n8 = previous_stack_read;
+		result.is_stack_read = 0;
+		result.is_sp_shift = 1;
+		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2y=-2; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
+	}
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
+		result.is_ram_write = 1;
+		result.ram_addr = pc + (int8_t)(t8);
+		result.ram_value = n8; // set first n8 to ram address t8 
+	}
+	else if (phase == 6) {
+		result.is_ram_write = 0;
+		result.is_opc_done = 1;
+	}
+	
+	return result;
+}
+
+opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_stack_read) {
 	// t=T;n=H2;       SET(3,-3) rr = ram + pc + (Sint8)t; POKE2(rr, n)
 	static uint8_t t8;
 	static uint16_t n16;
 	static opcode_result_t result;
-	
 	if (phase == 0) {
 		printf("************\n*** STR2 ***\n************\n");
 		result.is_stack_read = 1;
@@ -1748,11 +1908,11 @@ opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = pc + (int8_t)(t8);
-		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t8 
+		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address pc + t8 
 	}
 	else if (phase == 8) {
 		result.ram_addr = pc + (int8_t)(t8) + 1;
-		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address t8 + 1 
+		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address pc + t8 + 1 
 	}
 	else if (phase == 9) {
 		result.is_ram_write = 0;
@@ -3093,7 +3253,7 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x02B /* LTH2  */) { opc_result = lth2(phase, ins, stack_read_value); }
 	else if (opc == 0x00C /* JMP   */) { opc_result = jmp(phase, ins, pc, stack_read_value); }
 	else if (opc == 0x02C /* JMP2  */) { opc_result = jmp2(phase, ins, stack_read_value); }
-	else if (opc == 0x00D /* JCN   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
+	else if (opc == 0x00D /* JCN   */) { opc_result = jcn(phase, ins, pc, stack_read_value); }
 	else if (opc == 0x02D /* JCN2  */) { opc_result = jcn2(phase, ins, stack_read_value); }
 	else if (opc == 0x00E /* JSR   */) { opc_result = jsr(phase, ins, pc, stack_read_value); }
 	else if (opc == 0x02E /* JSR2  */) { opc_result = jsr2(phase, ins, pc, stack_read_value); }
@@ -3101,12 +3261,12 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x02F /* STH2  */) { opc_result = sth2(phase, ins, stack_read_value); }
 	else if (opc == 0x010 /* LDZ   */) { opc_result = ldz(phase, ins, stack_read_value, previous_ram_read); }
 	else if (opc == 0x030 /* LDZ2  */) { opc_result = ldz2(phase, ins, stack_read_value, previous_ram_read); }
-	else if (opc == 0x011 /* STZ   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
-	else if (opc == 0x031 /* STZ2  */) { opc_result = stz2(phase, ins, stack_read_value, previous_ram_read); }
-	else if (opc == 0x012 /* LDR   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
+	else if (opc == 0x011 /* STZ   */) { opc_result = stz(phase, ins, stack_read_value); }
+	else if (opc == 0x031 /* STZ2  */) { opc_result = stz2(phase, ins, stack_read_value); }
+	else if (opc == 0x012 /* LDR   */) { opc_result = ldr(phase, ins, pc, stack_read_value, previous_ram_read); }
 	else if (opc == 0x032 /* LDR2  */) { opc_result = ldr2(phase, ins, pc, stack_read_value, previous_ram_read); }
-	else if (opc == 0x013 /* STR   */) { printf("************\n 0x%X \n************\n", opc); opc_result.is_opc_done = 1; }
-	else if (opc == 0x033 /* STR2  */) { opc_result = str2(phase, ins, pc, stack_read_value, previous_ram_read); }
+	else if (opc == 0x013 /* STR   */) { opc_result = str1(phase, ins, pc, stack_read_value); }
+	else if (opc == 0x033 /* STR2  */) { opc_result = str2(phase, ins, pc, stack_read_value); }
 	else if (opc == 0x014 /* LDA   */) { opc_result = lda(phase, ins, stack_read_value, previous_ram_read); }
 	else if (opc == 0x034 /* LDA2  */) { opc_result = lda2(phase, ins, stack_read_value, previous_ram_read); }
 	else if (opc == 0x015 /* STA   */) { opc_result = sta(phase, ins, stack_read_value); }

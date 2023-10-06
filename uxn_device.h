@@ -148,7 +148,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.is_deo_done = 1;
 		}
 	}
-	else if (phase == 0x0D) { // END
+	else if (phase == 0x0D) {
 		if (device_port == 0xE) { // PIXEL
 			result.is_deo_done = ((y * 800) + x) > 575999 ? 1 : 0; 
 			result.is_device_ram_read = 1;
@@ -157,7 +157,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.is_deo_done = 1;
 		}
 	}
-	else if (phase == 0x0E) { // END
+	else if (phase == 0x0E) {
 		if (device_port == 0xE) { // PIXEL
 			printf("            SCREEN DEO: VRAM Write: X = 0x%X, Y = 0x%X, Color = 0x%X\n", x, y, (uint4_t)(color));
 			auto_advance = previous_device_ram_read;
@@ -170,7 +170,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.is_deo_done = 1;
 		}
 	}
-	else if (phase == 0x0F) { // END
+	else if (phase == 0x0F) {
 		if (device_port == 0xE) { // PIXEL
 			// TODO: implement auto-advance
 			result.is_vram_write = 0;
@@ -213,7 +213,6 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 		result.is_device_ram_write = 1;
 		result.device_ram_address = device_address;
 		result.device_ram_value = value;
-		// poke_dev(device_address, value); // START
 		device_port = (uint4_t)(device_address & 0x0F);
 		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
