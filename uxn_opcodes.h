@@ -1758,14 +1758,12 @@ opcode_result_t stz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2;y=(-2); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
-	}
-	else if (phase == 5) {
-		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = (uint16_t)(t8);
 		result.ram_value = n8; // set first byte of n16 to ram address t8 
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
 		result.is_ram_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -1808,18 +1806,16 @@ opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3y=-3; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
-	}
-	else if (phase == 7) {
-		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = (uint16_t)(t8);
 		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t8 
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
+		result.is_sp_shift = 0;
 		result.ram_addr = (uint16_t)(t8 + 1);
 		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address t8 + 1 
 	}
-	else if (phase == 9) {
+	else if (phase == 8) {
 		result.is_ram_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -1945,16 +1941,15 @@ opcode_result_t str1(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2y=-2; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
-	}
-	else if (phase == 5) {
-		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = pc + (int8_t)(t8);
 		result.ram_value = n8; // set first n8 to ram address t8 
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
 		result.is_ram_write = 0;
 		result.is_opc_done = 1;
+		
 	}
 	
 	return result;
@@ -1994,18 +1989,16 @@ opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3y=-3; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
-	}
-	else if (phase == 7) {
-		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = pc + (int8_t)(t8);
 		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address pc + t8 
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
+		result.is_sp_shift = 0;
 		result.ram_addr = pc + (int8_t)(t8) + 1;
 		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address pc + t8 + 1 
 	}
-	else if (phase == 9) {
+	else if (phase == 8) {
 		result.is_ram_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -2675,16 +2668,15 @@ opcode_result_t sta(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3;y=(-3); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -4
-	}
-	else if (phase == 7) {
-		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = t16; // poke RAM at address equal to T2
 		result.ram_value = n8;
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
+		result.is_sp_shift = 0;
 		result.is_ram_write = 0;
 		result.is_opc_done = 1;
+		
 	}
 	
 	return result;
@@ -2731,18 +2723,16 @@ opcode_result_t sta2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -4; // x=4;y=(-4); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -4
-	}
-	else if (phase == 9) {
-		result.is_sp_shift = 0;
 		result.is_ram_write = 1;
 		result.ram_addr = t16;
 		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t16 
 	}
-	else if (phase == 10) {
+	else if (phase == 9) {
+		result.is_sp_shift = 0;
 		result.ram_addr = t16 + 1;
 		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address t16 + 1 
 	}
-	else if (phase == 11) {
+	else if (phase == 10) {
 		result.is_ram_write = 0;
 		result.is_opc_done = 1;
 	}
