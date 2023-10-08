@@ -81,30 +81,28 @@ opcode_result_t jci(uint8_t phase, uint16_t pc, uint8_t previous_stack_read, uin
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = -1;
-	}
-	else if (phase == 3) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = pc; // peek RAM (byte 1 of 2) at address equal to PC
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		result.is_sp_shift = 0;
 		result.ram_addr = pc;
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
 		result.ram_addr = pc + 1; // peek RAM (byte 2 of 2) at address equal to PC + 1
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.ram_addr = pc + 1;
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_ram_read = 0;
 		result.is_pc_updated = 1;
 		result.pc = t8 == 0 ? pc + 2 : (pc + tmp16 + 2);
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
 	}
@@ -167,30 +165,28 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	else if (phase == 2) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
-	}
-	else if (phase == 3) {
-		result.is_stack_write = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = pc; // peek RAM (byte 1 of 2) at address equal to PC
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		result.is_stack_write = 0;
 		result.ram_addr = pc;
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
 		result.ram_addr = pc + 1; // peek RAM (byte 2 of 2) at address equal to PC + 1
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.ram_addr = pc + 1;
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_ram_read = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + tmp16 + 2; // pc += PEEK2_RAM(pc) + 2
 	}
-	else {
+	else if (phase == 7) {
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
 	}
@@ -1622,23 +1618,21 @@ opcode_result_t lda(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 1 : -1; // x=2y=-1; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 2 or 0
-	}
-	else if (phase == 5) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = t16; // peek RAM at address equal to T2
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
 		result.ram_addr = t16; 
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		tmp8 = previous_ram_read;
 		result.is_ram_read = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = tmp8;	// set T
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -1664,23 +1658,21 @@ opcode_result_t ldz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 1 : 0; // x=1y=0; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 1 or 0
-	}
-	else if (phase == 3) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = (uint16_t)(t8); // peek RAM at address equal to T
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		result.is_sp_shift = 0;
 		result.ram_addr = (uint16_t)(t8); // peek RAM at address equal to T
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		tmp8 = previous_ram_read;
 		result.is_ram_read = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = tmp8;	// set T
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -1707,35 +1699,33 @@ opcode_result_t ldz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 2 : 1; // x=1y=0; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 1 or 0
-	}
-	else if (phase == 3) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = (uint16_t)(t8); // peek RAM at address equal to T
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		result.is_sp_shift = 0;
 		result.ram_addr = (uint16_t)(t8); // peek RAM at address equal to T
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
 		result.ram_addr = (uint16_t)(t8 + 1); // peek RAM at address equal to T + 1
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.ram_addr = (uint16_t)(t8 + 1); // peek RAM at address equal to T + 1
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_ram_read = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
-	else if (phase == 9) {
+	else if (phase == 8) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -1855,23 +1845,21 @@ opcode_result_t ldr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 1 : 0; // x=1y=0; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 1 or 0
-	}
-	else if (phase == 3) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = pc + (int8_t)(t8); // peek RAM at address equal to  PC + T 
 	}
 	else if (phase == 3) {
+		result.is_sp_shift = 0;
 		result.ram_addr = pc + (int8_t)(t8);
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
 		tmp8 = previous_ram_read;
 		result.is_ram_read = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = tmp8;	// set T
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -1898,35 +1886,33 @@ opcode_result_t ldr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 2 : 1; // x=1y=1; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
-	}
-	else if (phase == 3) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = pc + (int8_t)(t8); // peek RAM (byte 1 of 2) at address equal to  PC + T 
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		result.is_sp_shift = 0;
 		result.ram_addr = pc + (int8_t)(t8); 
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
 		result.ram_addr = pc + (int8_t)(t8) + 1; // peek RAM (byte 2 of 2) at address equal to PC + T + 1
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.ram_addr = pc + (int8_t)(t8) + 1; 
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_ram_read = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
-	else if (phase == 9) {
+	else if (phase == 8) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -2053,35 +2039,33 @@ opcode_result_t lda2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 2 : 0; // x=2y=0; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 2 or 0
-	}
-	else if (phase == 5) {
-		result.is_sp_shift = 0;
 		result.is_ram_read = 1;
 		result.ram_addr = t16; // peek RAM (byte 1 of 2) at address equal to t16
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
 		result.ram_addr = t16;
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
 		result.ram_addr = t16 + 1; // peek RAM (byte 2 of 2) at address equal to t16 + 1
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
 		result.ram_addr = t16 + 1;
 	}
-	else if (phase == 9) {
+	else if (phase == 8) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_ram_read = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
-	else if (phase == 10) {
+	else if (phase == 9) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
-	else if (phase == 11) {
+	else if (phase == 10) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
