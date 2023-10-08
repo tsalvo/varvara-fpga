@@ -3415,25 +3415,15 @@ eval_opcode_result_t eval_opcode_phased(
 	stack_address = (stack_index ^ opc_result.is_stack_index_flipped ? sp1 : sp0) - opc_result.stack_address_sp_offset;
 	stack_write_value = opc_result.stack_value;
 	
-	if (stack_index ^ opc_result.is_stack_index_flipped) {
-		stack_read_value = stack_r_ram_update(
-			stack_address, 
-			stack_write_value,
-			is_stack_write, // write 0 enable
-			0,				// read 0 enable
-			stack_address,
-			is_stack_read
-		);
-	} else {
-		stack_read_value = stack_w_ram_update(
-			stack_address, 
-			stack_write_value,
-			is_stack_write, // write 0 enable
-			0,				// read 0 enable
-			stack_address,
-			is_stack_read
-		);
-	}
+	stack_read_value = stack_ram_update(
+		~(stack_index ^ opc_result.is_stack_index_flipped),
+		stack_address, 
+		stack_write_value,
+		is_stack_write, // write 0 enable
+		0,				// read 0 enable
+		stack_address,
+		is_stack_read
+	);
 	
 	device_ram_read_value = device_ram_update(
 		opc_result.device_ram_address,
