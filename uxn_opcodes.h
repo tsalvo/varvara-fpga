@@ -207,29 +207,27 @@ opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		printf("************\n**** LIT ***\n************\n");
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = 1; 		// shift(1)
+		result.is_ram_read = 1;
+		result.ram_addr = pc; // peek RAM at at address equal to PC
 		result.is_opc_done = 0;
 	} 
 	else if (phase == 1) {
 		result.is_sp_shift = 0;
-		result.is_ram_read = 1;
 		result.ram_addr = pc; // peek RAM at at address equal to PC
 	}
 	else if (phase == 2) {
-		result.ram_addr = pc; // peek RAM at at address equal to PC
-	}
-	else if (phase == 3) {
 		tmp8 = previous_ram_read;
 		result.is_ram_read = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + 1; // pc += 1
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
 		result.is_pc_updated = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = tmp8; // T = PEEK_RAM(pc);
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -246,41 +244,39 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		printf("************\n*** LIT2 ***\n************\n");
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = 2; 		// shift(2)
+		result.is_ram_read = 1;
+		result.ram_addr = pc; // peek RAM (byte 1 of 2) at address equal to PC
 		result.is_opc_done = 0;
 	} 
 	else if (phase == 1) {
 		result.is_sp_shift = 0;
-		result.is_ram_read = 1;
-		result.ram_addr = pc; // peek RAM (byte 1 of 2) at address equal to PC
-	}
-	else if (phase == 2) {
 		result.ram_addr = pc; 
 	}
-	else if (phase == 3) {
+	else if (phase == 2) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
 		result.ram_addr = pc + 1; // peek RAM (byte 2 of 2) at address equal to PC + 1
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
 		result.ram_addr = pc + 1; 
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_ram_read = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + 2; // pc += 2
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.is_pc_updated = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte) to value of RAM at PC 
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte) to value of RAM at PC + 1
 	}
-	else {
+	else if (phase == 7) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
