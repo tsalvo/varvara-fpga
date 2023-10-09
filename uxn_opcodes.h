@@ -196,7 +196,6 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 
 opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	// SHIFT( 1) T = ram[pc++];
-	static uint8_t tmp8 = 0;
 	static opcode_result_t result;
 	
 	if (phase == 0) {
@@ -210,20 +209,17 @@ opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	else if (phase == 1) {
 		result.is_sp_shift = 0;
 		result.ram_addr = pc; // peek RAM at at address equal to PC
-	}
-	else if (phase == 2) {
-		tmp8 = previous_ram_read;
-		result.is_ram_read = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + 1; // pc += 1
 	}
-	else if (phase == 3) {
+	else if (phase == 2) {
+		result.is_ram_read = 0;
 		result.is_pc_updated = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = tmp8; // T = PEEK_RAM(pc);
+		result.stack_value = previous_ram_read; // T = PEEK_RAM(pc);
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -261,18 +257,16 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		result.is_ram_read = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + 2; // pc += 2
-	}
-	else if (phase == 5) {
-		result.is_pc_updated = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte) to value of RAM at PC 
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_pc_updated = 0;
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte) to value of RAM at PC + 1
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
 		result.is_stack_write = 0;
 		result.is_opc_done = 1;
 	}
@@ -673,13 +667,11 @@ opcode_result_t jmp(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -1; // x=1;y=(-1); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -1
-	}
-	else if (phase == 3) {
-		result.is_sp_shift = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + t8;
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		result.is_sp_shift = 0;
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
 	}
@@ -713,13 +705,11 @@ opcode_result_t jmp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2;y=(-2); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
-	}
-	else if (phase == 5) {
-		result.is_sp_shift = 0;
 		result.is_pc_updated = 1;
 		result.pc = t16; // pc = t16
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
 	}
@@ -752,13 +742,11 @@ opcode_result_t jcn(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2;y=(-2); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
-	}
-	else if (phase == 5) {
-		result.is_sp_shift = 0;
 		result.is_pc_updated = 1;
 		result.pc = n8 == 0 ? pc : pc + (int8_t)(t8); // if(n) pc += (Sint8)t;
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
+		result.is_sp_shift = 0;
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
 	}
@@ -800,13 +788,11 @@ opcode_result_t jcn2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_stack_read = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3;y=(-3); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
-	}
-	else if (phase == 7) {
-		result.is_sp_shift = 0;
 		result.is_pc_updated = n8 == 0 ? 0 : 1;
 		result.pc = n8 == 0 ? 0 : t16; // if(n) pc = t;
 	}
-	else if (phase == 8) {
+	else if (phase == 7) {
+		result.is_sp_shift = 0;
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
 	}
@@ -846,13 +832,11 @@ opcode_result_t jsr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 	else if (phase == 5) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
-	}
-	else if (phase == 6) {
-		result.is_stack_write = 0;
 		result.is_pc_updated = 1;
 		result.pc = pc + (int8_t)(t8); // pc = t
 	}
-	else if (phase == 7) {
+	else if (phase == 6) {
+		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
@@ -901,13 +885,11 @@ opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
 		result.stack_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
-	}
-	else if (phase == 8) {
-		result.is_stack_write = 0;
 		result.is_pc_updated = 1;
 		result.pc = t16; // pc = t16
 	}
-	else if (phase == 9) {
+	else if (phase == 8) {
+		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
 		result.is_opc_done = 1;
