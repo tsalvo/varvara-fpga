@@ -159,7 +159,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x0D) {
 		if (device_port == 0xE) { // PIXEL
-			result.is_deo_done = ((y * 800) + x) > 575999 ? 1 : 0; 
+			result.is_deo_done = ((y * 400) + x) > 143999 ? 1 : 0; 
 			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x26;
 		} else {
@@ -173,7 +173,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.is_device_ram_read = 0;
 			result.device_ram_address = 0;
 			result.is_vram_write = 1;
-			result.vram_address = ((uint32_t)(y) * (uint32_t)(800)) + ((uint32_t)(x));
+			result.vram_address = ((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x));
 			result.vram_value = (uint2_t)(color);
 		} else {
 			result.is_deo_done = 1;

@@ -103,7 +103,7 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 
 uint2_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint32_t vram_address, uint2_t vram_value) {
 	static uint2_t step_gpu_result = 0;
-	static uint32_t pixel_counter = 0; // 800x720, max = 575999
+	static uint32_t pixel_counter = 0; // 400x360, max = 143999
 
 	step_gpu_result = background_vram_update(
 		vram_address,   		// port 0 address
@@ -113,7 +113,7 @@ uint2_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint32_t
 		is_active_drawing_area 	// port 1 read enable
 	);
 	// Pixel Counter
-	if (pixel_counter == 576000 - 1) { // 800x720
+	if (pixel_counter == 143999) { // 400x360
 		pixel_counter = 0;
 	} else if (is_active_drawing_area) {
 		pixel_counter += 1;
@@ -128,7 +128,7 @@ uint2_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint32_t
 // 16-bit input message format:
 // 0001 UDLR SSBA YXLR  Controls
 // 0010 ---- ---- -PHV  (P)Visible Pixel, (H)HBLANK, (V)VBLANK
-#pragma MAIN_MHZ uxn_eval 44.28
+#pragma MAIN_MHZ uxn_eval 18.0
 uint16_t uxn_eval(uint16_t input) {
 	static uint32_t main_clock_cycle = 0;
 	static uint4_t input_code;
