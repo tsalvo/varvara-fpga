@@ -48,7 +48,6 @@ boot_step_result_t step_boot() {
 }
 
 typedef struct cpu_step_result_t {
-	uint1_t is_ram_read;
 	uint1_t is_ram_write;
 	uint16_t ram_address;
 	uint8_t ram_value;
@@ -64,17 +63,15 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	static uint8_t step_cpu_phase = 0x00;
 	static uint1_t is_ins_done = 0;
 	static eval_opcode_result_t eval_opcode_result;
-	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0};
+	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0};
 	if (step_cpu_phase == 0x00) {
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // START
-		cpu_step_result.is_ram_read = 1;
+		cpu_step_result.is_ram_write = 0;
 		printf("    STEP CPU: Phase = 0x%X, PC = 0x%X \n", step_cpu_phase, pc);
 	}
 	else if (step_cpu_phase == 0x01) {
-		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // DONE
-		cpu_step_result.is_ram_read = 1;
 		printf("    STEP CPU: Phase = 0x%X, PC = 0x%X, ins = 0x%X\n", step_cpu_phase, pc, ins);
 	}
 	else if (step_cpu_phase == 0x02) {	
@@ -85,7 +82,6 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	else {
 		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 3, ins, pc, ram_read_value);
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.pc : pc;
-		cpu_step_result.is_ram_read = eval_opcode_result.is_ram_read;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.ram_address = eval_opcode_result.ram_addr;
 		cpu_step_result.ram_value = eval_opcode_result.ram_value;
@@ -141,7 +137,6 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint2_t current_pixel_palette_color = 0;
 	static uint1_t is_active_drawing_area = 0, is_booted = 0;
 	
-	static uint1_t is_ram_read = 0;
 	static uint1_t is_ram_write = 0;
 	static uint16_t ram_address = 0;
 	static uint8_t ram_write_value = 0;
@@ -159,7 +154,6 @@ uint16_t uxn_eval(uint16_t input) {
 	
 	if (is_booted) {
 		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value);
-		is_ram_read = cpu_step_result.is_ram_read;
 		is_ram_write = cpu_step_result.is_ram_write;
 		ram_address = cpu_step_result.ram_address;
 		ram_write_value = cpu_step_result.ram_value;
@@ -168,7 +162,6 @@ uint16_t uxn_eval(uint16_t input) {
 		vram_value = cpu_step_result.vram_value;
 	} else {
 		boot_step_result_t boot_step_result = step_boot();
-		is_ram_read = 0;
 		is_ram_write = boot_step_result.is_valid_byte;
 		ram_address = boot_step_result.ram_address;
 		ram_write_value = boot_step_result.rom_byte;
@@ -178,10 +171,7 @@ uint16_t uxn_eval(uint16_t input) {
 	ram_read_value = main_ram_update(
 		ram_address,
 		ram_write_value,
-		is_ram_write,
-		0,
-		ram_address,
-		is_ram_read
+		is_ram_write
 	);
 	
 	current_pixel_palette_color = step_gpu(is_active_drawing_area, is_vram_write, vram_address, vram_value);
