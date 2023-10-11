@@ -24,6 +24,7 @@ typedef struct device_out_result_t {
 	uint8_t device_ram_value;
 	
 	uint1_t is_vram_write;
+	uint1_t vram_write_layer;
 	uint32_t vram_address;
 	uint2_t vram_value;
 	
@@ -34,8 +35,8 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	static uint16_t ctrl_none, x, y;
 	static uint8_t pixel, sprite, auto_advance;
 	static uint2_t color;
-	static uint1_t is_fill_mode;
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
+	static uint1_t is_fill_mode, layer;
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
 	
 	printf("            SCREEN DEO: Port: 0x%X, Phase 0x%X\n", device_port, phase);
 	
@@ -60,6 +61,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			pixel = previous_device_ram_read;
 			color = (uint2_t)(pixel);
 			is_fill_mode = (pixel & 0x80) == 0 ? 0 : 1;
+			layer = (pixel & 0x40) ? 1 : 0;
 			result.device_ram_address = 0x2F; // sprite
 		} else {
 			result.is_deo_done = 1;
@@ -156,6 +158,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			auto_advance = previous_device_ram_read;
 			result.device_ram_address = 0;
 			result.is_vram_write = 1;
+			result.vram_write_layer = layer;
 			result.vram_address = ((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x));
 			result.vram_value = (uint2_t)(color);
 		} else {
@@ -180,7 +183,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 }
 
 device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
 	
 	if (device_index == 0x2) { // SCREEN
 		result = screen_deo(device_port, phase, previous_device_ram_read);
@@ -192,7 +195,7 @@ device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t p
 }
 
 device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
 	static uint4_t device_index, device_port;
 	static uint16_t deo_mask[16] = {
 		0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000

@@ -37,6 +37,7 @@ typedef struct opcode_result_t {
 	uint8_t device_ram_value;
 	
 	uint1_t is_vram_write;
+	uint1_t vram_write_layer;
 	uint32_t vram_address;
 	uint2_t vram_value;
 	
@@ -52,6 +53,7 @@ typedef struct eval_opcode_result_t {
 	uint8_t ram_value;
 	
 	uint1_t is_vram_write;
+	uint1_t vram_write_layer;
 	uint32_t vram_address;
 	uint2_t vram_value;
 	
@@ -549,6 +551,7 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		result.device_ram_address = device_out_result.device_ram_address;
 		result.device_ram_value = device_out_result.device_ram_value;
 		result.is_vram_write = device_out_result.is_vram_write;
+		result.vram_write_layer = device_out_result.vram_write_layer;
 		result.vram_address = device_out_result.vram_address;
 		result.vram_value = device_out_result.vram_value;
 		result.is_opc_done = device_out_result.is_deo_done;
@@ -603,6 +606,7 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		result.device_ram_address = device_out_result.device_ram_address;
 		result.device_ram_value = device_out_result.device_ram_value;
 		result.is_vram_write = device_out_result.is_vram_write;
+		result.vram_write_layer = device_out_result.vram_write_layer;
 		result.vram_address = device_out_result.vram_address;
 		result.vram_value = device_out_result.vram_value;
 		result.is_opc_done = device_out_result.is_deo_done & is_second_deo;
@@ -3122,8 +3126,8 @@ eval_opcode_result_t eval_opcode_phased(
 	static uint8_t stack_write_value = 0;
 	static uint8_t stack_read_value = 0;
 	static uint8_t device_ram_read_value = 0;
-	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	opc = ((ins & 0x1F) > 0) ? ((uint12_t)(ins & 0x3F)) : ((uint12_t)(ins) << 4);
 	stack_index = ((ins & 0x40) > 0) ? 1 : 0;
 	
@@ -3232,6 +3236,7 @@ eval_opcode_result_t eval_opcode_phased(
 	opc_eval_result.ram_addr = opc_result.ram_addr;
 	opc_eval_result.ram_value = opc_result.ram_value;
 	opc_eval_result.is_vram_write = opc_result.is_vram_write;
+	opc_eval_result.vram_write_layer = opc_result.vram_write_layer;
 	opc_eval_result.vram_address = opc_result.vram_address;
 	opc_eval_result.vram_value = opc_result.vram_value;
 	opc_eval_result.is_opc_done = opc_result.is_opc_done;
