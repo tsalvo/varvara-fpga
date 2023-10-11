@@ -105,13 +105,20 @@ uint2_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint32_t
 	static uint2_t step_gpu_result = 0;
 	static uint32_t pixel_counter = 0; // 400x360, max = 143999
 
-	step_gpu_result = background_vram_update(
-		vram_address,   		// port 0 address
-		vram_value,				// port 0 write value
-		is_vram_write,			// port 0 write enable
-		pixel_counter,			// port 1 read address
-		is_active_drawing_area 	// port 1 read enable
+	step_gpu_result = bg_vram_update(
+		pixel_counter,			// read address
+		vram_address,   		// write address
+		vram_value,				// write value
+		is_vram_write 			// write enable
 	);
+	
+	// step_gpu_result = background_vram_update(
+	// 	vram_address,   		// port 0 address
+	// 	vram_value,				// port 0 write value
+	// 	is_vram_write,			// port 0 write enable
+	// 	pixel_counter,			// port 1 read address
+	// 	is_active_drawing_area 	// port 1 read enable
+	// );
 	// Pixel Counter
 	if (pixel_counter == 143999) { // 400x360
 		pixel_counter = 0;

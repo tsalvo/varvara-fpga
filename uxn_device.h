@@ -12,7 +12,6 @@
 #include "uxn_stack.h" 
 
 typedef struct device_in_result_t {
-	uint1_t is_device_ram_read;
 	uint8_t device_ram_address;
 	
 	uint8_t dei_value;
@@ -21,7 +20,6 @@ typedef struct device_in_result_t {
 
 typedef struct device_out_result_t {
 	uint1_t is_device_ram_write;
-	uint1_t is_device_ram_read;
 	uint8_t device_ram_address;
 	uint8_t device_ram_value;
 	
@@ -37,14 +35,13 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	static uint8_t pixel, sprite, auto_advance;
 	static uint2_t color;
 	static uint1_t is_fill_mode;
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	printf("            SCREEN DEO: Port: 0x%X, Phase 0x%X\n", device_port, phase);
 	
 	if (phase == 0x00) {
 		if (device_port == 0xE) { // PIXEL
 			result.is_device_ram_write = 0;
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2E; // pixel
 			result.is_deo_done = 0;
 		} else {
@@ -53,7 +50,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x01) {
 		if (device_port == 0xE) { // PIXEL
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2E; 
 		} else {
 			result.is_deo_done = 1;
@@ -64,7 +60,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			pixel = previous_device_ram_read;
 			color = (uint2_t)(pixel);
 			is_fill_mode = (pixel & 0x80) == 0 ? 0 : 1;
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2F; // sprite
 		} else {
 			result.is_deo_done = 1;
@@ -72,7 +67,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x03) {
 		if (device_port == 0xE) { // PIXEL
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2F;
 		} else {
 			result.is_deo_done = 1;
@@ -81,7 +75,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	else if (phase == 0x04) {
 		if (device_port == 0xE) { // PIXEL
 			sprite = previous_device_ram_read;
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x28; // x (hi)
 		} else {
 			result.is_deo_done = 1;
@@ -89,7 +82,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x05) {
 		if (device_port == 0xE) { // PIXEL
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x28;
 		} else {
 			result.is_deo_done = 1;
@@ -99,7 +91,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (device_port == 0xE) { // PIXEL
 			x = (uint16_t)(previous_device_ram_read);
 			x <<= 8;
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x29; // x (lo)
 		} else {
 			result.is_deo_done = 1;
@@ -107,7 +98,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x07) {
 		if (device_port == 0xE) { // PIXEL
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x29;
 		} else {
 			result.is_deo_done = 1;
@@ -116,7 +106,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	else if (phase == 0x08) {
 		if (device_port == 0xE) { // PIXEL
 			x |= (uint16_t)(previous_device_ram_read);
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2A; // y (hi)
 		} else {
 			result.is_deo_done = 1;
@@ -124,7 +113,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x09) {
 		if (device_port == 0xE) { // PIXEL			
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2A;
 		} else {
 			result.is_deo_done = 1;
@@ -134,7 +122,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (device_port == 0xE) { // PIXEL
 			y = (uint16_t)(previous_device_ram_read);
 			y <<= 8;
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2B; // y (lo)
 		} else {
 			result.is_deo_done = 1;
@@ -142,7 +129,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x0B) {
 		if (device_port == 0xE) { // PIXEL
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x2B;
 		} else {
 			result.is_deo_done = 1;
@@ -151,7 +137,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	else if (phase == 0x0C) {
 		if (device_port == 0xE) { // PIXEL
 			y |= (uint16_t)(previous_device_ram_read);
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x26; // (auto)
 		} else {
 			result.is_deo_done = 1;
@@ -160,7 +145,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	else if (phase == 0x0D) {
 		if (device_port == 0xE) { // PIXEL
 			result.is_deo_done = ((y * 400) + x) > 143999 ? 1 : 0; 
-			result.is_device_ram_read = 1;
 			result.device_ram_address = 0x26;
 		} else {
 			result.is_deo_done = 1;
@@ -170,7 +154,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (device_port == 0xE) { // PIXEL
 			printf("            SCREEN DEO: VRAM Write: X = 0x%X, Y = 0x%X, Color = 0x%X\n", x, y, (uint4_t)(color));
 			auto_advance = previous_device_ram_read;
-			result.is_device_ram_read = 0;
 			result.device_ram_address = 0;
 			result.is_vram_write = 1;
 			result.vram_address = ((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x));
@@ -197,7 +180,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 }
 
 device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	if (device_index == 0x2) { // SCREEN
 		result = screen_deo(device_port, phase, previous_device_ram_read);
@@ -209,7 +192,7 @@ device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t p
 }
 
 device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	static uint4_t device_index, device_port;
 	static uint16_t deo_mask[16] = {
 		0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000
@@ -218,7 +201,6 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 	printf("       DEVICE OUT: Address: 0x%X, Value: 0x%X, Phase 0x%X\n", device_address, value, phase);
 	
 	if (phase == 0) {
-		result.is_device_ram_read = 0;
 		result.is_device_ram_write = 1;
 		result.device_ram_address = device_address;
 		result.device_ram_value = value;
@@ -227,6 +209,7 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
 	}
 	else if (phase == 1) {
+		result.is_device_ram_write = 0;
 		device_port = (uint4_t)(device_address & 0x0F);
 		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
@@ -239,7 +222,7 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 }
 
 device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_in_result_t result = {0, 0, 0, 0};
+	static device_in_result_t result = {0, 0, 0};
 	
 	if (phase == 0) {
 		result.dei_value = 0;
