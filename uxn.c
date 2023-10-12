@@ -101,34 +101,80 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	return cpu_step_result;
 }
 
-uint2_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint32_t vram_address, uint2_t vram_value) {
-	static uint2_t fg_pixel, bg_pixel, step_gpu_result;
-	static uint32_t pixel_counter = 0; // 400x360, max = 143999
+typedef struct gpu_step_result_t {
+	uint2_t color;
+	uint1_t is_active_fill;
+} gpu_step_result_t;
 
-	bg_pixel = bg_vram_update(
-		pixel_counter,							// read address
-		vram_address,   						// write address
-		vram_value,								// write value
-		is_vram_write & (~vram_write_layer)		// write enable
+gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint32_t vram_address, uint2_t vram_value) {
+	gpu_step_result_t result = {0, 0};
+	static uint4_t vram_code = 0;
+	
+	// fill
+	static uint32_t fill_pixels_remaining;
+	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
+	static uint1_t is_fill_active, is_fill_left, is_fill_top, is_fill_pixel, is_fill_pixel0, is_fill_pixel1, fill_layer, fill_isect_l, fill_isect_r, fill_isect_t, fill_isect_b;
+	
+	static uint2_t fg_pixel_color, bg_pixel_color;
+	static uint32_t pixel_counter = 0; // 400x360, max = 143999
+	static uint16_t x, y;
+	
+	vram_code = (uint4_t)(vram_address >> 28);
+	
+	// 0-8: y
+	// 0b111100CC 0lTLXXXX XXXXXXYY YYYYYYYY
+	if (vram_code == 0xF) {
+		is_fill_active = 1;
+		is_fill_left = vram_address >> 20;
+		is_fill_top = vram_address >> 21;
+		fill_x0 = is_fill_left ? 0 : (vram_address >> 10);
+		fill_x1 = is_fill_left ? (vram_address >> 10) : 399;
+		fill_y0 = is_fill_top ? 0 : vram_address;
+		fill_x1 = is_fill_top ? vram_address : 359;
+		fill_layer = vram_address >> 22;
+		fill_pixels_remaining = 14400;
+	} else {
+		fill_pixels_remaining = fill_pixels_remaining == 0 ? 0 : fill_pixels_remaining - 1;
+		is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
+	}
+	
+	y = pixel_counter / 400;
+	x = pixel_counter - (y * 400);
+	
+	fill_isect_l = x > fill_x0;
+	fill_isect_r = x < fill_x1;
+	fill_isect_t = y > fill_y0;
+	fill_isect_b = y < fill_y1;
+	
+	is_fill_pixel = is_fill_active & fill_isect_l & fill_isect_r & fill_isect_t & fill_isect_b;
+	is_fill_pixel0 = is_fill_pixel & (~fill_layer);
+	is_fill_pixel1 = is_fill_pixel & fill_layer;
+
+	bg_pixel_color = bg_vram_update(
+		pixel_counter,							                    // read address
+		is_fill_pixel0 ? pixel_counter : vram_address,              // write address
+		vram_value,								                    // write value
+		is_fill_pixel0 | (is_vram_write & (~vram_write_layer))		// write enable
 	);
 	
-	fg_pixel = fg_vram_update(
-		pixel_counter,							// read address
-		vram_address,   						// write address
-		vram_value,								// write value
-		is_vram_write & vram_write_layer		// write enable
+	fg_pixel_color = fg_vram_update(
+		pixel_counter,							                    // read address
+		is_fill_pixel1 ? pixel_counter : vram_address,              // write address
+		vram_value,								                    // write value
+		is_fill_pixel1 | (is_vram_write & vram_write_layer)		    // write enable
 	);
-	
-	step_gpu_result = fg_pixel == 0 ? bg_pixel : fg_pixel;
-	
+
 	// Pixel Counter
 	if (pixel_counter == 143999) { // 400x360
 		pixel_counter = 0;
 	} else if (is_active_drawing_area) {
 		pixel_counter += 1;
 	}
+		
+	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
+	result.is_active_fill = is_fill_active;
 
-	return step_gpu_result;
+	return result;
 }
 
 // Top-level module
@@ -144,6 +190,7 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint2_t current_pixel_palette_color = 0;
 	static uint1_t is_active_drawing_area = 0, is_booted = 0;
 	
+	static uint1_t is_active_fill = 0;
 	static uint1_t is_ram_write = 0;
 	static uint16_t ram_address = 0;
 	static uint8_t ram_write_value = 0;
@@ -160,7 +207,13 @@ uint16_t uxn_eval(uint16_t input) {
 		is_active_drawing_area = input >> 2 & 0x0001;
 	} 
 	
-	if (is_booted) {
+	if (~is_booted) {
+		boot_step_result_t boot_step_result = step_boot();
+		is_ram_write = boot_step_result.is_valid_byte;
+		ram_address = boot_step_result.ram_address;
+		ram_write_value = boot_step_result.rom_byte;
+		is_booted = boot_step_result.is_finished;
+	} else if (~is_active_fill) {
 		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value);
 		is_ram_write = cpu_step_result.is_ram_write;
 		ram_address = cpu_step_result.ram_address;
@@ -169,12 +222,6 @@ uint16_t uxn_eval(uint16_t input) {
 		vram_write_layer = cpu_step_result.vram_write_layer;
 		vram_address = cpu_step_result.vram_address;
 		vram_value = cpu_step_result.vram_value;
-	} else {
-		boot_step_result_t boot_step_result = step_boot();
-		is_ram_write = boot_step_result.is_valid_byte;
-		ram_address = boot_step_result.ram_address;
-		ram_write_value = boot_step_result.rom_byte;
-		is_booted = boot_step_result.is_finished;
 	}
 	
 	ram_read_value = main_ram_update(
@@ -183,8 +230,9 @@ uint16_t uxn_eval(uint16_t input) {
 		is_ram_write
 	);
 	
-	current_pixel_palette_color = step_gpu(is_active_drawing_area, is_vram_write, vram_write_layer, vram_address, vram_value);
-	uxn_eval_result = (uint16_t)(palette_color_values[current_pixel_palette_color]);
+	gpu_step_result_t gpu_step_result = step_gpu(is_active_drawing_area, is_vram_write, vram_write_layer, vram_address, vram_value);
+	is_active_fill = gpu_step_result.is_active_fill;
+	uxn_eval_result = (uint16_t)(palette_color_values[gpu_step_result.color]);
 	main_clock_cycle += 1;
 	
 	return uxn_eval_result;

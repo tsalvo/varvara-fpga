@@ -1,8 +1,6 @@
 #pragma once
 #include "uintN_t.h"  // uintN_t types for any N
 #include <stdint.h>
-#pragma once
-#include "ram.h"      // PipelineC RAM declarations
 
 #pragma once
 #include "uxn_ram_device.h"
@@ -37,8 +35,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	static uint2_t color;
 	static uint1_t is_fill_mode, layer;
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
-	
-	printf("            SCREEN DEO: Port: 0x%X, Phase 0x%X\n", device_port, phase);
 	
 	if (phase == 0x00) {
 		if (device_port == 0xE) { // PIXEL
