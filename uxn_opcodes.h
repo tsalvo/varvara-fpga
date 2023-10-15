@@ -26,21 +26,19 @@ typedef struct opcode_result_t {
 	
 	uint1_t is_stack_write;
 	uint8_t stack_address_sp_offset;
-	uint8_t stack_value;
 	
 	uint1_t is_ram_write;
 	uint16_t ram_addr;
-	uint8_t ram_value;
 	
 	uint1_t is_device_ram_write;
 	uint8_t device_ram_address;
-	uint8_t device_ram_value;
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
 	uint32_t vram_address;
-	uint2_t vram_value;
-	
+
+	uint8_t u8_value;
+		
 	uint1_t is_opc_done;
 } opcode_result_t;
 
@@ -50,12 +48,12 @@ typedef struct eval_opcode_result_t {
 	
 	uint1_t is_ram_write;
 	uint16_t ram_addr;
-	uint8_t ram_value;
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
 	uint32_t vram_address;
-	uint2_t vram_value;
+	
+	uint8_t u8_value;
 	
 	uint1_t is_opc_done;
 } eval_opcode_result_t;
@@ -152,11 +150,11 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 2) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 		result.ram_addr = pc; // peek RAM (byte 1 of 2) at address equal to PC
 	}
 	else if (phase == 3) {
@@ -205,7 +203,7 @@ opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		result.is_pc_updated = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = previous_ram_read; // T = PEEK_RAM(pc);
+		result.u8_value = previous_ram_read; // T = PEEK_RAM(pc);
 	}
 	else if (phase == 3) {
 		result.is_stack_write = 0;
@@ -245,12 +243,12 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		result.pc = pc + 2; // pc += 2
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte) to value of RAM at PC 
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte) to value of RAM at PC 
 	}
 	else if (phase == 5) {
 		result.is_pc_updated = 0;
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte) to value of RAM at PC + 1
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte) to value of RAM at PC + 1
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -262,7 +260,6 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 
 opcode_result_t pop(uint8_t phase, uint8_t ins) {
 	// SET(1,-1)
-	static int8_t tmp8;
 	static opcode_result_t result;
 	if (phase == 0) {
 		printf("************\n**** POP ***\n************\n");
@@ -323,15 +320,15 @@ opcode_result_t ovr(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8;  // set T
+		result.u8_value = n8;  // set T
 	}
 	else if (phase == 6) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = t8;  // set N
+		result.u8_value = t8;  // set N
 	}
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 3;
-		result.stack_value = n8;  // set L
+		result.u8_value = n8;  // set L
 	}
 	else if (phase == 8) {
 		result.is_stack_write = 0;
@@ -385,27 +382,27 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(n16);	// set T2 = previous N2 (low byte)
+		result.u8_value = (uint8_t)(n16);	// set T2 = previous N2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(n16 >> 8); // set T2 = previous N2 (high byte)
+		result.u8_value = (uint8_t)(n16 >> 8); // set T2 = previous N2 (high byte)
 	}
 	else if (phase == 11) {
 		result.stack_address_sp_offset = 3;
-		result.stack_value = (uint8_t)(t16);	// set N2 = previous T2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set N2 = previous T2 (low byte)
 	}
 	else if (phase == 12) {
 		result.stack_address_sp_offset = 4;
-		result.stack_value = (uint8_t)(t16 >> 8); // set N2 = previous T2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set N2 = previous T2 (high byte)
 	}
 	else if (phase == 13) {
 		result.stack_address_sp_offset = 5;
-		result.stack_value = (uint8_t)(n16);	// set L2 = previous N2 (low byte)
+		result.u8_value = (uint8_t)(n16);	// set L2 = previous N2 (low byte)
 	}
 	else if (phase == 14) {
 		result.stack_address_sp_offset = 6;
-		result.stack_value = (uint8_t)(n16 >> 8); // set L2 = previous N2 (high byte)
+		result.u8_value = (uint8_t)(n16 >> 8); // set L2 = previous N2 (high byte)
 	}
 	else if (phase == 15) {
 		result.is_stack_write = 0;
@@ -446,7 +443,7 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 			if (~has_written_to_t) {
 				result.is_stack_write = 1;
 				result.stack_address_sp_offset = 1;
-				result.stack_value = device_in_result.dei_value;
+				result.u8_value = device_in_result.dei_value;
 				has_written_to_t = 1;
 			} else {
 				result.is_stack_write = 0;
@@ -502,12 +499,12 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 			current_dei_phase = 0;
 			result.is_stack_write = 1;
 			result.stack_address_sp_offset = 1;
-			result.stack_value = device_in_result.dei_value;
+			result.u8_value = device_in_result.dei_value;
 			has_written_to_t = 1;
 		}
 		else if (~has_written_to_n) {
 			result.stack_address_sp_offset = 2;
-			result.stack_value = device_in_result.dei_value;
+			result.u8_value = device_in_result.dei_value;
 			has_written_to_n = 1;
 		}
 		else {
@@ -549,11 +546,10 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		device_out_result = device_out(t8, n8, phase - 5, previous_device_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
 		result.device_ram_address = device_out_result.device_ram_address;
-		result.device_ram_value = device_out_result.device_ram_value;
+		result.u8_value = device_out_result.u8_value;
 		result.is_vram_write = device_out_result.is_vram_write;
 		result.vram_write_layer = device_out_result.vram_write_layer;
 		result.vram_address = device_out_result.vram_address;
-		result.vram_value = device_out_result.vram_value;
 		result.is_opc_done = device_out_result.is_deo_done;
 	}
 	
@@ -604,11 +600,10 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		device_out_result = device_out(deo_param0, deo_param1, current_deo_phase, previous_device_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
 		result.device_ram_address = device_out_result.device_ram_address;
-		result.device_ram_value = device_out_result.device_ram_value;
 		result.is_vram_write = device_out_result.is_vram_write;
 		result.vram_write_layer = device_out_result.vram_write_layer;
 		result.vram_address = device_out_result.vram_address;
-		result.vram_value = device_out_result.vram_value;
+		result.u8_value = device_out_result.u8_value;
 		result.is_opc_done = device_out_result.is_deo_done & is_second_deo;
 		if (device_out_result.is_deo_done) {
 			current_deo_phase = 0;
@@ -789,11 +784,11 @@ opcode_result_t jsr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(pc);		// set T2 (low byte)
+		result.u8_value = (uint8_t)(pc);		// set T2 (low byte)
 	}
 	else if (phase == 5) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
+		result.u8_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
 		result.is_pc_updated = 1;
 		result.pc = pc + (int8_t)(t8); // pc = t
 	}
@@ -840,11 +835,11 @@ opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(pc);		// set T2 (low byte)
+		result.u8_value = (uint8_t)(pc);		// set T2 (low byte)
 	}
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
+		result.u8_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
 		result.is_pc_updated = 1;
 		result.pc = t16; // pc = t16
 	}
@@ -886,7 +881,7 @@ opcode_result_t add(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 + t8;	// set T
+		result.u8_value = n8 + t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -941,11 +936,11 @@ opcode_result_t add2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -983,7 +978,7 @@ opcode_result_t and(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 & t8;	// set T
+		result.u8_value = n8 & t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -1038,11 +1033,11 @@ opcode_result_t and2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -1080,7 +1075,7 @@ opcode_result_t ora(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 | t8;	// set T
+		result.u8_value = n8 | t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -1135,11 +1130,11 @@ opcode_result_t ora2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -1177,7 +1172,7 @@ opcode_result_t eor(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 ^ t8;	// set T
+		result.u8_value = n8 ^ t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -1232,11 +1227,11 @@ opcode_result_t eor2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -1274,7 +1269,7 @@ opcode_result_t equ(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 == t8 ? 1 : 0;	// set T
+		result.u8_value = n8 == t8 ? 1 : 0;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -1328,7 +1323,7 @@ opcode_result_t equ2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n16 == t16 ? 1 : 0;	// set T
+		result.u8_value = n16 == t16 ? 1 : 0;	// set T
 	}
 	else if (phase == 10) {
 		result.is_stack_write = 0;
@@ -1366,7 +1361,7 @@ opcode_result_t neq(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 == t8 ? 0 : 1;	// set T
+		result.u8_value = n8 == t8 ? 0 : 1;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -1420,7 +1415,7 @@ opcode_result_t neq2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n16 == t16 ? 0 : 1;	// set T
+		result.u8_value = n16 == t16 ? 0 : 1;	// set T
 	}
 	else if (phase == 10) {
 		result.is_stack_write = 0;
@@ -1451,7 +1446,7 @@ opcode_result_t inc(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = t8 + 1;	// set T 
+		result.u8_value = t8 + 1;	// set T 
 	}
 	else if (phase == 4) {
 		result.is_stack_write = 0;
@@ -1491,11 +1486,11 @@ opcode_result_t inc2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 6) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 7) {
 		result.is_stack_write = 0;
@@ -1540,7 +1535,7 @@ opcode_result_t lda(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		tmp8 = previous_ram_read;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = tmp8;	// set T
+		result.u8_value = tmp8;	// set T
 	}
 	else if (phase == 7) {
 		result.is_stack_write = 0;
@@ -1576,7 +1571,7 @@ opcode_result_t ldz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		tmp8 = previous_ram_read;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = tmp8;	// set T
+		result.u8_value = tmp8;	// set T
 	}
 	else if (phase == 5) {
 		result.is_stack_write = 0;
@@ -1621,11 +1616,11 @@ opcode_result_t ldz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 8) {
 		result.is_stack_write = 0;
@@ -1660,7 +1655,7 @@ opcode_result_t stz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2;y=(-2); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
 		result.is_ram_write = 1;
 		result.ram_addr = (uint16_t)(t8);
-		result.ram_value = n8; // set first byte of n16 to ram address t8 
+		result.u8_value = n8; // set first byte of n16 to ram address t8 
 	}
 	else if (phase == 5) {
 		result.is_sp_shift = 0;
@@ -1706,12 +1701,12 @@ opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3y=-3; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
 		result.is_ram_write = 1;
 		result.ram_addr = (uint16_t)(t8);
-		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t8 
+		result.u8_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t8 
 	}
 	else if (phase == 7) {
 		result.is_sp_shift = 0;
 		result.ram_addr = (uint16_t)(t8 + 1);
-		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address t8 + 1 
+		result.u8_value = (uint8_t)(n16); // set second byte of n16 to ram address t8 + 1 
 	}
 	else if (phase == 8) {
 		result.is_ram_write = 0;
@@ -1747,7 +1742,7 @@ opcode_result_t ldr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		tmp8 = previous_ram_read;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = tmp8;	// set T
+		result.u8_value = tmp8;	// set T
 	}
 	else if (phase == 4) {
 		result.is_stack_write = 0;
@@ -1792,11 +1787,11 @@ opcode_result_t ldr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 8) {
 		result.is_stack_write = 0;
@@ -1831,7 +1826,7 @@ opcode_result_t str1(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -2; // x=2y=-2; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -2
 		result.is_ram_write = 1;
 		result.ram_addr = pc + (int8_t)(t8);
-		result.ram_value = n8; // set first n8 to ram address t8 
+		result.u8_value = n8; // set first n8 to ram address t8 
 	}
 	else if (phase == 5) {
 		result.is_sp_shift = 0;
@@ -1877,12 +1872,12 @@ opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3y=-3; shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -3
 		result.is_ram_write = 1;
 		result.ram_addr = pc + (int8_t)(t8);
-		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address pc + t8 
+		result.u8_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address pc + t8 
 	}
 	else if (phase == 7) {
 		result.is_sp_shift = 0;
 		result.ram_addr = pc + (int8_t)(t8) + 1;
-		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address pc + t8 + 1 
+		result.u8_value = (uint8_t)(n16); // set second byte of n16 to ram address pc + t8 + 1 
 	}
 	else if (phase == 8) {
 		result.is_ram_write = 0;
@@ -1934,11 +1929,11 @@ opcode_result_t lda2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 9) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 10) {
 		result.is_stack_write = 0;
@@ -1976,7 +1971,7 @@ opcode_result_t gth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 > t8 ? 1 : 0;	// set T
+		result.u8_value = n8 > t8 ? 1 : 0;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -2030,7 +2025,7 @@ opcode_result_t gth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n16 > t16 ? 1 : 0;	// set T
+		result.u8_value = n16 > t16 ? 1 : 0;	// set T
 	}
 	else if (phase == 10) {
 		result.is_stack_write = 0;
@@ -2068,7 +2063,7 @@ opcode_result_t lth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 < t8 ? 1 : 0;	// set T
+		result.u8_value = n8 < t8 ? 1 : 0;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -2122,7 +2117,7 @@ opcode_result_t lth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n16 < t16 ? 1 : 0;	// set T
+		result.u8_value = n16 < t16 ? 1 : 0;	// set T
 	}
 	else if (phase == 10) {
 		result.is_stack_write = 0;
@@ -2160,7 +2155,7 @@ opcode_result_t mul(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 * t8;	// set T
+		result.u8_value = n8 * t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -2215,11 +2210,11 @@ opcode_result_t mul2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -2257,7 +2252,7 @@ opcode_result_t div(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = t8 == 0 ? 0 : n8 / t8;	// set T
+		result.u8_value = t8 == 0 ? 0 : n8 / t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -2312,11 +2307,11 @@ opcode_result_t div2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -2347,7 +2342,7 @@ opcode_result_t nip(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = t8;	// set T
+		result.u8_value = t8;	// set T
 	}
 	else if (phase == 4) {
 		result.is_stack_write = 0;
@@ -2386,11 +2381,11 @@ opcode_result_t nip2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(t16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set T2 (low byte)
 	}
 	else if (phase == 6) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(t16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 7) {
 		result.is_stack_write = 0;
@@ -2430,7 +2425,7 @@ opcode_result_t sft(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = tmp8;	// set T
+		result.u8_value = tmp8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -2478,11 +2473,11 @@ opcode_result_t sft2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 8) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 9) {
 		result.is_stack_write = 0;
@@ -2526,7 +2521,7 @@ opcode_result_t sta(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -3; // x=3;y=(-3); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -4
 		result.is_ram_write = 1;
 		result.ram_addr = t16; // poke RAM at address equal to T2
-		result.ram_value = n8;
+		result.u8_value = n8;
 	}
 	else if (phase == 7) {
 		result.is_sp_shift = 0;
@@ -2579,12 +2574,12 @@ opcode_result_t sta2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.sp_relative_shift = ((ins & 0x80) > 0) ? 0 : -4; // x=4;y=(-4); shift amount = (((ins & 0x80) > 0) ? x + y : y) ====> 0 or -4
 		result.is_ram_write = 1;
 		result.ram_addr = t16;
-		result.ram_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t16 
+		result.u8_value = (uint8_t)(n16 >> 8); // set first byte of n16 to ram address t16 
 	}
 	else if (phase == 9) {
 		result.is_sp_shift = 0;
 		result.ram_addr = t16 + 1;
-		result.ram_value = (uint8_t)(n16); // set second byte of n16 to ram address t16 + 1 
+		result.u8_value = (uint8_t)(n16); // set second byte of n16 to ram address t16 + 1 
 	}
 	else if (phase == 10) {
 		result.is_ram_write = 0;
@@ -2619,7 +2614,7 @@ opcode_result_t sth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = t8; // set T
+		result.u8_value = t8; // set T
 	}
 	else if (phase == 5) {
 		result.is_stack_write = 0;
@@ -2663,11 +2658,11 @@ opcode_result_t sth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(t16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set T2 (low byte)
 	}
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(t16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 8) {
 		result.is_stack_write = 0;
@@ -2706,7 +2701,7 @@ opcode_result_t sub(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8 - t8;	// set T
+		result.u8_value = n8 - t8;	// set T
 	}
 	else if (phase == 6) {
 		result.is_stack_write = 0;
@@ -2761,11 +2756,11 @@ opcode_result_t sub2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_stack_write = 0;
@@ -2803,11 +2798,11 @@ opcode_result_t swp(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = n8;	// set T
+		result.u8_value = n8;	// set T
 	}
 	else if (phase == 6) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = t8;	// set N
+		result.u8_value = t8;	// set N
 	}
 	else if (phase == 7) {
 		result.is_stack_write = 0;
@@ -2861,20 +2856,20 @@ opcode_result_t swp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(n16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(n16);	// set T2 (low byte)
 	}
 	else if (phase == 10) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(n16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(n16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 11) {
 		result.is_sp_shift = 0;
 		result.stack_address_sp_offset = 3;
-		result.stack_value = (uint8_t)(t16);	// set N2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set N2 (low byte)
 	}
 	else if (phase == 12) {
 		result.stack_address_sp_offset = 4;
-		result.stack_value = (uint8_t)(t16 >> 8); // set N2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set N2 (high byte)
 	}
 	else if (phase == 13) {
 		result.is_stack_write = 0;
@@ -2919,15 +2914,15 @@ opcode_result_t rot(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = l8;	// set T
+		result.u8_value = l8;	// set T
 	}
 	else if (phase == 8) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = t8;	// set N
+		result.u8_value = t8;	// set N
 	}
 	else if (phase == 9) {
 		result.stack_address_sp_offset = 3;
-		result.stack_value = n8;	// set L
+		result.u8_value = n8;	// set L
 	}
 	else if (phase == 10) {
 		result.is_stack_write = 0;
@@ -2996,27 +2991,27 @@ opcode_result_t rot2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(l16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(l16);	// set T2 (low byte)
 	}
 	else if (phase == 14) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(l16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(l16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 15) {
 		result.stack_address_sp_offset = 3;
-		result.stack_value = (uint8_t)(t16);	// set N2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set N2 (low byte)
 	}
 	else if (phase == 16) {
 		result.stack_address_sp_offset = 4;
-		result.stack_value = (uint8_t)(t16 >> 8); // set N2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set N2 (high byte)
 	}
 	else if (phase == 17) {
 		result.stack_address_sp_offset = 5;
-		result.stack_value = (uint8_t)(n16);	// set L2 (low byte)
+		result.u8_value = (uint8_t)(n16);	// set L2 (low byte)
 	}
 	else if (phase == 18) {
 		result.stack_address_sp_offset = 6;
-		result.stack_value = (uint8_t)(n16 >> 8); // set L2 (high byte)
+		result.u8_value = (uint8_t)(n16 >> 8); // set L2 (high byte)
 	}
 	else if (phase == 19) {
 		result.is_stack_write = 0;
@@ -3047,11 +3042,11 @@ opcode_result_t dup(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = t8;	// set T
+		result.u8_value = t8;	// set T
 	}
 	else if (phase == 4) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = t8;	// set N
+		result.u8_value = t8;	// set N
 	}
 	else if (phase == 5) {
 		result.is_stack_write = 0;
@@ -3090,19 +3085,19 @@ opcode_result_t dup2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.stack_value = (uint8_t)(t16);	// set T2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set T2 (low byte)
 	}
 	else if (phase == 6) {
 		result.stack_address_sp_offset = 2;
-		result.stack_value = (uint8_t)(t16 >> 8); // set T2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 7) {
 		result.stack_address_sp_offset = 3;
-		result.stack_value = (uint8_t)(t16);	// set N2 (low byte)
+		result.u8_value = (uint8_t)(t16);	// set N2 (low byte)
 	}
 	else if (phase == 8) {
 		result.stack_address_sp_offset = 4;
-		result.stack_value = (uint8_t)(t16 >> 8); // set N2 (high byte)
+		result.u8_value = (uint8_t)(t16 >> 8); // set N2 (high byte)
 	}
 	else if (phase == 9) {
 		result.is_stack_write = 0;
@@ -3126,8 +3121,8 @@ eval_opcode_result_t eval_opcode_phased(
 	static uint8_t stack_write_value = 0;
 	static uint8_t stack_read_value = 0;
 	static uint8_t device_ram_read_value = 0;
-	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	opc = ((ins & 0x1F) > 0) ? ((uint12_t)(ins & 0x3F)) : ((uint12_t)(ins) << 4);
 	stack_index = ((ins & 0x40) > 0) ? 1 : 0;
 	
@@ -3216,7 +3211,7 @@ eval_opcode_result_t eval_opcode_phased(
 	is_stack_write = opc_result.is_stack_write;
 	stack_address = (stack_index ^ opc_result.is_stack_index_flipped ? sp1 : sp0) - opc_result.stack_address_sp_offset;
 	stack_address += (stack_index ^ opc_result.is_stack_index_flipped) ? 256 : 0;
-	stack_write_value = opc_result.stack_value;
+	stack_write_value = opc_result.u8_value;
 	
 	stack_read_value = stack_ram_update(
 		stack_address, 
@@ -3226,7 +3221,7 @@ eval_opcode_result_t eval_opcode_phased(
 	
 	device_ram_read_value = device_ram_update(
 		opc_result.device_ram_address,
-		opc_result.device_ram_value,
+		opc_result.u8_value,
 		opc_result.is_device_ram_write
 	);
 	
@@ -3234,11 +3229,10 @@ eval_opcode_result_t eval_opcode_phased(
 	opc_eval_result.pc = opc_result.pc;
 	opc_eval_result.is_ram_write = opc_result.is_ram_write;
 	opc_eval_result.ram_addr = opc_result.ram_addr;
-	opc_eval_result.ram_value = opc_result.ram_value;
 	opc_eval_result.is_vram_write = opc_result.is_vram_write;
 	opc_eval_result.vram_write_layer = opc_result.vram_write_layer;
 	opc_eval_result.vram_address = opc_result.vram_address;
-	opc_eval_result.vram_value = opc_result.vram_value;
+	opc_eval_result.u8_value = opc_result.u8_value;
 	opc_eval_result.is_opc_done = opc_result.is_opc_done;
 	
 	return opc_eval_result;

@@ -19,12 +19,12 @@ typedef struct device_in_result_t {
 typedef struct device_out_result_t {
 	uint1_t is_device_ram_write;
 	uint8_t device_ram_address;
-	uint8_t device_ram_value;
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
 	uint32_t vram_address;
-	uint2_t vram_value;
+	
+	uint8_t u8_value;
 	
 	uint1_t is_deo_done;
 } device_out_result_t;
@@ -35,7 +35,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	static uint8_t pixel, sprite, auto_advance;
 	static uint2_t color;
 	static uint1_t is_fill_mode, layer;
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	if (phase == 0x00) {
 		vram_addr = 0;
@@ -154,7 +154,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (device_port == 0xE) { // PIXEL
 			auto_advance = previous_device_ram_read;
 			result.device_ram_address = 0;
-			result.vram_value = (uint2_t)(color);
+			result.u8_value = (uint8_t)(color);
 			result.vram_write_layer = layer;
 			
 			if (is_fill_mode) {
@@ -180,7 +180,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			// TODO: implement auto-advance
 			result.is_vram_write = 0;
 			result.vram_address = 0;
-			result.vram_value = 0;
+			result.u8_value = 0;
 			result.is_deo_done = 1;
 		}
 		result.is_deo_done = 1;
@@ -193,7 +193,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 }
 
 device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	if (device_index == 0x2) { // SCREEN
 		result = screen_deo(device_port, phase, previous_device_ram_read);
@@ -205,7 +205,7 @@ device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t p
 }
 
 device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	static uint4_t device_index, device_port;
 	static uint16_t deo_mask[16] = {
 		0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000
@@ -216,7 +216,7 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 	if (phase == 0) {
 		result.is_device_ram_write = 1;
 		result.device_ram_address = device_address;
-		result.device_ram_value = value;
+		result.u8_value = value;
 		device_port = (uint4_t)(device_address & 0x0F);
 		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;

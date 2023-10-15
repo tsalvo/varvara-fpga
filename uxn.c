@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/fill_test.h"
+#include "roms/mandelbrot_fast.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 
@@ -49,12 +49,13 @@ boot_step_result_t step_boot() {
 typedef struct cpu_step_result_t {
 	uint1_t is_ram_write;
 	uint16_t ram_address;
-	uint8_t ram_value;
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
 	uint32_t vram_address;
-	uint2_t vram_value;
+	
+	uint8_t u8_value;
+
 } cpu_step_result_t;
 
 cpu_step_result_t step_cpu(uint8_t ram_read_value) {
@@ -63,7 +64,7 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	static uint8_t step_cpu_phase = 0x00;
 	static uint1_t is_ins_done = 0;
 	static eval_opcode_result_t eval_opcode_result;
-	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0};
+	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0};
 	if (step_cpu_phase == 0x00) {
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // START
@@ -81,11 +82,10 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.pc : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.ram_address = eval_opcode_result.ram_addr;
-		cpu_step_result.ram_value = eval_opcode_result.ram_value;
 		cpu_step_result.is_vram_write = eval_opcode_result.is_vram_write;
 		cpu_step_result.vram_write_layer = eval_opcode_result.vram_write_layer;
 		cpu_step_result.vram_address = eval_opcode_result.vram_address;
-		cpu_step_result.vram_value = eval_opcode_result.vram_value;
+		cpu_step_result.u8_value = eval_opcode_result.u8_value;
 		is_ins_done = eval_opcode_result.is_opc_done;
 	}
 	
@@ -218,11 +218,11 @@ uint16_t uxn_eval(uint16_t input) {
 		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value);
 		is_ram_write = cpu_step_result.is_ram_write;
 		ram_address = cpu_step_result.ram_address;
-		ram_write_value = cpu_step_result.ram_value;
+		ram_write_value = cpu_step_result.u8_value;
 		is_vram_write = cpu_step_result.is_vram_write;
 		vram_write_layer = cpu_step_result.vram_write_layer;
 		vram_address = cpu_step_result.vram_address;
-		vram_value = cpu_step_result.vram_value;
+		vram_value = (uint2_t)cpu_step_result.u8_value;
 	}
 	
 	ram_read_value = main_ram_update(
