@@ -7,7 +7,7 @@ end entity;
   
 architecture sim of top_test is
 	  signal test_clk    : std_logic := '0';
-	  signal test_input : unsigned(15 downto 0) := x"0000";
+	  signal test_input : unsigned(15 downto 0) := x"2004";
 	constant clk_period : time := 56 ns;
 begin
 	-- The Device Under Test (DUT)

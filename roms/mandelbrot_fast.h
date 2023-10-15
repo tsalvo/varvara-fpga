@@ -90,9 +90,39 @@
 	JMP2r
 
 */
+
+/*	
+	#include <varvara.h>
+	
+	void main(void) {
+	  set_palette(0x08df, 0x12bf, 0x549d);
+	  set_screen_size(400, 360);
+	  for (x0 = -280; x0 < 120; ++x0) {
+		for (y0 = -180; y0 <= 0; ++y0) {
+		  x = 0;
+		  y = 0;
+		  for (i = 0; i < 25; ++i) {
+			if ((xx = mul(x, x)) + (yy = mul(y, y)) > 4 * 256)
+			  break;
+			tmp = xx - yy + x0 * 2;
+			y = 2 * mul(x, y) + y0 * 2;
+			x = tmp;
+		  }
+		  tmp = (unsigned)(i + (x0 + y0 & 1)) / 8;
+		  set_screen_xy(x0 + 280, y0 + 180);
+		  draw_pixel(tmp);
+		  set_screen_y(180 - y0);
+		  draw_pixel(tmp);
+		}
+	  }
+	}
+
+*/
+
+#define ROM_SIZE 512
 uint8_t read_rom_byte(uint16_t read_address)
 {
-	static uint8_t uxn_rom[512] = {
+	static uint8_t uxn_rom[ROM_SIZE] = {
 		0xE0, 0x00, 0x00, 0x60, 0x00, 0x12, 0x62, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -168,7 +198,5 @@ uint8_t read_rom_byte(uint16_t read_address)
 	  0			// write enable
   );
   
-  printf("  ROM read address = 0x%X, read value = 0x%X\n", rdaddr, rdata);
-
   return rdata;
 }
