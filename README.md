@@ -4,7 +4,7 @@ Very early work in progress implementation of [Varvara / UXN](https://100r.co/si
 ### Change test ROM:
 Currently two ROMs are available as C arrays within `.h` files in the `roms/` directory:
 - fill_test.h (draws a series of rectangles using the fill command)
-- mandelbrot_test.h (draws a mandelbrot set image, one pxel at a time)
+- mandelbrot_test.h (draws a mandelbrot set image, one pixel at a time)
 To use a different ROM, just change the import statement in `uxn.c` to import the correct ROM.
 
 ### build into VHDL files (for later importing into openfpga-uxn project):
