@@ -79,9 +79,9 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	}
 	else {
 		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 3, ins, pc, ram_read_value);
-		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.pc : pc;
+		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.u16_value : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
-		cpu_step_result.ram_address = eval_opcode_result.ram_addr;
+		cpu_step_result.ram_address = eval_opcode_result.u16_value;
 		cpu_step_result.is_vram_write = eval_opcode_result.is_vram_write;
 		cpu_step_result.vram_write_layer = eval_opcode_result.vram_write_layer;
 		cpu_step_result.vram_address = eval_opcode_result.vram_address;
