@@ -25,25 +25,18 @@ typedef struct boot_step_result_t {
 } boot_step_result_t;
 
 boot_step_result_t step_boot() {
-	static uint16_t ram_address = 0xFE, rom_address = 0; // first ROM byte goes to RAM 0x0100, but keep the RAM address behind by 1 due to latency, and 1 more behind due to early ram_address incrementing
-	static uint8_t rom_byte = 0;
-	static uint1_t boot_phase = 0, is_finished = 0;
+	static uint1_t boot_phase = 0;
+	static uint16_t rom_address = 0;
+	static boot_step_result_t result = {0, 0, 0, 0xFE}; // why ram_address starts at "0xFE"? first ROM byte goes to RAM 0x0100, but keep the RAM address behind by 1 due to latency, and 1 more behind due to early ram_address incrementing
 	
-	if (boot_phase == 0) {
-		rom_byte = read_rom_byte(rom_address); // START
-		is_finished = 0;
-	}
-	else if (boot_phase == 1) {
-		rom_byte = read_rom_byte(rom_address); // DONE		
-		rom_address += 1;
-		ram_address += 1;
-		is_finished = rom_address > (ROM_SIZE - 1);
-	}
-	
-	boot_step_result_t boot_result = {boot_phase, is_finished, rom_byte, ram_address}; // max init
+	result.rom_byte = read_rom_byte(rom_address);
+	rom_address += boot_phase; // increase when boot phase is 1, not when it's zero (allow for two reads)
+	result.ram_address += boot_phase;
+	result.is_finished = boot_phase == 0 ? 0 : (rom_address > (ROM_SIZE - 1) ? 1 : 0);
+	result.is_valid_byte = boot_phase;
 	boot_phase += 1;
 	
-	return boot_result;
+	return result;
 }
 
 typedef struct cpu_step_result_t {
@@ -61,24 +54,22 @@ typedef struct cpu_step_result_t {
 cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
-	static uint8_t step_cpu_phase = 0x00;
+	static uint8_t step_cpu_phase = 0;
 	static uint1_t is_ins_done = 0;
 	static eval_opcode_result_t eval_opcode_result;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0};
-	if (step_cpu_phase == 0x00) {
+	if (step_cpu_phase == 0) {
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // START
 		cpu_step_result.is_ram_write = 0;
+		cpu_step_result.is_vram_write = 0;
 	}
-	else if (step_cpu_phase == 0x01) {
-		cpu_step_result.ram_address = pc; // DONE
-	}
-	else if (step_cpu_phase == 0x02) {	
-		ins = ram_read_value;
+	else if (step_cpu_phase == 1) {
 		pc += 1;
 	}
 	else {
-		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 3, ins, pc, ram_read_value);
+		ins = step_cpu_phase == 2 ? ram_read_value : ins;
+		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, ram_read_value);
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.u16_value : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.ram_address = eval_opcode_result.u16_value;
@@ -92,7 +83,7 @@ cpu_step_result_t step_cpu(uint8_t ram_read_value) {
 	if (is_ins_done == 1) {
 		step_cpu_phase = 0;
 	} else {
-		step_cpu_phase += 1;
+		step_cpu_phase = (pc == 0) ? 0 : (step_cpu_phase + 1);  // stop if PC == 0
 	}
 	
 	return cpu_step_result;
