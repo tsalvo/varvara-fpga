@@ -50,6 +50,9 @@ typedef struct eval_opcode_result_t {
 	uint1_t vram_write_layer;
 	uint32_t vram_address;
 	
+	uint1_t is_device_ram_write;
+	uint8_t device_ram_address;
+	
 	uint8_t u8_value; // for ram_value, vram_value, device_ram_value
 	uint16_t u16_value; // for pc value and ram address
 	
@@ -3032,7 +3035,8 @@ eval_opcode_result_t eval_opcode_phased(
 	uint8_t phase,
 	uint8_t ins,
 	uint16_t pc,
-	uint8_t previous_ram_read
+	uint8_t previous_ram_read,
+	uint8_t previous_device_ram_read
 ) {
 	static uint8_t sp0, sp1;
 	static uint12_t opc;
@@ -3041,7 +3045,7 @@ eval_opcode_result_t eval_opcode_phased(
 	static uint8_t stack_read_value = 0;
 	static uint8_t device_ram_read_value = 0;
 	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	opc = ((ins & 0x1F) > 0) ? ((uint12_t)(ins & 0x3F)) : ((uint12_t)(ins) << 4);
 	
 	
@@ -3097,10 +3101,10 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x034 /* LDA2  */) { opc_result = lda2(phase, ins, stack_read_value, previous_ram_read); }
 	else if (opc == 0x015 /* STA   */) { opc_result = sta(phase, ins, stack_read_value); }
 	else if (opc == 0x035 /* STA2  */) { opc_result = sta2(phase, ins, stack_read_value); }
-	else if (opc == 0x016 /* DEI   */) { opc_result = dei(phase, ins, stack_read_value, device_ram_read_value); }
-	else if (opc == 0x036 /* DEI2  */) { opc_result = dei2(phase, ins, stack_read_value, device_ram_read_value); }
-	else if (opc == 0x017 /* DEO   */) { opc_result = deo(phase, ins, stack_read_value, device_ram_read_value); }
-	else if (opc == 0x037 /* DEO2  */) { opc_result = deo2(phase, ins, stack_read_value, device_ram_read_value); }
+	else if (opc == 0x016 /* DEI   */) { opc_result = dei(phase, ins, stack_read_value, previous_device_ram_read); }
+	else if (opc == 0x036 /* DEI2  */) { opc_result = dei2(phase, ins, stack_read_value, previous_device_ram_read); }
+	else if (opc == 0x017 /* DEO   */) { opc_result = deo(phase, ins, stack_read_value, previous_device_ram_read); }
+	else if (opc == 0x037 /* DEO2  */) { opc_result = deo2(phase, ins, stack_read_value, previous_device_ram_read); }
 	else if (opc == 0x018 /* ADD   */) { opc_result = add(phase, ins, stack_read_value); }
 	else if (opc == 0x038 /* ADD2  */) { opc_result = add2(phase, ins, stack_read_value); }
 	else if (opc == 0x019 /* SUB   */) { opc_result = sub(phase, ins, stack_read_value); }
@@ -3139,12 +3143,8 @@ eval_opcode_result_t eval_opcode_phased(
 		opc_result.is_stack_write
 	);
 	
-	device_ram_read_value = device_ram_update(
-		opc_result.device_ram_address,
-		opc_result.u8_value,
-		opc_result.is_device_ram_write
-	);
-	
+	opc_eval_result.device_ram_address = opc_result.device_ram_address;
+	opc_eval_result.is_device_ram_write = opc_result.is_device_ram_write;
 	opc_eval_result.is_pc_updated = opc_result.is_pc_updated;
 	opc_eval_result.u16_value = opc_result.u16_value;
 	opc_eval_result.is_ram_write = opc_result.is_ram_write;

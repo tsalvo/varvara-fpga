@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/mandelbrot_fast.h"
+#include "roms/fill_test.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 
@@ -47,35 +47,41 @@ typedef struct cpu_step_result_t {
 	uint1_t vram_write_layer;
 	uint32_t vram_address;
 	
+	uint1_t is_device_ram_write;
+	uint8_t device_ram_address;
+	
 	uint8_t u8_value;
 
 } cpu_step_result_t;
 
-cpu_step_result_t step_cpu(uint8_t ram_read_value) {
+cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint8_t step_cpu_phase = 0;
 	static uint1_t is_ins_done = 0;
 	static eval_opcode_result_t eval_opcode_result;
-	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0};
+	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
 	if (step_cpu_phase == 0) {
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // START
 		cpu_step_result.is_ram_write = 0;
 		cpu_step_result.is_vram_write = 0;
+		cpu_step_result.is_device_ram_write = 0;
 	}
 	else if (step_cpu_phase == 1) {
 		pc += 1;
 	}
 	else {
-		ins = step_cpu_phase == 2 ? ram_read_value : ins;
-		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, ram_read_value);
+		ins = step_cpu_phase == 2 ? previous_ram_read_value : ins;
+		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, previous_ram_read_value, previous_device_ram_read);
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.u16_value : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.ram_address = eval_opcode_result.u16_value;
 		cpu_step_result.is_vram_write = eval_opcode_result.is_vram_write;
 		cpu_step_result.vram_write_layer = eval_opcode_result.vram_write_layer;
 		cpu_step_result.vram_address = eval_opcode_result.vram_address;
+		cpu_step_result.device_ram_address = eval_opcode_result.device_ram_address;
+		cpu_step_result.is_device_ram_write = eval_opcode_result.is_device_ram_write;
 		cpu_step_result.u8_value = eval_opcode_result.u8_value;
 		is_ins_done = eval_opcode_result.is_opc_done;
 	}
@@ -171,6 +177,96 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	return result;
 }
 
+
+uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write, uint2_t gpu_step_color) {
+	static uint12_t color0 = 0xFFF;
+	static uint12_t color1 = 0x000;
+	static uint12_t color2 = 0x7DB;
+	static uint12_t color3 = 0xF62;
+	static uint4_t color_cmp_0 = 0, color_cmp_1 = 0;
+	static uint12_t tmp12 = 0;
+	static uint16_t result = 0;
+	
+	if (is_device_ram_write) {
+		color_cmp_0 = (uint4_t)(device_ram_value >> 4);
+		color_cmp_1 = (uint4_t)(device_ram_value);
+		if (device_ram_address == 0x08) {
+			tmp12 = color_cmp_0;
+			tmp12 <<= 8;
+			color0 &= 0x0FF;
+			color0 |= tmp12;
+			
+			tmp12 = color_cmp_1;
+			tmp12 <<= 8;
+			color1 &= 0x0FF;
+			color1 |= tmp12;
+		}
+		else if (device_ram_address == 0x09) {
+			tmp12 = color_cmp_0;
+			tmp12 <<= 8;
+			color2 &= 0x0FF;
+			color2 |= tmp12;
+			
+			tmp12 = color_cmp_1;
+			tmp12 <<= 8;
+			color3 &= 0x0FF;
+			color3 |= tmp12;
+		}
+		else if (device_ram_address == 0x0A) {
+			tmp12 = color_cmp_0;
+			tmp12 <<= 4;
+			color0 &= 0xF0F;
+			color0 |= tmp12;
+			
+			tmp12 = color_cmp_1;
+			tmp12 <<= 4;
+			color1 &= 0xF0F;
+			color1 |= tmp12;
+		}
+		else if (device_ram_address == 0x0B) {
+			tmp12 = color_cmp_0;
+			tmp12 <<= 4;
+			color2 &= 0xF0F;
+			color2 |= tmp12;
+			
+			tmp12 = color_cmp_1;
+			tmp12 <<= 4;
+			color3 &= 0xF0F;
+			color3 |= tmp12;
+		}
+		else if (device_ram_address == 0x0C) {
+			tmp12 = (uint12_t)color_cmp_0;
+			color0 &= 0xFF0;
+			color0 |= tmp12;
+			
+			tmp12 = (uint12_t)color_cmp_1;
+			color1 &= 0xFF0;
+			color1 |= tmp12;
+		}
+		else if (device_ram_address == 0x0D) {
+			tmp12 = (uint12_t)color_cmp_0;
+			color2 &= 0xFF0;
+			color2 |= tmp12;
+			
+			tmp12 = (uint12_t)color_cmp_1;
+			color3 &= 0xFF0;
+			color3 |= tmp12;
+		}
+	}
+	
+	if (gpu_step_color == 0) {
+		result = color0;
+	} else if (gpu_step_color == 1) {
+		result = color1;
+	} else if (gpu_step_color == 2) {
+		result = color2;
+	} else {
+		result = color3;
+	}
+	
+	return result;
+}
+
 // Top-level module
 // 16-bit input message format:
 // 0001 UDLR SSBA YXLR  Controls
@@ -184,11 +280,15 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint2_t current_pixel_palette_color = 0;
 	static uint1_t is_active_drawing_area = 0, is_booted = 0;
 	
+	static gpu_step_result_t gpu_step_result;
 	static uint1_t is_active_fill = 0;
 	static uint1_t is_ram_write = 0;
 	static uint16_t ram_address = 0;
 	static uint8_t ram_write_value = 0;
 	static uint8_t ram_read_value = 0;
+	static uint8_t device_ram_address = 0;
+	static uint8_t device_ram_read_value = 0;
+	static uint1_t is_device_ram_write = 0;
 	static uint1_t is_vram_write = 0;
 	static uint1_t vram_write_layer = 0;
 	static uint32_t vram_address = 0;
@@ -206,9 +306,11 @@ uint16_t uxn_eval(uint16_t input) {
 		ram_write_value = boot_step_result.rom_byte;
 		is_booted = boot_step_result.is_finished;
 	} else if (~is_active_fill) {
-		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value);
+		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value, device_ram_read_value);
 		is_ram_write = cpu_step_result.is_ram_write;
 		ram_address = cpu_step_result.ram_address;
+		device_ram_address = cpu_step_result.device_ram_address;
+		is_device_ram_write = cpu_step_result.is_device_ram_write;
 		ram_write_value = cpu_step_result.u8_value;
 		is_vram_write = cpu_step_result.is_vram_write;
 		vram_write_layer = cpu_step_result.vram_write_layer;
@@ -218,14 +320,20 @@ uint16_t uxn_eval(uint16_t input) {
 	
 	ram_read_value = main_ram_update(
 		ram_address,
-		ram_write_value,
+		ram_write_value, // shared register, write only to either ram or device ram in one cycle
 		is_ram_write
 	);
 	
-	gpu_step_result_t gpu_step_result = step_gpu(is_active_drawing_area, is_vram_write, vram_write_layer, vram_address, vram_value);
-	is_active_fill = gpu_step_result.is_active_fill;
-	uxn_eval_result = (uint16_t)(palette_color_values[gpu_step_result.color]);
-	main_clock_cycle += 1;
+	device_ram_read_value = device_ram_update(
+		device_ram_address,
+		ram_write_value, // shared register, write only to either ram or device ram in one cycle
+		is_device_ram_write
+	);
 	
+	gpu_step_result = step_gpu(is_active_drawing_area, is_vram_write, vram_write_layer, vram_address, vram_value);
+	is_active_fill = gpu_step_result.is_active_fill;
+	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_step_result.color);
+	
+	main_clock_cycle += 1;
 	return uxn_eval_result;
 }
