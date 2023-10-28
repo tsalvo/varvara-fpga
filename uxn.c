@@ -275,9 +275,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 uint16_t uxn_eval(uint16_t input) {
 	static uint32_t main_clock_cycle = 0;
 	static uint4_t input_code;
-	static uint12_t palette_color_values[4] = {0xFFF, 0x000, 0x7DB, 0xF62};
 	static uint16_t uxn_eval_result = 0;
-	static uint2_t current_pixel_palette_color = 0;
 	static uint1_t is_active_drawing_area = 0, is_booted = 0;
 	
 	static gpu_step_result_t gpu_step_result;
