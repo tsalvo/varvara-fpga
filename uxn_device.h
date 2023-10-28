@@ -175,7 +175,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.u8_value = (uint8_t)(x); // x (lo)
 			}
 		}
-		if (is_sprite_port) { // SPRITE
+		else if (is_sprite_port) { // SPRITE
 			result.device_ram_address = 0x2D; // ram_addr (lo) (start read)
 			ram_addr = (uint16_t)(previous_device_ram_read);
 			ram_addr <<= 8;
@@ -189,7 +189,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.u8_value = (uint8_t)(y >> 8); // y (hi)
 			}
 		}
-		if (is_sprite_port) { // SPRITE
+		else if (is_sprite_port) { // SPRITE
 			result.device_ram_address = 0x2D; // ram_addr (lo) (continue read)
 		}
 	}
@@ -201,7 +201,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.u8_value = (uint8_t)(y); // y (lo)
 			}
 		}
-		if (is_sprite_port) { // SPRITE
+		else if (is_sprite_port) { // SPRITE
 			ram_addr |= (uint16_t)(previous_device_ram_read);
 			// TODO: implement
 			result.is_deo_done = 1;
