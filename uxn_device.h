@@ -33,7 +33,7 @@ typedef struct device_out_result_t {
 
 device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static uint32_t vram_addr;
-	static uint16_t x, y, ram_addr;
+	static uint16_t x, y, dx, dy, dxy, dyx, dyy, dxx, ram_addr, ram_addr_incr;
 	static uint8_t ctrl, auto_advance;
 	static uint4_t color;
 	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer;
@@ -64,8 +64,8 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			color = (uint4_t)(ctrl);
 			ctrl_mode = (uint1_t)(ctrl >> 7);
 			layer = (uint1_t)(ctrl >> 6);
-			flip_x = (uint1_t)(ctrl >> 5);
-			flip_y = (uint1_t)(ctrl >> 4);
+			flip_y = (uint1_t)(ctrl >> 5);
+			flip_x = (uint1_t)(ctrl >> 4);
 			result.device_ram_address = 0x28; // x (hi) (start read)
 		}
 	}
@@ -131,8 +131,8 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			if (ctrl_mode) { // fill mode
 				vram_addr = ((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x));
 				vram_addr &= 0x0003FFFF;
-				vram_addr |= (flip_x ? 0x00100000 : 0);
-				vram_addr |= (flip_y ? 0x00200000 : 0);
+				vram_addr |= (flip_y ? 0x00100000 : 0);
+				vram_addr |= (flip_x ? 0x00200000 : 0);
 				vram_addr |= 0xF0000000;
 				result.is_vram_write = 0;
 				result.vram_address = vram_addr;
@@ -203,7 +203,13 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		}
 		else if (is_sprite_port) { // SPRITE
 			ram_addr |= (uint16_t)(previous_device_ram_read);
-			// TODO: implement
+			dx = ((uint16_t)(auto_advance & 0x01) << 3);
+			dy = ((uint16_t)(auto_advance & 0x02) << 2);
+			dxy = flip_y ? (dx * (-1)) : dx;
+			dyx = flip_x ? (dy * (-1)) : dy;
+			dxx = flip_x ? (dx * (-1)) : dx;
+			dyy = flip_y ? (dy * (-1)) : dy;
+			ram_addr_incr = (auto_advance & 0x4) << (1 + (ctrl & 0x80 > 0 ? 1 : 0));
 			result.is_deo_done = 1;
 		}
 	}
@@ -211,6 +217,10 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (is_pixel_port) {  // PIXEL
 			result.is_device_ram_write = 0;
 			result.device_ram_address = 0;
+			result.is_deo_done = 1;
+		}
+		else if (is_sprite_port) { // SPRITE
+			// TODO: implement
 			result.is_deo_done = 1;
 		}
 	}
