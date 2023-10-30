@@ -31,9 +31,62 @@ typedef struct device_out_result_t {
 	uint1_t is_deo_done;
 } device_out_result_t;
 
+typedef struct screen_blit_result_t {
+	
+	uint16_t ram_address;
+	
+	uint1_t is_vram_write;
+	uint1_t vram_write_layer;
+	uint32_t vram_address;
+	
+	uint8_t u8_value;
+	
+	uint1_t is_blit_done;
+} screen_blit_result_t;
+
+screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advance, uint16_t x, uint16_t y, uint16_t ram_addr, uint8_t previous_ram_read) {
+	static uint8_t blending[4][16] = {
+		{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
+		{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+		{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
+		{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}
+	};
+	static uint1_t ctrl_mode, layer, flip_x, flip_y;
+	static uint16_t dx, dy, dxy, dyx, dyy, dxx, ram_addr_incr;
+	static uint12_t i_phase;
+	static uint4_t length, i_length;
+	static screen_blit_result_t result;
+	
+	if (phase == 0) {
+		ctrl_mode = (uint1_t)(ctrl >> 7);
+		layer = (uint1_t)(ctrl >> 6);
+		flip_y = (uint1_t)(ctrl >> 5);
+		flip_x = (uint1_t)(ctrl >> 4);
+		dx = ((uint16_t)(auto_advance & 0x01) << 3);
+		dy = ((uint16_t)(auto_advance & 0x02) << 2);
+		dxy = flip_y ? (dx * (-1)) : dx;
+		dyx = flip_x ? (dy * (-1)) : dy;
+		dxx = flip_x ? (dx * (-1)) : dx;
+		dyy = flip_y ? (dy * (-1)) : dy;
+		ram_addr_incr = (auto_advance & 0x4) << (1 + (ctrl & 0x80 > 0 ? 1 : 0));
+		length = (uint4_t)(auto_advance >> 4);
+		i_phase = 0;
+		i_length = length;
+	}
+	else {
+		// TODO: implement
+		result.is_vram_write = 0;
+		result.ram_address = 0;
+		result.vram_address = 0;
+		result.is_blit_done = 1;
+	}
+	
+	return result;
+}
+
 device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static uint32_t vram_addr;
-	static uint16_t x, y, dx, dy, dxy, dyx, dyy, dxx, ram_addr, ram_addr_incr;
+	static uint16_t x, y, ram_addr;
 	static uint8_t ctrl, auto_advance;
 	static uint4_t color;
 	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer;
@@ -203,29 +256,24 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		}
 		else if (is_sprite_port) { // SPRITE
 			ram_addr |= (uint16_t)(previous_device_ram_read);
-			dx = ((uint16_t)(auto_advance & 0x01) << 3);
-			dy = ((uint16_t)(auto_advance & 0x02) << 2);
-			dxy = flip_y ? (dx * (-1)) : dx;
-			dyx = flip_x ? (dy * (-1)) : dy;
-			dxx = flip_x ? (dx * (-1)) : dx;
-			dyy = flip_y ? (dy * (-1)) : dy;
-			ram_addr_incr = (auto_advance & 0x4) << (1 + (ctrl & 0x80 > 0 ? 1 : 0));
-			result.is_deo_done = 1;
 		}
 	}
-	else if (phase == 0x11) {
-		if (is_pixel_port) {  // PIXEL
+	else {
+		if (is_sprite_port) { // SPRITE
+			screen_blit_result_t screen_blit_result = screen_blit(phase - 11, ctrl, auto_advance, x, y, ram_addr, previous_ram_read);
+			result.is_device_ram_write = 0;
+			result.device_ram_address = 0;
+			result.is_vram_write = screen_blit_result.is_vram_write;
+			result.vram_address = screen_blit_result.vram_address;
+			result.vram_write_layer = screen_blit_result.vram_write_layer;
+			result.u8_value = screen_blit_result.u8_value;
+			result.ram_address = screen_blit_result.ram_address;
+			result.is_deo_done = screen_blit_result.is_blit_done;
+		} else {
 			result.is_device_ram_write = 0;
 			result.device_ram_address = 0;
 			result.is_deo_done = 1;
 		}
-		else if (is_sprite_port) { // SPRITE
-			// TODO: implement
-			result.is_deo_done = 1;
-		}
-	}
-	else {
-		result.is_deo_done = 1;
 	}
 	
 	return result;
