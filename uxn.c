@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/mandelbrot_fast.h"
+#include "roms/cube3d.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 

@@ -45,11 +45,11 @@ typedef struct screen_blit_result_t {
 } screen_blit_result_t;
 
 screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advance, uint16_t x, uint16_t y, uint16_t ram_addr, uint8_t previous_ram_read) {
-	static uint8_t blending[4][16] = {
-		{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
-		{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
-		{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
-		{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}
+	static uint2_t blending[64] = {
+		0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0,
+		0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3,
+		1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1,
+		2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2
 	};
 	static uint1_t ctrl_mode, layer, flip_x, flip_y;
 	static uint16_t dx, dy, dxy, dyx, dyy, dxx, ram_addr_incr;
@@ -68,7 +68,7 @@ screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advan
 		dyx = flip_x ? (dy * (-1)) : dy;
 		dxx = flip_x ? (dx * (-1)) : dx;
 		dyy = flip_y ? (dy * (-1)) : dy;
-		ram_addr_incr = (auto_advance & 0x4) << (1 + (ctrl & 0x80 > 0 ? 1 : 0));
+		ram_addr_incr = (auto_advance & 0x04) << (1 + (ctrl & 0x80 > 0 ? 1 : 0));
 		length = (uint4_t)(auto_advance >> 4);
 		i_phase = 0;
 		i_length = length;
