@@ -68,7 +68,7 @@ screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advan
 		dyx = flip_x ? (dy * (-1)) : dy;
 		dxx = flip_x ? (dx * (-1)) : dx;
 		dyy = flip_y ? (dy * (-1)) : dy;
-		ram_addr_incr = (auto_advance & 0x04) << (1 + (ctrl & 0x80 > 0 ? 1 : 0));
+		ram_addr_incr = (auto_advance & 0x04) << (1 + ((ctrl & 0x80) > 0 ? 1 : 0));
 		length = (uint4_t)(auto_advance >> 4);
 		i_phase = 0;
 		i_length = length;
@@ -320,12 +320,85 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 	return result;
 }
 
-device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+device_in_result_t generic_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
 	
-	if (phase == 0) {
+	if (phase < 2) {
+		result.device_ram_address = device_address;
 		result.dei_value = 0;
+		result.is_dei_done = 0;
+	}
+	else if (phase == 2) {
+		result.device_ram_address = 0;
+		result.dei_value = previous_device_ram_read;
 		result.is_dei_done = 1;
+	}
+	
+	return result;
+}
+
+device_in_result_t system_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+	static device_in_result_t result = {0, 0, 0};
+	if (device_address == 0x04) {
+		result.device_ram_address = 0;
+		result.dei_value = 0; // TODO: STACK 0 (WST) Pointer
+		result.is_dei_done = 1;
+	}
+	else if (device_address == 0x05) {
+		result.device_ram_address = 0;
+		result.dei_value = 0; // TODO: STACK 1 (RST) Pointer
+		result.is_dei_done = 1;
+	}
+	else {
+		result = generic_dei(device_address, phase, previous_device_ram_read);
+	}
+	
+	return result;
+}
+
+device_in_result_t screen_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+	static device_in_result_t result = {0, 0, 0};
+	if (device_address == 0x22) {      // screen width (400, or 0x0190) (high byte)
+		result.device_ram_address = 0;
+		result.dei_value = 0x01;
+		result.is_dei_done = 1;
+	}
+	else if (device_address == 0x23) { // screen width (400, or 0x0190) (low byte)
+		result.device_ram_address = 0;
+		result.dei_value = 0x90;
+		result.is_dei_done = 1;
+	}
+	else if (device_address == 0x24) { // screen height (360, or 0x0168) (high byte)
+		result.device_ram_address = 0;
+		result.dei_value = 0x01;
+		result.is_dei_done = 1;
+	}
+	else if (device_address == 0x25) { // screen height (360, or 0x0168) (low byte)
+		result.device_ram_address = 0;
+		result.dei_value = 0x68;
+		result.is_dei_done = 1;
+	}
+	else {
+		result = generic_dei(device_address, phase, previous_device_ram_read);
+	}
+	
+	return result;
+}
+
+device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+	static uint8_t device;
+	static device_in_result_t result = {0, 0, 0};
+	
+	device = device_address & 0xF0;
+	
+	if (device == 0x00) {
+		result = system_dei(device_address, phase, previous_device_ram_read);
+	}
+	else if (device == 0x20) {
+		result = screen_dei(device_address, phase, previous_device_ram_read);
+	}
+	else {
+		result = generic_dei(device_address, phase, previous_device_ram_read);
 	}
 	
 	return result;

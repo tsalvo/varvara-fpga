@@ -42,6 +42,7 @@ typedef struct opcode_result_t {
 } opcode_result_t;
 
 typedef struct eval_opcode_result_t {
+	uint1_t is_waiting;
 	uint1_t is_pc_updated;
 	
 	uint1_t is_ram_write;
@@ -416,7 +417,7 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
 	// t=T;            SET(1, 0) T = DEI(t);
 	static uint1_t has_written_to_t;
-	static uint8_t t8, tmp8;
+	static uint8_t t8;
 	static device_in_result_t device_in_result;
 	static opcode_result_t result;
 	if (phase == 0) {
@@ -3042,18 +3043,16 @@ eval_opcode_result_t eval_opcode_phased(
 ) {
 	static uint8_t sp0, sp1;
 	static uint12_t opc;
-	static uint1_t stack_index;
+	static uint1_t stack_index, is_wait;
 	static uint12_t stack_address = 0;
 	static uint8_t stack_read_value = 0;
-	static uint8_t device_ram_read_value = 0;
 	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	opc = ((ins & 0x1F) > 0) ? ((uint12_t)(ins & 0x3F)) : ((uint12_t)(ins) << 4);
-	
-	
+	is_wait = 0;
 	printf("        EVAL OPCODE: INS = 0x%X, OPC = 0x%X, phase = 0x%X\n", ins, opc, phase);
 	
-	if      (opc == 0x000 /* BRK   */) { opc_result.is_opc_done = 1; }
+	if      (opc == 0x000 /* BRK   */) { printf("************\n**** BRK ***\n************\n"); is_wait = 1; opc_result.is_opc_done = 1; }
 	else if (opc == 0x200 /* JCI   */) { opc_result = jci(phase, pc, stack_read_value, previous_ram_read); }
 	else if (opc == 0x400 /* JMI   */) { opc_result = jmi(phase, pc, previous_ram_read); }
 	else if (opc == 0x600 /* JSI   */) { opc_result = jsi(phase, pc, previous_ram_read); }
@@ -3145,6 +3144,7 @@ eval_opcode_result_t eval_opcode_phased(
 		opc_result.is_stack_write
 	);
 	
+	opc_eval_result.is_waiting = is_wait;
 	opc_eval_result.device_ram_address = opc_result.device_ram_address;
 	opc_eval_result.is_device_ram_write = opc_result.is_device_ram_write;
 	opc_eval_result.is_pc_updated = opc_result.is_pc_updated;

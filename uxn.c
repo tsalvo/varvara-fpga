@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/cube3d.h"
+#include "roms/bounce.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 
@@ -27,7 +27,7 @@ typedef struct boot_step_result_t {
 boot_step_result_t step_boot() {
 	static uint1_t boot_phase = 0;
 	static uint16_t rom_address = 0;
-	static boot_step_result_t result = {0, 0, 0, 0xFE}; // why ram_address starts at "0xFE"? first ROM byte goes to RAM 0x0100, but keep the RAM address behind by 1 due to latency, and 1 more behind due to early ram_address incrementing
+	static boot_step_result_t result = {0, 0, 0, 0xFF}; // why ram_address starts at "0xFF"? first ROM byte goes to RAM 0x0100, but keep the RAM address behind by 1 due to latency
 	
 	result.rom_byte = read_rom_byte(rom_address);
 	rom_address += boot_phase; // increase when boot phase is 1, not when it's zero (allow for two reads)
@@ -54,13 +54,19 @@ typedef struct cpu_step_result_t {
 
 } cpu_step_result_t;
 
-cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read) {
+cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint1_t use_vector, uint16_t vector) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint8_t step_cpu_phase = 0;
-	static uint1_t is_ins_done = 0;
+	static uint1_t is_ins_done = 0, is_waiting = 0;
 	static eval_opcode_result_t eval_opcode_result;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
+	
+	pc = (use_vector & is_waiting) ? vector : pc;
+	is_waiting = use_vector ? 0 : is_waiting;
+	
+	printf("Step CPU phase = 0x%X, pc = 0x%X, is_waiting = 0x%X, use_vector = 0x%X, vector = 0x%X\n", step_cpu_phase, pc, is_waiting, use_vector, vector);
+	
 	if (step_cpu_phase == 0) {
 		is_ins_done = 0;
 		cpu_step_result.ram_address = pc; // START
@@ -83,10 +89,11 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 		cpu_step_result.device_ram_address = eval_opcode_result.device_ram_address;
 		cpu_step_result.is_device_ram_write = eval_opcode_result.is_device_ram_write;
 		cpu_step_result.u8_value = eval_opcode_result.u8_value;
+		is_waiting = eval_opcode_result.is_waiting;
 		is_ins_done = eval_opcode_result.is_opc_done;
 	}
 	
-	if (is_ins_done == 1) {
+	if (is_ins_done | is_waiting) {
 		step_cpu_phase = 0;
 	} else {
 		step_cpu_phase = (pc == 0) ? 0 : (step_cpu_phase + 1);  // stop if PC == 0
@@ -98,10 +105,11 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 typedef struct gpu_step_result_t {
 	uint2_t color;
 	uint1_t is_active_fill;
+	uint1_t is_new_frame;
 } gpu_step_result_t;
 
 gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint32_t vram_address, uint2_t vram_value) {
-	static gpu_step_result_t result = {0, 0};
+	static gpu_step_result_t result = {0, 0, 0};
 	static uint4_t vram_code = 0;
 	static uint32_t adjusted_vram_address;
 	
@@ -173,10 +181,30 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
 	result.is_active_fill = is_fill_active;
+	result.is_new_frame = pixel_counter == 0 ? 1 : 0;
 
 	return result;
 }
 
+
+uint16_t vector_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write) {
+	static uint16_t screen_vector = 0;
+	
+	if (is_device_ram_write) {
+		if (device_ram_address == 0x20) {
+			screen_vector &= 0x00FF;
+			screen_vector |= ((uint16_t)(device_ram_value) << 8);
+			printf("screen_vector 0x%X\n", screen_vector);
+		}
+		else if (device_ram_address == 0x21) {
+			screen_vector &= 0xFF00;
+			screen_vector |= ((uint16_t)(device_ram_value));
+			printf("screen_vector 0x%X\n", screen_vector);
+		}
+	}
+	
+	return screen_vector;
+}
 
 uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write, uint2_t gpu_step_color) {
 	static uint12_t color0 = 0xFFF;
@@ -282,6 +310,7 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint1_t is_active_fill = 0;
 	static uint1_t is_ram_write = 0;
 	static uint16_t ram_address = 0;
+	static uint16_t screen_vector = 0;
 	static uint8_t ram_write_value = 0;
 	static uint8_t ram_read_value = 0;
 	static uint8_t device_ram_address = 0;
@@ -304,7 +333,7 @@ uint16_t uxn_eval(uint16_t input) {
 		ram_write_value = boot_step_result.rom_byte;
 		is_booted = boot_step_result.is_finished;
 	} else if (~is_active_fill) {
-		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value, device_ram_read_value);
+		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
 		is_ram_write = cpu_step_result.is_ram_write;
 		ram_address = cpu_step_result.ram_address;
 		device_ram_address = cpu_step_result.device_ram_address;
@@ -331,6 +360,7 @@ uint16_t uxn_eval(uint16_t input) {
 	gpu_step_result = step_gpu(is_active_drawing_area, is_vram_write, vram_write_layer, vram_address, vram_value);
 	is_active_fill = gpu_step_result.is_active_fill;
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_step_result.color);
+	screen_vector = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);
 	
 	main_clock_cycle += 1;
 	return uxn_eval_result;
