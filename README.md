@@ -5,6 +5,9 @@ Very early work in progress implementation of [Varvara / UXN](https://100r.co/si
 Currently two ROMs are available as C arrays within `.h` files in the `roms/` directory:
 - `fill_test.h` (draws a series of rectangles using the fill command)
 - `mandelbrot_test.h` (draws a mandelbrot set image, one pixel at a time)
+- `bounce.h` uses screen vectors to move a bouncing ball once per frame
+- `cube3d.h` draws a 3D spinning cube (not working yet) 
+- `star.h` draws 3 rotating stars, with UXN character sprites in the center (not working yet) 
 
 To use a different ROM, just change the import statement in `uxn.c` to import the correct ROM.
 

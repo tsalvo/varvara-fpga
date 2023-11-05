@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/bounce.h"
+#include "roms/mandelbrot_fast.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 
@@ -144,6 +144,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		fill_layer = vram_write_layer;
 		fill_color = vram_value;
 		fill_pixels_remaining = 143999;
+		printf("NEW FILL: x0=0x%X y0=0x%X x1=0x%X y1=0x%X color=0x%X\n", fill_x0, fill_y0, fill_x1, fill_y1, fill_color);
 	}
 	
 	is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
@@ -174,14 +175,15 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	// Pixel Counter
 	if (pixel_counter == 143999) { // 400x360
 		pixel_counter = 0;
+		result.is_new_frame = 1;
 	} else if (is_active_drawing_area) {
+		result.is_new_frame = 0;
 		pixel_counter += 1;
 		fill_pixels_remaining = fill_pixels_remaining == 0 ? 0 : fill_pixels_remaining - 1;
 	}
 		
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
 	result.is_active_fill = is_fill_active;
-	result.is_new_frame = pixel_counter == 0 ? 1 : 0;
 
 	return result;
 }

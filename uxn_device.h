@@ -260,7 +260,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else {
 		if (is_sprite_port) { // SPRITE
-			screen_blit_result_t screen_blit_result = screen_blit(phase - 11, ctrl, auto_advance, x, y, ram_addr, previous_ram_read);
+			screen_blit_result_t screen_blit_result = screen_blit(phase - 0x11, ctrl, auto_advance, x, y, ram_addr, previous_ram_read);
 			result.is_device_ram_write = 0;
 			result.device_ram_address = 0;
 			result.is_vram_write = screen_blit_result.is_vram_write;
