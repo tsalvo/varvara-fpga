@@ -207,7 +207,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x0A) {
 		if (is_pixel_port) {  // PIXEL, assume single pixel mode
-			if (auto_advance >> 1 & 0x01) { // auto Y
+			if ((auto_advance >> 1) & 0x01) { // auto Y
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2A;
 				result.u8_value = (uint8_t)(y >> 8); // y (hi)
@@ -219,7 +219,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x0B) {
 		if (is_pixel_port) {  // PIXEL, assume single pixel mode
-			if (auto_advance >> 1 & 0x01) { // auto Y
+			if ((auto_advance >> 1) & 0x01) { // auto Y
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2B;
 				result.u8_value = (uint8_t)(y); // y (lo)
