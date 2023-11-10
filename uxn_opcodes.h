@@ -2271,7 +2271,7 @@ opcode_result_t sth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	}
 	else if (phase == 3) {
 		result.is_stack_index_flipped = 1;
-		result.sp_relative_shift = 2;
+		result.sp_relative_shift = 1;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.u8_value = t8; // set T
