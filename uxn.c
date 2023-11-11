@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/mandelbrot_fast.h"
+#include "roms/star.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 
@@ -117,17 +117,14 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint32_t fill_pixels_remaining;
 	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
 	static uint2_t fill_color;
-	static uint1_t is_fill_active, is_fill_left, is_fill_top, is_fill_pixel, is_fill_pixel0, is_fill_pixel1, fill_layer, fill_isect_l, fill_isect_r, fill_isect_t, fill_isect_b, is_fill_code;
+	static uint1_t is_fill_active, is_fill_left, is_fill_top, is_fill_pixel0, is_fill_pixel1, fill_layer, is_fill_code;
 	
 	static uint2_t fg_pixel_color, bg_pixel_color;
 	static uint32_t pixel_counter = 0; // 400x360, max = 143999
 	static uint16_t x, y;
 	
-	adjusted_vram_address = vram_address > 143999 ? 0 : vram_address;
 	vram_code = (uint4_t)(vram_address >> 28);
 	is_fill_code = vram_code == 0xF ? 1 : 0;
-	y = pixel_counter / 400;
-	x = pixel_counter - (y * 400);
 	
 	// 0b11110000 00TL00PP PPPPPPPP PPPPPPPP (P = pixel number)
 	if (is_fill_code & ~is_fill_active) {
@@ -143,45 +140,39 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		fill_x0 = is_fill_left ? 0 : fill_x0;
 		fill_layer = vram_write_layer;
 		fill_color = vram_value;
-		fill_pixels_remaining = 143999;
+		fill_pixels_remaining = (fill_x1 - fill_x0) * (fill_y1 - fill_y0);
+		y = fill_y0;
+		x = fill_x0;
 		printf("NEW FILL: x0=0x%X y0=0x%X x1=0x%X y1=0x%X color=0x%X\n", fill_x0, fill_y0, fill_x1, fill_y1, fill_color);
 	}
 	
-	is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
+	adjusted_vram_address = is_fill_active ? (((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x))) : vram_address & 0x0003FFFF;
 	
-	fill_isect_l = x > fill_x0;
-	fill_isect_r = x < fill_x1;
-	fill_isect_t = y > fill_y0;
-	fill_isect_b = y < fill_y1;
+	is_fill_left = (x == fill_x1) ? 1 : 0;
+	y = is_fill_left ? (y + 1) : y;
+	x = is_fill_left ? fill_x0 : x + 1;
 	
-	is_fill_pixel = is_fill_active & fill_isect_l & fill_isect_r & fill_isect_t & fill_isect_b;
-	is_fill_pixel0 = is_fill_pixel & (~fill_layer);
-	is_fill_pixel1 = is_fill_pixel & fill_layer;
+	is_fill_pixel0 = is_fill_active & (~fill_layer);
+	is_fill_pixel1 = is_fill_active & fill_layer;
 	
 	bg_pixel_color = bg_vram_update(
 		pixel_counter,							                                           // read address
-		is_fill_pixel0 ? pixel_counter : (is_fill_active ? 0 : adjusted_vram_address),     // write address
+		adjusted_vram_address,                                                             // write address
 		is_fill_pixel0 ? fill_color : vram_value,					                       // write value
 		is_fill_pixel0 | (~is_fill_active & is_vram_write & (~vram_write_layer))		   // write enable
 	);
 	
 	fg_pixel_color = fg_vram_update(
 		pixel_counter,							                    					// read address
-		is_fill_pixel1 ? pixel_counter : (is_fill_active ? 0 : adjusted_vram_address),  // write address
+		adjusted_vram_address,                                                          // write address
 		is_fill_pixel1 ? fill_color : vram_value,										// write value
 		is_fill_pixel1 | (~is_fill_active & is_vram_write & vram_write_layer)		    // write enable
 	);
-
-	// Pixel Counter
-	if (pixel_counter == 143999) { // 400x360
-		pixel_counter = 0;
-		result.is_new_frame = 1;
-	} else if (is_active_drawing_area) {
-		result.is_new_frame = 0;
-		pixel_counter += 1;
-		fill_pixels_remaining = fill_pixels_remaining == 0 ? 0 : fill_pixels_remaining - 1;
-	}
-		
+	
+	fill_pixels_remaining = is_fill_active ? fill_pixels_remaining - 1 : 0;
+	is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
+	pixel_counter = (pixel_counter == 143999) ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
+	result.is_new_frame = (pixel_counter == 143999) ? 1 : 0;
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
 	result.is_active_fill = is_fill_active;
 
