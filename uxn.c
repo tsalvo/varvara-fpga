@@ -292,7 +292,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 // 16-bit input message format:
 // 0001 UDLR SSBA YXLR  Controls
 // 0010 ---- ---- -PHV  (P)Visible Pixel, (H)HBLANK, (V)VBLANK
-#pragma MAIN_MHZ uxn_eval 18.0
+#pragma MAIN_MHZ uxn_eval 49.152
 uint16_t uxn_eval(uint16_t input) {
 	static uint32_t main_clock_cycle = 0;
 	static uint4_t input_code;
