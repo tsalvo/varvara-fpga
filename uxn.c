@@ -288,21 +288,26 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	return result;
 }
 
-// Top-level module
 // 16-bit input message format:
 // 0001 UDLR SSBA YXLR  Controls
 // 0010 ---- ---- -PHV  (P)Visible Pixel, (H)HBLANK, (V)VBLANK
-#pragma MAIN_MHZ uxn_eval 49.152
-uint16_t uxn_eval(uint16_t input) {
+#pragma MAIN_MHZ uxn_top 49.152
+uint16_t uxn_top(
+	uint4_t code,
+	uint1_t is_visible_pixel,
+	uint1_t rom_load_valid_byte,
+	uint16_t rom_load_address,
+	uint8_t rom_load_value
+) {
 	static uint32_t main_clock_cycle = 0;
 	static uint4_t input_code;
 	static uint16_t uxn_eval_result = 0;
-	static uint1_t is_active_drawing_area = 0, is_booted = 0;
+	static uint1_t is_booted = 0;
 	
 	static gpu_step_result_t gpu_step_result;
 	static uint1_t is_active_fill = 0;
 	static uint1_t is_ram_write = 0;
-	static uint16_t ram_address = 0;
+	static uint16_t ram_address = 0x00FF;
 	static uint16_t screen_vector = 0;
 	static uint8_t ram_write_value = 0;
 	static uint8_t ram_read_value = 0;
@@ -313,18 +318,18 @@ uint16_t uxn_eval(uint16_t input) {
 	static uint1_t vram_write_layer = 0;
 	static uint32_t vram_address = 0;
 	static uint2_t vram_value = 0;
-	input_code = input >> 12;
-		
-	if (input_code == 0x2) {
-		is_active_drawing_area = input >> 2 & 0x0001;
-	} 
 	
 	if (~is_booted) {
-		boot_step_result_t boot_step_result = step_boot();
-		is_ram_write = boot_step_result.is_valid_byte;
-		ram_address = boot_step_result.ram_address;
-		ram_write_value = boot_step_result.rom_byte;
-		is_booted = boot_step_result.is_finished;
+		is_ram_write = rom_load_valid_byte;
+		ram_address += rom_load_valid_byte ? 1 : 0;
+		ram_write_value = rom_load_value;
+		is_booted = ram_address > 0x08FF; // (2048 + 0x100)
+		// OLD (C-Array-Style)
+		// boot_step_result_t boot_step_result = step_boot();
+		// is_ram_write = boot_step_result.is_valid_byte;
+		// ram_address = boot_step_result.ram_address;
+		// ram_write_value = boot_step_result.rom_byte;
+		// is_booted = boot_step_result.is_finished;
 	} else if (~is_active_fill) {
 		cpu_step_result_t cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
 		is_ram_write = cpu_step_result.is_ram_write;
@@ -350,7 +355,7 @@ uint16_t uxn_eval(uint16_t input) {
 		is_device_ram_write
 	);
 	
-	gpu_step_result = step_gpu(is_active_drawing_area, is_vram_write, vram_write_layer, vram_address, vram_value);
+	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, vram_address, vram_value);
 	is_active_fill = gpu_step_result.is_active_fill;
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_step_result.color);
 	screen_vector = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);

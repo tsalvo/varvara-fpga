@@ -13,7 +13,7 @@ begin
 	-- The Device Under Test (DUT)
 	i_top : entity work.top
 	port map(
-		clk_18p0 => test_clk,
+		clk_49p192 => test_clk,
 		uxn_eval_input => test_input
 	);
 	test_clk <= not test_clk after clk_period / 2;
