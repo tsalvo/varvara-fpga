@@ -300,7 +300,7 @@ uint16_t uxn_top(
 	uint8_t rom_load_value
 ) {
 	static uint32_t main_clock_cycle = 0;
-	static uint4_t input_code;
+	static uint24_t boot_check = 0;
 	static uint16_t uxn_eval_result = 0;
 	static uint1_t is_booted = 0;
 	
@@ -322,8 +322,9 @@ uint16_t uxn_top(
 	if (~is_booted) {
 		is_ram_write = rom_load_valid_byte;
 		ram_address += rom_load_valid_byte ? 1 : 0;
+		boot_check = rom_load_valid_byte ? 0 : ((ram_address > 0x00FF) ? boot_check + 1 : 0);
 		ram_write_value = rom_load_value;
-		is_booted = ram_address > 0x08FF; // (2048 + 0x100)
+		is_booted = (boot_check == 0xFFFFFF) ? 1 : 0;
 		// OLD (C-Array-Style)
 		// boot_step_result_t boot_step_result = step_boot();
 		// is_ram_write = boot_step_result.is_valid_byte;
