@@ -8,12 +8,12 @@ end entity;
 architecture sim of top_test is
 	  signal test_clk    : std_logic := '0';
 	  signal test_input : unsigned(15 downto 0) := x"2004";
-	constant clk_period : time := 21 ns;
+	constant clk_period : time := 677 ns;
 begin
 	-- The Device Under Test (DUT)
 	i_top : entity work.top
 	port map(
-		clk_49p192 => test_clk,
+		clk_14p746 => test_clk,
 		uxn_eval_input => test_input
 	);
 	test_clk <= not test_clk after clk_period / 2;

@@ -288,12 +288,8 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	return result;
 }
 
-// 16-bit input message format:
-// 0001 UDLR SSBA YXLR  Controls
-// 0010 ---- ---- -PHV  (P)Visible Pixel, (H)HBLANK, (V)VBLANK
-#pragma MAIN_MHZ uxn_top 49.152
+#pragma MAIN_MHZ uxn_top 14.746
 uint16_t uxn_top(
-	uint4_t code,
 	uint1_t is_visible_pixel,
 	uint1_t rom_load_valid_byte,
 	uint16_t rom_load_address,
