@@ -33,7 +33,7 @@ typedef struct opcode_result_t {
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
-	uint32_t vram_address;
+	uint24_t vram_address;
 
 	uint8_t u8_value; // for stack_value, ram_value, vram_value, device_ram_value
 	uint16_t u16_value; // for pc value and ram address
@@ -49,7 +49,7 @@ typedef struct eval_opcode_result_t {
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
-	uint32_t vram_address;
+	uint24_t vram_address;
 	
 	uint1_t is_device_ram_write;
 	uint8_t device_ram_address;

@@ -5,8 +5,8 @@
 #define SCREEN_RAM_SIZE 144000
 
 uint2_t bg_vram_update(
-	uint32_t read_address, 
-	uint32_t write_address, 
+	uint24_t read_address, 
+	uint24_t write_address, 
 	uint2_t write_value, 
 	uint1_t write_enable
 ) {
@@ -14,9 +14,9 @@ uint2_t bg_vram_update(
 	static uint32_t waddr = 0;
 	static uint32_t wdata = 0;
 	static uint32_t raddr = 0;
-	raddr = read_address;
-	waddr = write_address;
-	wdata = write_value;
+	raddr = (uint32_t)read_address;
+	waddr = (uint32_t)write_address;
+	wdata = (uint32_t)write_value;
 	
 	uint2_t rdata = bg_vram_RAM_DP_RF_1(
 		raddr,			// read address
@@ -29,8 +29,8 @@ uint2_t bg_vram_update(
 }
 
 uint2_t fg_vram_update(
-	uint32_t read_address, 
-	uint32_t write_address, 
+	uint24_t read_address, 
+	uint24_t write_address, 
 	uint2_t write_value, 
 	uint1_t write_enable
 ) {
@@ -38,9 +38,9 @@ uint2_t fg_vram_update(
 	static uint32_t waddr = 0;
 	static uint32_t wdata = 0;
 	static uint32_t raddr = 0;
-	raddr = read_address;
-	waddr = write_address;
-	wdata = write_value;
+	raddr = (uint32_t)read_address;
+	waddr = (uint32_t)write_address;
+	wdata = (uint32_t)write_value;
 	
 	uint2_t rdata = fg_vram_RAM_DP_RF_1(
 		raddr,			// read address

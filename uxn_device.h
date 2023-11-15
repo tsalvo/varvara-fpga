@@ -22,11 +22,11 @@ typedef struct device_out_result_t {
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
-	uint32_t vram_address;
+	uint24_t vram_address;
 	
 	uint16_t ram_address; // TODO: look into sharing with vram_address
 	
-	uint8_t u8_value;
+	uint8_t u8_value; // device ram write value, RAM write value
 	
 	uint1_t is_deo_done;
 } device_out_result_t;
@@ -37,7 +37,7 @@ typedef struct screen_blit_result_t {
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
-	uint32_t vram_address;
+	uint24_t vram_address;
 	
 	uint8_t u8_value;
 	
@@ -85,7 +85,7 @@ screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advan
 }
 
 device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
-	static uint32_t vram_addr;
+	static uint24_t vram_addr;
 	static uint16_t x, y, ram_addr;
 	static uint8_t ctrl, auto_advance;
 	static uint4_t color;
@@ -154,15 +154,15 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.u8_value = (uint8_t)(color & 0x3);
 			result.vram_write_layer = layer;
 			if (ctrl_mode) { // fill mode
-				vram_addr = ((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x));
-				vram_addr &= 0x0003FFFF;
-				vram_addr |= (flip_y ? 0x00100000 : 0);
-				vram_addr |= (flip_x ? 0x00200000 : 0);
-				vram_addr |= 0xF0000000;
+				vram_addr = ((uint24_t)(y) * (uint24_t)(400)) + ((uint24_t)(x));
+				vram_addr &= 0x03FFFF;
+				vram_addr |= (flip_y ? 0x080000 : 0);
+				vram_addr |= (flip_x ? 0x040000 : 0);
+				vram_addr |= 0xF00000;
 				result.is_vram_write = 0;
 				result.vram_address = vram_addr;
 			} else { // single pixel mode
-				result.vram_address = ((uint32_t)(y) * (uint32_t)(400)) + ((uint32_t)(x));
+				result.vram_address = ((uint24_t)(y) * (uint24_t)(400)) + ((uint24_t)(x));
 				result.is_vram_write = 1;
 			}
 		}
