@@ -8,6 +8,8 @@
 #include "uxn_stack.h"
 #pragma once
 #include "uxn_device.h"
+#pragma once
+#include "uxn_constants.h"
 
 /* Registers
 [ Z ][ Y ][ X ][ L ][ N ][ T ] <
@@ -70,7 +72,9 @@ opcode_result_t jci(uint8_t phase, uint16_t pc, uint8_t previous_stack_read, uin
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** JCI ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -107,7 +111,9 @@ opcode_result_t jmi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	static uint16_t tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** JMI ***\n************\n");
+		#endif
 		result.u16_value = pc;     // peek RAM (byte 1 of 2) at address equal to PC
 		result.is_opc_done = 0;
 	}
@@ -136,7 +142,9 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	static uint16_t tmp16 = 0;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** JSI ***\n************\n");
+		#endif
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = 2; 		// shift(2)
 		tmp16 = pc + 2;
@@ -179,7 +187,9 @@ opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	static opcode_result_t result;
 	
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** LIT ***\n************\n");
+		#endif
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = 1; 		// shift(1)
 		result.u16_value = pc; // peek RAM at at address equal to PC
@@ -210,7 +220,9 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	static opcode_result_t result;
 	
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** LIT2 ***\n************\n");
+		#endif
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = 2;
 		result.u16_value = pc;     // peek RAM (byte 1 of 2) at address equal to PC
@@ -249,7 +261,9 @@ opcode_result_t pop(uint8_t phase, uint8_t ins) {
 	// SET(1,-1)
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** POP ***\n************\n");
+		#endif
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 1, -1);
 		result.is_opc_done = 0;
@@ -266,7 +280,9 @@ opcode_result_t pop2(uint8_t phase, uint8_t ins) {
 	// SET(2,-2)
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** POP2 ***\n************\n");
+		#endif
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
 		result.is_opc_done = 0;
@@ -284,7 +300,9 @@ opcode_result_t ovr(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** OVR ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -322,7 +340,9 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** OVR2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -384,7 +404,9 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	static device_in_result_t device_in_result;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** DEI ***\n************\n");
+		#endif
 		has_written_to_t = 0;
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
@@ -392,17 +414,14 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		device_in_result.is_dei_done = 0;
 	}
 	else if (phase == 1) {
-		result.stack_address_sp_offset = 1; // get T
-	}
-	else if (phase == 2) {
-		t8 = previous_stack_read;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 1, 0);
 	}
 	else {
 		result.is_sp_shift = 0;
+		t8 = (phase == 2) ? previous_stack_read : t8;
 		if (~device_in_result.is_dei_done) {
-			device_in_result = device_in(t8, phase - 3, previous_device_ram_read);
+			device_in_result = device_in(t8, phase - 2, previous_device_ram_read);
 			result.device_ram_address = device_in_result.device_ram_address;
 		} else {
 			if (~has_written_to_t) {
@@ -427,7 +446,9 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	static device_in_result_t device_in_result;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** DEI2 ***\n************\n");
+		#endif
 		has_written_to_t = 0;
 		has_written_to_n = 0;
 		is_first_dei_done = 0;
@@ -439,15 +460,12 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		device_in_result.is_dei_done = 0;
 	}
 	else if (phase == 1) {
-		result.stack_address_sp_offset = 1; // get T
-	}
-	else if (phase == 2) {
-		t8 = previous_stack_read;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 1, 1);
 	}
 	else {
 		result.is_sp_shift = 0;
+		t8 = (phase == 2) ? previous_stack_read : t8;
 		dei_param = is_first_dei_done ? t8 + 1 : t8;
 		if (~is_first_dei_done | (has_written_to_t & ~is_second_dei_done)) {
 			device_in_result = device_in(dei_param, current_dei_phase, previous_device_ram_read);
@@ -487,7 +505,9 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	static opcode_result_t result;
 	static device_out_result_t device_out_result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** DEO ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -496,15 +516,13 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	}
 	else if (phase == 2) {
 		t8 = previous_stack_read;
-	}
-	else if (phase == 3) {
-		n8 = previous_stack_read;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
 	}
 	else {
 		result.is_sp_shift = 0;
-		device_out_result = device_out(t8, n8, phase - 4, previous_device_ram_read, previous_ram_read);
+		n8 = (phase == 3) ? previous_stack_read : n8;
+		device_out_result = device_out(t8, n8, phase - 3, previous_device_ram_read, previous_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
 		result.device_ram_address = device_out_result.device_ram_address;
 		result.u8_value = device_out_result.u8_value;
@@ -525,7 +543,9 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	static opcode_result_t result;
 	static device_out_result_t device_out_result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** DEO2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 		is_second_deo = 0;
@@ -540,15 +560,13 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	}
 	else if (phase == 3) {
 		n8 = previous_stack_read;
-	}
-	else if (phase == 4) {
-		l8 = previous_stack_read;
 		result.stack_address_sp_offset = 0;
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 3, -3);
 	}
 	else {
 		result.is_sp_shift = 0;
+		l8 = (phase == 4) ? previous_stack_read : l8;
 		deo_param0 = is_second_deo ? t8 + 1 : t8;
 		deo_param1 = is_second_deo ? n8 : l8;
 		device_out_result = device_out(deo_param0, deo_param1, current_deo_phase, previous_device_ram_read, previous_ram_read);
@@ -576,7 +594,9 @@ opcode_result_t jmp(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 	static int8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** JMP ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -604,7 +624,9 @@ opcode_result_t jmp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** JMP2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -636,7 +658,9 @@ opcode_result_t jcn(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** JCN ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -668,7 +692,9 @@ opcode_result_t jcn2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** JCN2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -704,7 +730,9 @@ opcode_result_t jsr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** JSR ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -743,7 +771,9 @@ opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	static uint16_t t16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** JSR2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -788,7 +818,9 @@ opcode_result_t add(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** ADD ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -820,7 +852,9 @@ opcode_result_t add2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** ADD2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -867,7 +901,9 @@ opcode_result_t and(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** AND ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -899,7 +935,9 @@ opcode_result_t and2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** AND2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -946,7 +984,9 @@ opcode_result_t ora(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** ORA ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -978,7 +1018,9 @@ opcode_result_t ora2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** ORA2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1025,7 +1067,9 @@ opcode_result_t eor(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** EOR ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1057,7 +1101,9 @@ opcode_result_t eor2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** EOR2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1104,7 +1150,9 @@ opcode_result_t equ(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** EQU ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1136,7 +1184,9 @@ opcode_result_t equ2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** EQU2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1178,7 +1228,9 @@ opcode_result_t neq(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** NEQ ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1210,7 +1262,9 @@ opcode_result_t neq2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** NEQ2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1252,7 +1306,9 @@ opcode_result_t inc(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** INC ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1281,7 +1337,9 @@ opcode_result_t inc2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** INC2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1320,7 +1378,9 @@ opcode_result_t lda(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	static uint8_t tmp8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** LDA ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1359,7 +1419,9 @@ opcode_result_t ldz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	static uint8_t t8, tmp8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** LDZ ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1395,7 +1457,9 @@ opcode_result_t ldz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	static uint16_t tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** LDZ2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1439,7 +1503,9 @@ opcode_result_t stz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** STZ ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1473,7 +1539,9 @@ opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static opcode_result_t result;
 	
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** STZ2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1514,7 +1582,9 @@ opcode_result_t ldr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 	static uint8_t t8, tmp8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** LDR ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1550,7 +1620,9 @@ opcode_result_t ldr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	static uint16_t tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** LDR2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1594,7 +1666,9 @@ opcode_result_t str1(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** STR ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1627,7 +1701,9 @@ opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	static uint16_t n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** STR2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1668,7 +1744,9 @@ opcode_result_t lda2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	static uint16_t t16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** LDA2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1716,7 +1794,9 @@ opcode_result_t gth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** ADD ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1748,7 +1828,9 @@ opcode_result_t gth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** GTH2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1790,7 +1872,9 @@ opcode_result_t lth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** LTH ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1822,7 +1906,9 @@ opcode_result_t lth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** LTH2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1864,7 +1950,9 @@ opcode_result_t mul(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** MUL ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1896,7 +1984,9 @@ opcode_result_t mul2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** MUL2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -1943,7 +2033,9 @@ opcode_result_t div(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** DIV ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -1975,7 +2067,9 @@ opcode_result_t div2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** DIV2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2022,7 +2116,9 @@ opcode_result_t nip(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** NIP ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2051,7 +2147,9 @@ opcode_result_t nip2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** NIP2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2089,7 +2187,9 @@ opcode_result_t sft(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8, tmp8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** SFT ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2123,7 +2223,9 @@ opcode_result_t sft2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** SFT2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2166,7 +2268,9 @@ opcode_result_t sta(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** STA ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2203,7 +2307,9 @@ opcode_result_t sta2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** STA2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2249,7 +2355,9 @@ opcode_result_t sth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** STH ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2283,7 +2391,9 @@ opcode_result_t sth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** STH2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2325,7 +2435,9 @@ opcode_result_t sub(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** SUB ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2357,7 +2469,9 @@ opcode_result_t sub2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, tmp16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** SUB2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2404,7 +2518,9 @@ opcode_result_t swp(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** SWP ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2440,7 +2556,9 @@ opcode_result_t swp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** SWP2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2495,7 +2613,9 @@ opcode_result_t rot(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8, n8, l8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** ROT ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2537,7 +2657,9 @@ opcode_result_t rot2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16, n16, l16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** ROT2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2606,7 +2728,9 @@ opcode_result_t dup(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n**** DUP ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 	}
@@ -2639,7 +2763,9 @@ opcode_result_t dup2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static uint16_t t16;
 	static opcode_result_t result;
 	if (phase == 0) {
+		#if DEBUG
 		printf("************\n*** DUP2 ***\n************\n");
+		#endif
 		result.stack_address_sp_offset = 2; // get T2 (byte 1 of 2)
 		result.is_opc_done = 0;
 	}
@@ -2695,9 +2821,11 @@ eval_opcode_result_t eval_opcode_phased(
 	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	opc = ((ins & 0x1F) > 0) ? ((uint12_t)(ins & 0x3F)) : ((uint12_t)(ins) << 4);
 	is_wait = 0;
+	#if DEBUG
 	printf("        EVAL OPCODE: INS = 0x%X, OPC = 0x%X, phase = 0x%X\n", ins, opc, phase);
+	#endif
 	
-	if      (opc == 0x000 /* BRK   */) { printf("************\n**** BRK ***\n************\n"); is_wait = 1; opc_result.is_opc_done = 1; }
+	if      (opc == 0x000 /* BRK   */) { is_wait = 1; opc_result.is_opc_done = 1; }
 	else if (opc == 0x200 /* JCI   */) { opc_result = jci(phase, pc, stack_read_value, previous_ram_read); }
 	else if (opc == 0x400 /* JMI   */) { opc_result = jmi(phase, pc, previous_ram_read); }
 	else if (opc == 0x600 /* JSI   */) { opc_result = jsi(phase, pc, previous_ram_read); }
@@ -2767,7 +2895,6 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x03E /* EOR2  */) { opc_result = eor2(phase, ins, stack_read_value); }
 	else if (opc == 0x01F /* SFT   */) { opc_result = sft(phase, ins, stack_read_value); }
 	else if (opc == 0x03F /* SFT2  */) { opc_result = sft2(phase, ins, stack_read_value); }
-	else { printf("************\n ERR 0x%X \n************\n", opc); }
 	
 	stack_index = ((ins & 0x40) > 0) ? 1 : 0;
 	stack_index ^= opc_result.is_stack_index_flipped;

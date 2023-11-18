@@ -4,6 +4,7 @@
 #include "roms/star.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
+#include "uxn_constants.h"
 
 // RULES:
 // - cannot write to a global variable from more than one function (unless you use clock domain crossing)
@@ -65,7 +66,9 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	pc = (use_vector & is_waiting) ? vector : pc;
 	is_waiting = use_vector ? 0 : is_waiting;
 	
+	#if DEBUG
 	printf("Step CPU phase = 0x%X, pc = 0x%X, is_waiting = 0x%X, use_vector = 0x%X, vector = 0x%X\n", step_cpu_phase, pc, is_waiting, use_vector, vector);
+	#endif
 	
 	if (step_cpu_phase == 0) {
 		is_ins_done = 0;
@@ -143,7 +146,9 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		fill_pixels_remaining = (fill_x1 - fill_x0) * (fill_y1 - fill_y0);
 		y = fill_y0;
 		x = fill_x0;
+		#if DEBUG
 		printf("NEW FILL: x0=0x%X y0=0x%X x1=0x%X y1=0x%X color=0x%X\n", fill_x0, fill_y0, fill_x1, fill_y1, fill_color);
+		#endif
 	}
 	
 	adjusted_vram_address = is_fill_active ? (((uint24_t)(y) * (uint24_t)(400)) + ((uint24_t)(x))) : (vram_address & 0x03FFFF);
@@ -187,12 +192,10 @@ uint16_t vector_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint
 		if (device_ram_address == 0x20) {
 			screen_vector &= 0x00FF;
 			screen_vector |= ((uint16_t)(device_ram_value) << 8);
-			printf("screen_vector 0x%X\n", screen_vector);
 		}
 		else if (device_ram_address == 0x21) {
 			screen_vector &= 0xFF00;
 			screen_vector |= ((uint16_t)(device_ram_value));
-			printf("screen_vector 0x%X\n", screen_vector);
 		}
 	}
 	
