@@ -539,7 +539,7 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	// t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO((t + 1), n)
 	static uint8_t t8, n8, l8, current_deo_phase, deo_param0, deo_param1;
-	static uint1_t is_second_deo = 0;
+	static uint1_t is_second_deo = 0, is_phase_3 = 0, is_phase_4 = 0;
 	static opcode_result_t result;
 	static device_out_result_t device_out_result;
 	if (phase == 0) {
@@ -552,23 +552,21 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		current_deo_phase = 0;
 	}
 	else if (phase == 1) {
-		result.stack_address_sp_offset = 2; // get N
+		result.stack_address_sp_offset = 3; // get L
 	}
 	else if (phase == 2) {
-		result.stack_address_sp_offset = 3; // get L
+		result.stack_address_sp_offset = 2; // get N
 		t8 = previous_stack_read;
-	}
-	else if (phase == 3) {
-		n8 = previous_stack_read;
-		result.stack_address_sp_offset = 0;
-		result.is_sp_shift = 1;
-		result.sp_relative_shift = sp_relative_shift(ins, 3, -3);
+		result.sp_relative_shift = sp_relative_shift(ins, 3, -3); // for next cycle
 	}
 	else {
-		result.is_sp_shift = 0;
-		l8 = (phase == 4) ? previous_stack_read : l8;
+		is_phase_3 = (phase == 3) ? 1 : 0;
+		is_phase_4 = (phase == 4) ? 1 : 0;
+		l8 = is_phase_3 ? previous_stack_read : l8;
+		n8 = is_phase_4 ? previous_stack_read : n8;
 		deo_param0 = is_second_deo ? t8 + 1 : t8;
 		deo_param1 = is_second_deo ? n8 : l8;
+		result.is_sp_shift = is_phase_3;		
 		device_out_result = device_out(deo_param0, deo_param1, current_deo_phase, previous_device_ram_read, previous_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
 		result.device_ram_address = device_out_result.device_ram_address;
