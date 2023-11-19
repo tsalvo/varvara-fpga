@@ -2588,7 +2588,6 @@ opcode_result_t swp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.u8_value = (uint8_t)(n16 >> 8); // set T2 (high byte)
 	}
 	else if (phase == 7) {
-		result.is_sp_shift = 0;
 		result.stack_address_sp_offset = 3;
 		result.u8_value = (uint8_t)(t16);	// set N2 (low byte)
 	}
