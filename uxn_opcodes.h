@@ -781,27 +781,25 @@ opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	else if (phase == 2) {
 		t16 = (uint16_t)(previous_stack_read);
 		t16 <<= 8;
-	}
-	else if (phase == 3) {
-		t16 |= ((uint16_t)(previous_stack_read));
 		result.is_sp_shift = 1;
 		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
 	}
-	else if (phase == 4) {
+	else if (phase == 3) {
+		t16 |= ((uint16_t)(previous_stack_read));
 		result.is_stack_index_flipped = 1;
 		result.sp_relative_shift = 2;
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
 		result.u8_value = (uint8_t)(pc);		// set T2 (low byte)
 	}
-	else if (phase == 5) {
+	else if (phase == 4) {
 		result.is_sp_shift = 0;
 		result.stack_address_sp_offset = 2;
 		result.u8_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
 		result.is_pc_updated = 1;
 		result.u16_value = t16; // pc = t16
 	}
-	else if (phase == 6) {
+	else if (phase == 5) {
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
