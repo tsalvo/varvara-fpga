@@ -1,7 +1,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
 
-#include "roms/star.h"
+#include "roms/bounce.h"
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 #include "uxn_constants.h"
@@ -143,7 +143,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		fill_x0 = is_fill_left ? 0 : fill_x0;
 		fill_layer = vram_write_layer;
 		fill_color = vram_value;
-		fill_pixels_remaining = (fill_x1 - fill_x0) * (fill_y1 - fill_y0);
+		fill_pixels_remaining = (fill_x1 - fill_x0 + 1) * (fill_y1 - fill_y0 + 1);
 		y = fill_y0;
 		x = fill_x0;
 		#if DEBUG
@@ -291,7 +291,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	return result;
 }
 
-#pragma MAIN_MHZ uxn_top 14.746
+#pragma MAIN_MHZ uxn_top 13.824
 uint16_t uxn_top(
 	uint1_t is_visible_pixel,
 	uint1_t rom_load_valid_byte,
@@ -325,7 +325,7 @@ uint16_t uxn_top(
 		ram_address += (rom_load_valid_byte | is_booted) ? 1 : 0;
 		ram_write_value = is_booted ? 0 : rom_load_value;
 		
-		// OLD (C-Array-Style)
+		// // OLD (C-Array-Style)
 		// boot_step_result_t boot_step_result = step_boot();
 		// is_ram_write = boot_step_result.is_valid_byte;
 		// ram_address = boot_step_result.ram_address;
