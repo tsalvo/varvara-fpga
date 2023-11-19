@@ -177,7 +177,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	fill_pixels_remaining = is_fill_active ? fill_pixels_remaining - 1 : 0;
 	is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
 	pixel_counter = (pixel_counter == 143999) ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
-	result.is_new_frame = (pixel_counter == 0) ? 1 : 0;
+	result.is_new_frame = (pixel_counter == 143999) ? 1 : 0;
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
 	result.is_active_fill = is_fill_active;
 
