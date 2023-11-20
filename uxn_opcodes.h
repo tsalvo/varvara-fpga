@@ -38,7 +38,7 @@ typedef struct opcode_result_t {
 	uint1_t vram_write_layer;
 	uint24_t vram_address;
 
-	uint8_t u8_value; // for stack_value, ram_value, vram_value, device_ram_value
+	uint8_t u8_value; // for 8-bit stack writes, ram_value, vram_value, device_ram_value
 	uint16_t u16_value; // for pc value, 16-bit stack writes, and ram address
 		
 	uint1_t is_opc_done;
@@ -2608,7 +2608,7 @@ eval_opcode_result_t eval_opcode_phased(
 		}
 	}
 	
-	stack_address = ((uint12_t)(stack_index ? sp1 : sp0)) - ((uint12_t)(opc_result.stack_address_sp_offset));
+	stack_address = ((uint9_t)(stack_index ? sp1 : sp0)) - ((uint9_t)(opc_result.stack_address_sp_offset));
 	stack_address += (stack_index ? 256 : 0);
 	
 	previous_stack_read = stack_ram_update(
