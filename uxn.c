@@ -1,7 +1,8 @@
 #include "uintN_t.h"  // uintN_t types for any N
 #include "intN_t.h"   // intN_t types for any N
-
+#if DEBUG
 #include "roms/bounce.h"
+#endif
 #include "uxn_opcodes.h"
 #include "uxn_ram_main.h"
 #include "uxn_constants.h"
@@ -333,7 +334,6 @@ uint16_t uxn_top(
 		ram_address += (rom_load_valid_byte | is_booted) ? 1 : 0;
 		ram_write_value = is_booted ? 0 : rom_load_value;
 #endif
-		
 	} else if (~is_active_fill) {
 		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
 		is_ram_write = cpu_step_result.is_ram_write;
