@@ -319,18 +319,21 @@ uint16_t uxn_top(
 	static uint2_t vram_value = 0;
 	
 	if (~is_booted) {
+#if DEBUG
+		// OLD (C-Array-Style)
+		boot_step_result_t boot_step_result = step_boot();
+		is_ram_write = boot_step_result.is_valid_byte;
+		ram_address = boot_step_result.ram_address;
+		ram_write_value = boot_step_result.rom_byte;
+		is_booted = boot_step_result.is_finished;
+#else
 		boot_check = rom_load_valid_byte ? 0 : ((ram_address > 0x00FF) ? boot_check + 1 : 0);
 		is_booted = (boot_check == 0xFFFFFF) ? 1 : 0;
 		is_ram_write = (rom_load_valid_byte | is_booted);
 		ram_address += (rom_load_valid_byte | is_booted) ? 1 : 0;
 		ram_write_value = is_booted ? 0 : rom_load_value;
+#endif
 		
-		// // OLD (C-Array-Style)
-		// boot_step_result_t boot_step_result = step_boot();
-		// is_ram_write = boot_step_result.is_valid_byte;
-		// ram_address = boot_step_result.ram_address;
-		// ram_write_value = boot_step_result.rom_byte;
-		// is_booted = boot_step_result.is_finished;
 	} else if (~is_active_fill) {
 		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
 		is_ram_write = cpu_step_result.is_ram_write;
