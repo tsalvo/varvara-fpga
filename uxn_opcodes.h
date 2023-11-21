@@ -32,6 +32,7 @@ typedef struct opcode_result_t {
 	uint1_t is_ram_write;
 	
 	uint1_t is_device_ram_write;
+	uint1_t is_device_ram_16bit;
 	uint8_t device_ram_address;
 	
 	uint1_t is_vram_write;
@@ -55,6 +56,7 @@ typedef struct eval_opcode_result_t {
 	uint24_t vram_address;
 	
 	uint1_t is_device_ram_write;
+	uint1_t is_device_ram_16bit;
 	uint8_t device_ram_address;
 	
 	uint8_t u8_value; // for ram_value, vram_value, device_ram_value
@@ -369,7 +371,7 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint16_t previous_stack_read) {
 	return result;
 }
 
-opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
+opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint16_t previous_device_ram_read) {
 	// t=T;            SET(1, 0) T = DEI(t);
 	static uint1_t has_written_to_t;
 	static uint8_t t8;
@@ -383,6 +385,7 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		result.stack_address_sp_offset = 1; // get T
 		result.is_opc_done = 0;
 		result.is_device_ram_write = 0;
+		result.is_device_ram_16bit = 0;
 		device_in_result.is_dei_done = 0;
 	}
 	else if (phase == 1) {
@@ -411,7 +414,7 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	return result;
 }
 
-opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
+opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint16_t previous_device_ram_read) {
 	// t=T;            SET(1, 1) T = DEI(t + 1); N = DEI(t);
 	static uint8_t t8, current_dei_phase, dei_param;
 	static uint1_t is_first_dei_done, is_second_dei_done, has_written_to_t, has_written_to_n;
@@ -428,6 +431,7 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		current_dei_phase = 0;
 		result.stack_address_sp_offset = 1; // get T
 		result.is_device_ram_write = 0;
+		result.is_device_ram_16bit = 0;
 		result.is_opc_done = 0;
 		device_in_result.is_dei_done = 0;
 	}
@@ -471,7 +475,7 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	return result;
 }
 
-opcode_result_t deo(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+opcode_result_t deo(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, uint16_t previous_device_ram_read, uint8_t previous_ram_read) {
 	// t=T;n=N;        SET(2,-2) DEO(t, n)
 	static uint8_t t8, n8;
 	static opcode_result_t result;
@@ -495,9 +499,10 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, ui
 		result.is_sp_shift = 0;
 		device_out_result = device_out(t8, n8, phase - 2, previous_device_ram_read, previous_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
+		result.is_device_ram_16bit = device_out_result.is_device_ram_16bit;
 		result.device_ram_address = device_out_result.device_ram_address;
 		result.u8_value = device_out_result.u8_value;
-		result.u16_value = device_out_result.ram_address;
+		result.u16_value = device_out_result.u16_value;
 		result.is_vram_write = device_out_result.is_vram_write;
 		result.vram_write_layer = device_out_result.vram_write_layer;
 		result.vram_address = device_out_result.vram_address;
@@ -507,7 +512,7 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, ui
 	return result;
 }
 
-opcode_result_t deo2(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+opcode_result_t deo2(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, uint16_t previous_device_ram_read, uint8_t previous_ram_read) {
 	// t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO((t + 1), n)
 	static uint8_t t8, n8, l8, current_deo_phase, deo_param0, deo_param1;
 	static uint1_t is_second_deo = 0;
@@ -540,11 +545,12 @@ opcode_result_t deo2(uint8_t phase, uint8_t ins, uint16_t previous_stack_read, u
 		result.is_sp_shift = 0;		
 		device_out_result = device_out(deo_param0, deo_param1, current_deo_phase, previous_device_ram_read, previous_ram_read);
 		result.is_device_ram_write = device_out_result.is_device_ram_write;
+		result.is_device_ram_16bit = device_out_result.is_device_ram_16bit;
 		result.device_ram_address = device_out_result.device_ram_address;
 		result.is_vram_write = device_out_result.is_vram_write;
 		result.vram_write_layer = device_out_result.vram_write_layer;
 		result.vram_address = device_out_result.vram_address;
-		result.u16_value = device_out_result.ram_address;
+		result.u16_value = device_out_result.u16_value;
 		result.u8_value = device_out_result.u8_value;
 		result.is_opc_done = device_out_result.is_deo_done & is_second_deo;
 		if (device_out_result.is_deo_done) {
@@ -2511,14 +2517,14 @@ eval_opcode_result_t eval_opcode_phased(
 	uint8_t ins,
 	uint16_t pc,
 	uint8_t previous_ram_read,
-	uint8_t previous_device_ram_read
+	uint16_t previous_device_ram_read
 ) {
 	static uint8_t sp0, sp1, ins_a_3f, opc;
 	static uint1_t stack_index, is_wait, is_imm;
 	static uint9_t stack_address = 0;
 	static uint16_t previous_stack_read = 0;
-	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	
 	is_wait = 0;
 	ins_a_3f = (ins & 0x3F);
@@ -2626,6 +2632,7 @@ eval_opcode_result_t eval_opcode_phased(
 	opc_eval_result.is_waiting = is_wait;
 	opc_eval_result.device_ram_address = opc_result.device_ram_address;
 	opc_eval_result.is_device_ram_write = opc_result.is_device_ram_write;
+	opc_eval_result.is_device_ram_16bit = opc_result.is_device_ram_16bit;
 	opc_eval_result.is_pc_updated = opc_result.is_pc_updated;
 	opc_eval_result.u16_value = opc_result.u16_value;
 	opc_eval_result.is_ram_write = opc_result.is_ram_write;

@@ -1,8 +1,8 @@
 #pragma once
 #include "uintN_t.h"  // uintN_t types for any N
 
-// 400 x 360
-#define SCREEN_RAM_SIZE 144000
+// 320 x 288
+#define SCREEN_RAM_SIZE 92160
 
 uint2_t bg_vram_update(
 	uint24_t read_address, 
