@@ -277,8 +277,6 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 	}
 	else if (phase == 1) {
 		result.is_device_ram_write = 0;
-		device_port = (uint4_t)(device_address & 0x0F);
-		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
 	}
 	else {
@@ -296,7 +294,7 @@ device_in_result_t generic_dei(uint8_t device_address, uint8_t phase, uint8_t pr
 		result.dei_value = 0;
 		result.is_dei_done = 0;
 	}
-	else if (phase == 2) {
+	else {
 		result.device_ram_address = 0;
 		result.dei_value = previous_device_ram_read;
 		result.is_dei_done = 1;
