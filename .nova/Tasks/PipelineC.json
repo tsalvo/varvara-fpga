@@ -1,0 +1,20 @@
+{
+  "actions" : {
+    "build" : {
+      "postActions" : [
+        {
+          "script" : "rm lextab.py\nrm yacctab.py\nrm -rf pipelinec_output_uxn.c_1\ndocker run --rm -v $(pwd):\/workdir pipelinec uxn.c",
+          "type" : "runScript"
+        }
+      ]
+    },
+    "clean" : {
+      "postActions" : [
+        {
+          "script" : "rm lextab.py\nrm yacctab.py\nrm -rf pipelinec_output_uxn.c_1",
+          "type" : "runScript"
+        }
+      ]
+    }
+  }
+}
