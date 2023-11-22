@@ -2,7 +2,7 @@
 #include "uintN_t.h"  // uintN_t types for any N
 
 // 512 bytes Stack RAM (256 for work stack, 256 for return stack)
-uint8_t stack_ram_update(uint12_t stack_address, uint8_t value, uint1_t write_enable) {
+uint8_t stack_ram_update(uint9_t stack_address, uint8_t value, uint1_t write_enable) {
 	static uint8_t stack_ram[512];
 	static uint32_t rwaddr;
 	static uint8_t wdata;

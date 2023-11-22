@@ -2807,89 +2807,92 @@ eval_opcode_result_t eval_opcode_phased(
 	uint8_t previous_ram_read,
 	uint8_t previous_device_ram_read
 ) {
-	static uint8_t sp0, sp1;
-	static uint12_t opc;
-	static uint1_t stack_index, is_wait;
-	static uint12_t stack_address = 0;
-	static uint8_t stack_read_value = 0;
+	static uint8_t sp0, sp1, ins_a_3f, opc;
+	static uint1_t stack_index, is_wait, is_imm;
+	static uint9_t stack_address = 0;
+	static uint8_t previous_stack_read = 0;
 	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	opc = ((ins & 0x1F) > 0) ? ((uint12_t)(ins & 0x3F)) : ((uint12_t)(ins) << 4);
+	
 	is_wait = 0;
+	ins_a_3f = (ins & 0x3F);
+	is_imm = ~((ins_a_3f ^ 0xDF) | 0x20) ? 0 : 1;
+	opc = is_imm ? ins : ins_a_3f;
+	
 	#if DEBUG
 	printf("        EVAL OPCODE: INS = 0x%X, OPC = 0x%X, phase = 0x%X\n", ins, opc, phase);
 	#endif
 	
-	if      (opc == 0x000 /* BRK   */) { is_wait = 1; opc_result.is_opc_done = 1; }
-	else if (opc == 0x200 /* JCI   */) { opc_result = jci(phase, pc, stack_read_value, previous_ram_read); }
-	else if (opc == 0x400 /* JMI   */) { opc_result = jmi(phase, pc, previous_ram_read); }
-	else if (opc == 0x600 /* JSI   */) { opc_result = jsi(phase, pc, previous_ram_read); }
-	else if (opc == 0x800 /* LIT   */) { opc_result = lit(phase, pc, previous_ram_read); }
-	else if (opc == 0xA00 /* LIT2  */) { opc_result = lit2(phase, pc, previous_ram_read); }
-	else if (opc == 0xC00 /* LITr  */) { opc_result = lit(phase, pc, previous_ram_read); }
-	else if (opc == 0xE00 /* LIT2r */) { opc_result = lit2(phase, pc, previous_ram_read); }
-	else if (opc == 0x001 /* INC   */) { opc_result = inc(phase, ins, stack_read_value); }
-	else if (opc == 0x021 /* INC2  */) { opc_result = inc2(phase, ins, stack_read_value); }
-	else if (opc == 0x002 /* POP   */) { opc_result = pop(phase, ins); }
-	else if (opc == 0x022 /* POP2  */) { opc_result = pop2(phase, ins); }
-	else if (opc == 0x003 /* NIP   */) { opc_result = nip(phase, ins, stack_read_value); }
-	else if (opc == 0x023 /* NIP2  */) { opc_result = nip2(phase, ins, stack_read_value); }
-	else if (opc == 0x004 /* SWP   */) { opc_result = swp(phase, ins, stack_read_value); }
-	else if (opc == 0x024 /* SWP2  */) { opc_result = swp2(phase, ins, stack_read_value); }
-	else if (opc == 0x005 /* ROT   */) { opc_result = rot(phase, ins, stack_read_value); }
-	else if (opc == 0x025 /* ROT2  */) { opc_result = rot2(phase, ins, stack_read_value); }
-	else if (opc == 0x006 /* DUP   */) { opc_result = dup(phase, ins, stack_read_value); }
-	else if (opc == 0x026 /* DUP2  */) { opc_result = dup2(phase, ins, stack_read_value); }
-	else if (opc == 0x007 /* OVR   */) { opc_result = ovr(phase, ins, stack_read_value); }
-	else if (opc == 0x027 /* OVR2  */) { opc_result = ovr2(phase, ins, stack_read_value); }
-	else if (opc == 0x008 /* EQU   */) { opc_result = equ(phase, ins, stack_read_value); }
-	else if (opc == 0x028 /* EQU2  */) { opc_result = equ2(phase, ins, stack_read_value); }
-	else if (opc == 0x009 /* NEQ   */) { opc_result = neq(phase, ins, stack_read_value); }
-	else if (opc == 0x029 /* NEQ2  */) { opc_result = neq2(phase, ins, stack_read_value); }
-	else if (opc == 0x00A /* GTH   */) { opc_result = gth(phase, ins, stack_read_value); }
-	else if (opc == 0x02A /* GTH2  */) { opc_result = gth2(phase, ins, stack_read_value); }
-	else if (opc == 0x00B /* LTH   */) { opc_result = lth(phase, ins, stack_read_value);  }
-	else if (opc == 0x02B /* LTH2  */) { opc_result = lth2(phase, ins, stack_read_value); }
-	else if (opc == 0x00C /* JMP   */) { opc_result = jmp(phase, ins, pc, stack_read_value); }
-	else if (opc == 0x02C /* JMP2  */) { opc_result = jmp2(phase, ins, stack_read_value); }
-	else if (opc == 0x00D /* JCN   */) { opc_result = jcn(phase, ins, pc, stack_read_value); }
-	else if (opc == 0x02D /* JCN2  */) { opc_result = jcn2(phase, ins, stack_read_value); }
-	else if (opc == 0x00E /* JSR   */) { opc_result = jsr(phase, ins, pc, stack_read_value); }
-	else if (opc == 0x02E /* JSR2  */) { opc_result = jsr2(phase, ins, pc, stack_read_value); }
-	else if (opc == 0x00F /* STH   */) { opc_result = sth(phase, ins, stack_read_value); }
-	else if (opc == 0x02F /* STH2  */) { opc_result = sth2(phase, ins, stack_read_value); }
-	else if (opc == 0x010 /* LDZ   */) { opc_result = ldz(phase, ins, stack_read_value, previous_ram_read); }
-	else if (opc == 0x030 /* LDZ2  */) { opc_result = ldz2(phase, ins, stack_read_value, previous_ram_read); }
-	else if (opc == 0x011 /* STZ   */) { opc_result = stz(phase, ins, stack_read_value); }
-	else if (opc == 0x031 /* STZ2  */) { opc_result = stz2(phase, ins, stack_read_value); }
-	else if (opc == 0x012 /* LDR   */) { opc_result = ldr(phase, ins, pc, stack_read_value, previous_ram_read); }
-	else if (opc == 0x032 /* LDR2  */) { opc_result = ldr2(phase, ins, pc, stack_read_value, previous_ram_read); }
-	else if (opc == 0x013 /* STR   */) { opc_result = str1(phase, ins, pc, stack_read_value); }
-	else if (opc == 0x033 /* STR2  */) { opc_result = str2(phase, ins, pc, stack_read_value); }
-	else if (opc == 0x014 /* LDA   */) { opc_result = lda(phase, ins, stack_read_value, previous_ram_read); }
-	else if (opc == 0x034 /* LDA2  */) { opc_result = lda2(phase, ins, stack_read_value, previous_ram_read); }
-	else if (opc == 0x015 /* STA   */) { opc_result = sta(phase, ins, stack_read_value); }
-	else if (opc == 0x035 /* STA2  */) { opc_result = sta2(phase, ins, stack_read_value); }
-	else if (opc == 0x016 /* DEI   */) { opc_result = dei(phase, ins, stack_read_value, previous_device_ram_read); }
-	else if (opc == 0x036 /* DEI2  */) { opc_result = dei2(phase, ins, stack_read_value, previous_device_ram_read); }
-	else if (opc == 0x017 /* DEO   */) { opc_result = deo(phase, ins, stack_read_value, previous_device_ram_read, previous_ram_read); }
-	else if (opc == 0x037 /* DEO2  */) { opc_result = deo2(phase, ins, stack_read_value, previous_device_ram_read, previous_ram_read); }
-	else if (opc == 0x018 /* ADD   */) { opc_result = add(phase, ins, stack_read_value); }
-	else if (opc == 0x038 /* ADD2  */) { opc_result = add2(phase, ins, stack_read_value); }
-	else if (opc == 0x019 /* SUB   */) { opc_result = sub(phase, ins, stack_read_value); }
-	else if (opc == 0x039 /* SUB2  */) { opc_result = sub2(phase, ins, stack_read_value); }
-	else if (opc == 0x01A /* MUL   */) { opc_result = mul(phase, ins, stack_read_value); }
-	else if (opc == 0x03A /* MUL2  */) { opc_result = mul2(phase, ins, stack_read_value); }
-	else if (opc == 0x01B /* DIV   */) { opc_result = div(phase, ins, stack_read_value); }
-	else if (opc == 0x03B /* DIV2  */) { opc_result = div2(phase, ins, stack_read_value); }
-	else if (opc == 0x01C /* AND   */) { opc_result = and(phase, ins, stack_read_value); }
-	else if (opc == 0x03C /* AND2  */) { opc_result = and2(phase, ins, stack_read_value); }
-	else if (opc == 0x01D /* ORA   */) { opc_result = ora(phase, ins, stack_read_value); }
-	else if (opc == 0x03D /* ORA2  */) { opc_result = ora2(phase, ins, stack_read_value); }
-	else if (opc == 0x01E /* EOR   */) { opc_result = eor(phase, ins, stack_read_value); }
-	else if (opc == 0x03E /* EOR2  */) { opc_result = eor2(phase, ins, stack_read_value); }
-	else if (opc == 0x01F /* SFT   */) { opc_result = sft(phase, ins, stack_read_value); }
-	else if (opc == 0x03F /* SFT2  */) { opc_result = sft2(phase, ins, stack_read_value); }
+	if      (opc == 0x00 /* BRK   */) { is_wait = 1; opc_result.is_opc_done = 1; }
+	else if (opc == 0x20 /* JCI   */) { opc_result = jci(phase, pc, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x40 /* JMI   */) { opc_result = jmi(phase, pc, previous_ram_read); }
+	else if (opc == 0x60 /* JSI   */) { opc_result = jsi(phase, pc, previous_ram_read); }
+	else if (opc == 0x80 /* LIT   */) { opc_result = lit(phase, pc, previous_ram_read); }
+	else if (opc == 0xA0 /* LIT2  */) { opc_result = lit2(phase, pc, previous_ram_read); }
+	else if (opc == 0xC0 /* LITr  */) { opc_result = lit(phase, pc, previous_ram_read); }
+	else if (opc == 0xE0 /* LIT2r */) { opc_result = lit2(phase, pc, previous_ram_read); }
+	else if (opc == 0x01 /* INC   */) { opc_result = inc(phase, ins, previous_stack_read); }
+	else if (opc == 0x21 /* INC2  */) { opc_result = inc2(phase, ins, previous_stack_read); }
+	else if (opc == 0x02 /* POP   */) { opc_result = pop(phase, ins); }
+	else if (opc == 0x22 /* POP2  */) { opc_result = pop2(phase, ins); }
+	else if (opc == 0x03 /* NIP   */) { opc_result = nip(phase, ins, previous_stack_read); }
+	else if (opc == 0x23 /* NIP2  */) { opc_result = nip2(phase, ins, previous_stack_read); }
+	else if (opc == 0x04 /* SWP   */) { opc_result = swp(phase, ins, previous_stack_read); }
+	else if (opc == 0x24 /* SWP2  */) { opc_result = swp2(phase, ins, previous_stack_read); }
+	else if (opc == 0x05 /* ROT   */) { opc_result = rot(phase, ins, previous_stack_read); }
+	else if (opc == 0x25 /* ROT2  */) { opc_result = rot2(phase, ins, previous_stack_read); }
+	else if (opc == 0x06 /* DUP   */) { opc_result = dup(phase, ins, previous_stack_read); }
+	else if (opc == 0x26 /* DUP2  */) { opc_result = dup2(phase, ins, previous_stack_read); }
+	else if (opc == 0x07 /* OVR   */) { opc_result = ovr(phase, ins, previous_stack_read); }
+	else if (opc == 0x27 /* OVR2  */) { opc_result = ovr2(phase, ins, previous_stack_read); }
+	else if (opc == 0x08 /* EQU   */) { opc_result = equ(phase, ins, previous_stack_read); }
+	else if (opc == 0x28 /* EQU2  */) { opc_result = equ2(phase, ins, previous_stack_read); }
+	else if (opc == 0x09 /* NEQ   */) { opc_result = neq(phase, ins, previous_stack_read); }
+	else if (opc == 0x29 /* NEQ2  */) { opc_result = neq2(phase, ins, previous_stack_read); }
+	else if (opc == 0x0A /* GTH   */) { opc_result = gth(phase, ins, previous_stack_read); }
+	else if (opc == 0x2A /* GTH2  */) { opc_result = gth2(phase, ins, previous_stack_read); }
+	else if (opc == 0x0B /* LTH   */) { opc_result = lth(phase, ins, previous_stack_read);  }
+	else if (opc == 0x2B /* LTH2  */) { opc_result = lth2(phase, ins, previous_stack_read); }
+	else if (opc == 0x0C /* JMP   */) { opc_result = jmp(phase, ins, pc, previous_stack_read); }
+	else if (opc == 0x2C /* JMP2  */) { opc_result = jmp2(phase, ins, previous_stack_read); }
+	else if (opc == 0x0D /* JCN   */) { opc_result = jcn(phase, ins, pc, previous_stack_read); }
+	else if (opc == 0x2D /* JCN2  */) { opc_result = jcn2(phase, ins, previous_stack_read); }
+	else if (opc == 0x0E /* JSR   */) { opc_result = jsr(phase, ins, pc, previous_stack_read); }
+	else if (opc == 0x2E /* JSR2  */) { opc_result = jsr2(phase, ins, pc, previous_stack_read); }
+	else if (opc == 0x0F /* STH   */) { opc_result = sth(phase, ins, previous_stack_read); }
+	else if (opc == 0x2F /* STH2  */) { opc_result = sth2(phase, ins, previous_stack_read); }
+	else if (opc == 0x10 /* LDZ   */) { opc_result = ldz(phase, ins, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x30 /* LDZ2  */) { opc_result = ldz2(phase, ins, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x11 /* STZ   */) { opc_result = stz(phase, ins, previous_stack_read); }
+	else if (opc == 0x31 /* STZ2  */) { opc_result = stz2(phase, ins, previous_stack_read); }
+	else if (opc == 0x12 /* LDR   */) { opc_result = ldr(phase, ins, pc, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x32 /* LDR2  */) { opc_result = ldr2(phase, ins, pc, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x13 /* STR   */) { opc_result = str1(phase, ins, pc, previous_stack_read); }
+	else if (opc == 0x33 /* STR2  */) { opc_result = str2(phase, ins, pc, previous_stack_read); }
+	else if (opc == 0x14 /* LDA   */) { opc_result = lda(phase, ins, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x34 /* LDA2  */) { opc_result = lda2(phase, ins, previous_stack_read, previous_ram_read); }
+	else if (opc == 0x15 /* STA   */) { opc_result = sta(phase, ins, previous_stack_read); }
+	else if (opc == 0x35 /* STA2  */) { opc_result = sta2(phase, ins, previous_stack_read); }
+	else if (opc == 0x16 /* DEI   */) { opc_result = dei(phase, ins, previous_stack_read, previous_device_ram_read); }
+	else if (opc == 0x36 /* DEI2  */) { opc_result = dei2(phase, ins, previous_stack_read, previous_device_ram_read); }
+	else if (opc == 0x17 /* DEO   */) { opc_result = deo(phase, ins, previous_stack_read, previous_device_ram_read, previous_ram_read); }
+	else if (opc == 0x37 /* DEO2  */) { opc_result = deo2(phase, ins, previous_stack_read, previous_device_ram_read, previous_ram_read); }
+	else if (opc == 0x18 /* ADD   */) { opc_result = add(phase, ins, previous_stack_read); }
+	else if (opc == 0x38 /* ADD2  */) { opc_result = add2(phase, ins, previous_stack_read); }
+	else if (opc == 0x19 /* SUB   */) { opc_result = sub(phase, ins, previous_stack_read); }
+	else if (opc == 0x39 /* SUB2  */) { opc_result = sub2(phase, ins, previous_stack_read); }
+	else if (opc == 0x1A /* MUL   */) { opc_result = mul(phase, ins, previous_stack_read); }
+	else if (opc == 0x3A /* MUL2  */) { opc_result = mul2(phase, ins, previous_stack_read); }
+	else if (opc == 0x1B /* DIV   */) { opc_result = div(phase, ins, previous_stack_read); }
+	else if (opc == 0x3B /* DIV2  */) { opc_result = div2(phase, ins, previous_stack_read); }
+	else if (opc == 0x1C /* AND   */) { opc_result = and(phase, ins, previous_stack_read); }
+	else if (opc == 0x3C /* AND2  */) { opc_result = and2(phase, ins, previous_stack_read); }
+	else if (opc == 0x1D /* ORA   */) { opc_result = ora(phase, ins, previous_stack_read); }
+	else if (opc == 0x3D /* ORA2  */) { opc_result = ora2(phase, ins, previous_stack_read); }
+	else if (opc == 0x1E /* EOR   */) { opc_result = eor(phase, ins, previous_stack_read); }
+	else if (opc == 0x3E /* EOR2  */) { opc_result = eor2(phase, ins, previous_stack_read); }
+	else if (opc == 0x1F /* SFT   */) { opc_result = sft(phase, ins, previous_stack_read); }
+	else if (opc == 0x3F /* SFT2  */) { opc_result = sft2(phase, ins, previous_stack_read); }
 	
 	stack_index = ((ins & 0x40) > 0) ? 1 : 0;
 	stack_index ^= opc_result.is_stack_index_flipped;
@@ -2902,10 +2905,10 @@ eval_opcode_result_t eval_opcode_phased(
 		}
 	}
 	
-	stack_address = ((uint12_t)(stack_index ? sp1 : sp0)) - ((uint12_t)(opc_result.stack_address_sp_offset));
+	stack_address = ((uint9_t)(stack_index ? sp1 : sp0)) - ((uint9_t)(opc_result.stack_address_sp_offset));
 	stack_address += (stack_index ? 256 : 0);
 	
-	stack_read_value = stack_ram_update(
+	previous_stack_read = stack_ram_update(
 		stack_address, 
 		opc_result.u8_value,
 		opc_result.is_stack_write
