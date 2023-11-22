@@ -2774,7 +2774,7 @@ opcode_result_t dup2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		t16 |= ((uint16_t)(previous_stack_read));
 		result.is_sp_shift = 0;
 		result.is_stack_write = 1;
-		// SP offset is already 1
+		result.stack_address_sp_offset = 1;
 		result.u8_value = (uint8_t)(t16);	// set T2 (low byte)
 	}
 	else if (phase == 4) {
