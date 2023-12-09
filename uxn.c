@@ -294,6 +294,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	return result;
 }
 
+// #pragma PART "5CGXFC9E7F35C8" // TODO: try quartus step here for Cyclone V
 #pragma MAIN_MHZ uxn_top 13.824
 uint16_t uxn_top(
 	uint1_t is_visible_pixel,
