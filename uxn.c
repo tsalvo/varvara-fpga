@@ -45,11 +45,10 @@ boot_step_result_t step_boot() {
 
 typedef struct cpu_step_result_t {
 	uint1_t is_ram_write;
-	uint16_t ram_address;
+	uint16_t u16_addr; // ram address read / write, or vram address write
 	
 	uint1_t is_vram_write;
 	uint1_t vram_write_layer;
-	uint24_t vram_address;
 	
 	uint1_t is_device_ram_write;
 	uint8_t device_ram_address;
@@ -64,7 +63,7 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	static uint8_t step_cpu_phase = 0;
 	static uint1_t is_ins_done = 0, is_waiting = 0;
 	static eval_opcode_result_t eval_opcode_result;
-	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0};
 	
 	pc = (use_vector & is_waiting) ? vector : pc;
 	is_waiting = use_vector ? 0 : is_waiting;
@@ -75,7 +74,7 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	
 	if (step_cpu_phase == 0) {
 		is_ins_done = 0;
-		cpu_step_result.ram_address = pc; // START
+		cpu_step_result.u16_addr = pc; // START
 		cpu_step_result.is_ram_write = 0;
 		cpu_step_result.is_vram_write = 0;
 		cpu_step_result.is_device_ram_write = 0;
@@ -88,10 +87,9 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 		eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, previous_ram_read_value, previous_device_ram_read);
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.u16_value : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
-		cpu_step_result.ram_address = eval_opcode_result.u16_value;
+		cpu_step_result.u16_addr = eval_opcode_result.u16_value;
 		cpu_step_result.is_vram_write = eval_opcode_result.is_vram_write;
 		cpu_step_result.vram_write_layer = eval_opcode_result.vram_write_layer;
-		cpu_step_result.vram_address = eval_opcode_result.vram_address;
 		cpu_step_result.device_ram_address = eval_opcode_result.device_ram_address;
 		cpu_step_result.is_device_ram_write = eval_opcode_result.is_device_ram_write;
 		cpu_step_result.u8_value = eval_opcode_result.u8_value;
@@ -114,13 +112,12 @@ typedef struct gpu_step_result_t {
 	uint1_t is_new_frame;
 } gpu_step_result_t;
 
-gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint24_t vram_address, uint2_t vram_value) {
+gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint16_t vram_address, uint8_t vram_value) {
 	static gpu_step_result_t result = {0, 0, 0};
-	static uint4_t vram_code = 0;
-	static uint24_t adjusted_vram_address;
+	static uint16_t adjusted_vram_address;
 	
 	// fill
-	static uint24_t fill_pixels_remaining;
+	static uint16_t fill_pixels_remaining;
 	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
 	static uint2_t fill_color;
 	static uint1_t is_fill_active, is_fill_left, is_fill_top, is_fill_pixel0, is_fill_pixel1, fill_layer, is_fill_code;
@@ -129,23 +126,21 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint16_t pixel_counter = 0; // 260*234, max = 60839
 	static uint16_t x, y;
 	
-	vram_code = (uint4_t)(vram_address >> 20);
-	is_fill_code = vram_code == 0xF ? 1 : 0;
+	is_fill_code = is_vram_write & ((uint1_t)(vram_value >> 4));
 	
 	// 0bCCCCTLPPPPPPPPPPPPPPPPPP (CCCC = VRAM Code, T = fill from top, L = fill from left, P = pixel number)
 	if (is_fill_code & ~is_fill_active) {
 		is_fill_active = 1;
-		is_fill_top = vram_address >> 19;
-		is_fill_left = vram_address >> 18;
-		fill_pixels_remaining = vram_address & 0x03FFFF;
-		fill_y0 = fill_pixels_remaining / 260;
-		fill_x0 = fill_pixels_remaining - (fill_y0 * 260);
+		is_fill_top = vram_value >> 2;
+		is_fill_left = vram_value >> 3;
+		fill_y0 = vram_address / 260;
+		fill_x0 = vram_address - (fill_y0 * 260);
 		fill_y1 = is_fill_top ? fill_y0 : 233;
 		fill_x1 = is_fill_left ? fill_x0 : 259;
 		fill_y0 = is_fill_top ? 0 : fill_y0;
 		fill_x0 = is_fill_left ? 0 : fill_x0;
 		fill_layer = vram_write_layer;
-		fill_color = vram_value;
+		fill_color = (uint2_t)vram_value;
 		fill_pixels_remaining = (fill_x1 - fill_x0 + 1) * (fill_y1 - fill_y0 + 1);
 		y = fill_y0;
 		x = fill_x0;
@@ -154,7 +149,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		#endif
 	}
 	
-	adjusted_vram_address = is_fill_active ? (((uint24_t)(y) * (uint24_t)(260)) + ((uint24_t)(x))) : (vram_address & 0x03FFFF);
+	adjusted_vram_address = is_fill_active ? ((y * 0x0104) + x) : vram_address;
 	
 	is_fill_left = (x == fill_x1) ? 1 : 0;
 	y = is_fill_left ? (y + 1) : y;
@@ -310,7 +305,7 @@ uint16_t uxn_top(
 	static cpu_step_result_t cpu_step_result;
 	static uint1_t is_active_fill = 0;
 	static uint1_t is_ram_write = 0;
-	static uint16_t ram_address = 0x00FF;
+	static uint16_t u16_addr = 0x00FF; // ram address, or occasionally vram write addr
 	static uint16_t screen_vector = 0;
 	static uint8_t ram_write_value = 0;
 	static uint8_t ram_read_value = 0;
@@ -319,8 +314,7 @@ uint16_t uxn_top(
 	static uint1_t is_device_ram_write = 0;
 	static uint1_t is_vram_write = 0;
 	static uint1_t vram_write_layer = 0;
-	static uint24_t vram_address = 0;
-	static uint2_t vram_value = 0;
+	static uint8_t vram_value = 0;
 	
 	if (~is_booted) {
 		
@@ -328,31 +322,30 @@ uint16_t uxn_top(
 		// (C-Array-Style)
 		boot_step_result_t boot_step_result = step_boot();
 		is_ram_write = boot_step_result.is_valid_byte;
-		ram_address = boot_step_result.ram_address;
+		u16_addr = boot_step_result.ram_address;
 		ram_write_value = boot_step_result.rom_byte;
 		is_booted = boot_step_result.is_finished;
 		#else
-		boot_check = rom_load_valid_byte ? 0 : ((ram_address > 0x00FF) ? boot_check + 1 : 0);
+		boot_check = rom_load_valid_byte ? 0 : ((u16_addr > 0x00FF) ? boot_check + 1 : 0);
 		is_booted = (boot_check == 0xFFFFFF) ? 1 : 0;
 		is_ram_write = (rom_load_valid_byte | is_booted);
-		ram_address += (rom_load_valid_byte | is_booted) ? 1 : 0;
+		u16_addr += (rom_load_valid_byte | is_booted) ? 1 : 0;
 		ram_write_value = is_booted ? 0 : rom_load_value;
 		#endif
 	} else if (~is_active_fill) {
 		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
 		is_ram_write = cpu_step_result.is_ram_write;
-		ram_address = cpu_step_result.ram_address;
+		u16_addr = cpu_step_result.u16_addr;
 		device_ram_address = cpu_step_result.device_ram_address;
 		is_device_ram_write = cpu_step_result.is_device_ram_write;
 		ram_write_value = cpu_step_result.u8_value;
 		is_vram_write = cpu_step_result.is_vram_write;
 		vram_write_layer = cpu_step_result.vram_write_layer;
-		vram_address = cpu_step_result.vram_address;
-		vram_value = (uint2_t)cpu_step_result.u8_value;
+		vram_value = cpu_step_result.u8_value;
 	}
 	
 	ram_read_value = main_ram_update(
-		ram_address,
+		u16_addr,
 		ram_write_value, // shared register, write only to either ram or device ram in one cycle
 		is_ram_write
 	);
@@ -363,7 +356,7 @@ uint16_t uxn_top(
 		is_device_ram_write
 	);
 	
-	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, vram_address, vram_value);
+	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value);
 	is_active_fill = gpu_step_result.is_active_fill;
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_step_result.color);
 	screen_vector = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);

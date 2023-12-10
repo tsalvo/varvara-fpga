@@ -5,8 +5,8 @@
 #define SCREEN_RAM_SIZE 65536
 
 uint2_t bg_vram_update(
-	uint24_t read_address, 
-	uint24_t write_address, 
+	uint16_t read_address, 
+	uint16_t write_address, 
 	uint2_t write_value, 
 	uint1_t write_enable
 ) {
@@ -29,8 +29,8 @@ uint2_t bg_vram_update(
 }
 
 uint2_t fg_vram_update(
-	uint24_t read_address, 
-	uint24_t write_address, 
+	uint16_t read_address, 
+	uint16_t write_address, 
 	uint2_t write_value, 
 	uint1_t write_enable
 ) {
