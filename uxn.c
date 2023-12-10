@@ -126,7 +126,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint1_t is_fill_active, is_fill_left, is_fill_top, is_fill_pixel0, is_fill_pixel1, fill_layer, is_fill_code;
 	
 	static uint2_t fg_pixel_color, bg_pixel_color;
-	static uint18_t pixel_counter = 0; // 320*288, max = 92159
+	static uint16_t pixel_counter = 0; // 260*234, max = 60839
 	static uint16_t x, y;
 	
 	vram_code = (uint4_t)(vram_address >> 20);
@@ -138,10 +138,10 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		is_fill_top = vram_address >> 19;
 		is_fill_left = vram_address >> 18;
 		fill_pixels_remaining = vram_address & 0x03FFFF;
-		fill_y0 = fill_pixels_remaining / 320;
-		fill_x0 = fill_pixels_remaining - (fill_y0 * 320);
-		fill_y1 = is_fill_top ? fill_y0 : 287;
-		fill_x1 = is_fill_left ? fill_x0 : 319;
+		fill_y0 = fill_pixels_remaining / 260;
+		fill_x0 = fill_pixels_remaining - (fill_y0 * 260);
+		fill_y1 = is_fill_top ? fill_y0 : 233;
+		fill_x1 = is_fill_left ? fill_x0 : 259;
 		fill_y0 = is_fill_top ? 0 : fill_y0;
 		fill_x0 = is_fill_left ? 0 : fill_x0;
 		fill_layer = vram_write_layer;
@@ -154,7 +154,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		#endif
 	}
 	
-	adjusted_vram_address = is_fill_active ? (((uint24_t)(y) * (uint24_t)(320)) + ((uint24_t)(x))) : (vram_address & 0x03FFFF);
+	adjusted_vram_address = is_fill_active ? (((uint24_t)(y) * (uint24_t)(260)) + ((uint24_t)(x))) : (vram_address & 0x03FFFF);
 	
 	is_fill_left = (x == fill_x1) ? 1 : 0;
 	y = is_fill_left ? (y + 1) : y;
@@ -179,8 +179,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	
 	fill_pixels_remaining = is_fill_active ? fill_pixels_remaining - 1 : 0;
 	is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
-	pixel_counter = (pixel_counter == 92159) ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
-	result.is_new_frame = (pixel_counter == 92159) ? 1 : 0;
+	pixel_counter = (pixel_counter == 60839) ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
+	result.is_new_frame = (pixel_counter == 60839) ? 1 : 0;
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
 	result.is_active_fill = is_fill_active;
 
@@ -295,7 +295,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 }
 
 // #pragma PART "5CGXFC9E7F35C8" // TODO: try quartus step here for Cyclone V
-#pragma MAIN_MHZ uxn_top 13.824
+#pragma MAIN_MHZ uxn_top 14.112
 uint16_t uxn_top(
 	uint1_t is_visible_pixel,
 	uint1_t rom_load_valid_byte,

@@ -132,7 +132,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	else if (phase == 0x04) {
 		if (is_drawing_port) { // PIXEL or SPRITE
 			x |= (uint16_t)(previous_device_ram_read);
-			is_x_onscreen = previous_device_ram_read < 0x0140 ? 1 : 0;
+			is_x_onscreen = previous_device_ram_read < 0x0104 ? 1 : 0;
 			result.device_ram_address = 0x2B; // y (lo) 
 		} 
 	}
@@ -147,13 +147,13 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (is_pixel_port) { // PIXEL
 			result.device_ram_address = 0;
 			y |= (uint16_t)(previous_device_ram_read);
-			is_y_onscreen = previous_device_ram_read < 0x0120 ? 1 : 0;
+			is_y_onscreen = previous_device_ram_read < 0x00EA ? 1 : 0;
 			result.u8_value = (uint8_t)(color & 0x3);
 			result.vram_write_layer = layer;
 			if (ctrl_mode) { // fill mode
 				x = is_x_onscreen ? x : 0x013F;
 				y = is_y_onscreen ? y : 0x011F;
-				vram_addr = ((uint24_t)(y) * (uint24_t)(320)) + ((uint24_t)(x));
+				vram_addr = ((uint24_t)(y) * (uint24_t)(260)) + ((uint24_t)(x));
 				vram_addr &= 0x03FFFF;
 				vram_addr |= (flip_y ? 0x080000 : 0);
 				vram_addr |= (flip_x ? 0x040000 : 0);
@@ -161,7 +161,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.is_vram_write = 0;
 				result.vram_address = vram_addr;
 			} else if (is_x_onscreen & is_y_onscreen) { // single pixel mode, where pixel is onscreen
-				result.vram_address = ((uint24_t)(y) * (uint24_t)(320)) + ((uint24_t)(x));
+				result.vram_address = ((uint24_t)(y) * (uint24_t)(260)) + ((uint24_t)(x));
 				result.is_vram_write = 1;
 			}
 		}
@@ -324,24 +324,24 @@ device_in_result_t system_dei(uint8_t device_address, uint8_t phase, uint8_t pre
 
 device_in_result_t screen_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
-	if (device_address == 0x22) {      // screen width (320, or 0x0140) (high byte)
+	if (device_address == 0x22) {      // screen width (260, or 0x0104) (high byte)
 		result.device_ram_address = 0;
 		result.dei_value = 0x01;
 		result.is_dei_done = 1;
 	}
-	else if (device_address == 0x23) { // screen width (320, or 0x0140) (low byte)
+	else if (device_address == 0x23) { // screen width (260, or 0x0104) (low byte)
 		result.device_ram_address = 0;
-		result.dei_value = 0x40;
+		result.dei_value = 0x04;
 		result.is_dei_done = 1;
 	}
-	else if (device_address == 0x24) { // screen height (288, or 0x0120) (high byte)
+	else if (device_address == 0x24) { // screen height (234, or 0x00EA) (high byte)
 		result.device_ram_address = 0;
-		result.dei_value = 0x01;
+		result.dei_value = 0x00;
 		result.is_dei_done = 1;
 	}
-	else if (device_address == 0x25) { // screen height (288, or 0x0120) (low byte)
+	else if (device_address == 0x25) { // screen height (234, or 0x00EA) (low byte)
 		result.device_ram_address = 0;
-		result.dei_value = 0x20;
+		result.dei_value = 0xEA;
 		result.is_dei_done = 1;
 	}
 	else {
