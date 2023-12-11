@@ -11,12 +11,12 @@ architecture sim of top_test is
 	  signal test_rom_load_valid_byte : unsigned(0 downto 0) := to_unsigned(0, 1);
 	  signal test_rom_load_address : unsigned(15 downto 0) := x"0000";
 	  signal test_rom_load_value : unsigned(7 downto 0) := x"00";
-	constant clk_period : time := 75 ns;
+	constant clk_period : time := 76 ns;
 begin
 	-- The Device Under Test (DUT)
 	i_top : entity work.top
 	port map(
-		clk_13p824 => test_clk,
+		clk_13p0 => test_clk,
 		uxn_top_is_visible_pixel => test_is_visible_pixel,
 		uxn_top_rom_load_valid_byte => test_rom_load_valid_byte,
 		uxn_top_rom_load_address => test_rom_load_address,
