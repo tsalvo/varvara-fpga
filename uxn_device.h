@@ -98,41 +98,31 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.is_deo_done = 1;
 		}
 	}
-	else if (phase == 0x01) {
-		if (is_drawing_port) { // PIXEL or SPRITE
-			result.device_ram_address = 0x28; // x (hi)
-		} 
+	else if (phase == 0x01) { // assume is_drawing_port
+		result.device_ram_address = 0x28; // x (hi)
 	}
 	else if (phase == 0x02) {
-		if (is_drawing_port) { // PIXEL or SPRITE
-			ctrl = previous_device_ram_read;
-			color = (uint4_t)(ctrl);
-			ctrl_mode = (uint1_t)(ctrl >> 7);
-			layer = (uint1_t)(ctrl >> 6);
-			flip_y = (uint1_t)(ctrl >> 5);
-			flip_x = (uint1_t)(ctrl >> 4);
-			result.device_ram_address = 0x29; // x (lo)
-		}
+		ctrl = previous_device_ram_read;
+		color = (uint4_t)(ctrl);
+		ctrl_mode = (uint1_t)(ctrl >> 7);
+		layer = (uint1_t)(ctrl >> 6);
+		flip_y = (uint1_t)(ctrl >> 5);
+		flip_x = (uint1_t)(ctrl >> 4);
+		result.device_ram_address = 0x29; // x (lo)
 	}
 	else if (phase == 0x03) {
-		if (is_drawing_port) { // PIXEL or SPRITE
-			x = (uint16_t)(previous_device_ram_read);
-			x <<= 8;
-			result.device_ram_address = 0x2A; // y (hi) 
-		} 
+		x = (uint16_t)(previous_device_ram_read);
+		x <<= 8;
+		result.device_ram_address = 0x2A; // y (hi) 
 	}
 	else if (phase == 0x04) {
-		if (is_drawing_port) { // PIXEL or SPRITE
-			x |= (uint16_t)(previous_device_ram_read);
-			result.device_ram_address = 0x2B; // y (lo) 
-		} 
+		x |= (uint16_t)(previous_device_ram_read);
+		result.device_ram_address = 0x2B; // y (lo) 
 	}
 	else if (phase == 0x05) {
-		if (is_drawing_port) { // PIXEL or SPRITE
-			y = (uint16_t)(previous_device_ram_read);
-			y <<= 8;
-			result.device_ram_address = 0x26; // auto 
-		}
+		y = (uint16_t)(previous_device_ram_read);
+		y <<= 8;
+		result.device_ram_address = 0x26; // auto 
 	}
 	else if (phase == 0x06) {
 		if (is_pixel_port) { // PIXEL
@@ -149,7 +139,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			
 			result.u8_value = tmp8;
 		}
-		else if (is_sprite_port) { // SPRITE
+		else { // SPRITE
 			y |= (uint16_t)(previous_device_ram_read);
 			result.device_ram_address = 0x2C; // ram_addr (hi)
 		}
@@ -171,7 +161,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.is_deo_done = 1;
 			}
 		}
-		else if (is_sprite_port) { // SPRITE
+		else { // SPRITE
 			auto_advance = previous_device_ram_read;
 			result.device_ram_address = 0x2D; // ram_addr (lo)
 		}
@@ -184,7 +174,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.u8_value = (uint8_t)(x); // x (lo)
 			}
 		}
-		else if (is_sprite_port) { // SPRITE
+		else { // SPRITE
 			ram_addr = (uint16_t)(previous_device_ram_read);
 			ram_addr <<= 8;
 		}
@@ -197,7 +187,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 				result.u8_value = (uint8_t)(y >> 8); // y (hi)
 			}
 		}
-		else if (is_sprite_port) { // SPRITE
+		else { // SPRITE
 			ram_addr |= (uint16_t)(previous_device_ram_read);
 		}
 	}
