@@ -208,11 +208,16 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	static uint4_t color_cmp_0 = 0, color_cmp_1 = 0;
 	static uint12_t tmp12 = 0;
 	static uint16_t result = 0;
+	static uint1_t is_palette_range = 0;
+	static uint4_t addr_low;
 	
-	if (is_device_ram_write) {
+	is_palette_range = (device_ram_address >> 4) == 0 ? 1 : 0;
+	
+	if (is_device_ram_write & is_palette_range) {
+		addr_low = (uint4_t)device_ram_address;
 		color_cmp_0 = (uint4_t)(device_ram_value >> 4);
 		color_cmp_1 = (uint4_t)(device_ram_value);
-		if (device_ram_address == 0x08) {
+		if (addr_low == 0x8) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 8;
 			color0 &= 0x0FF;
@@ -223,7 +228,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 			color1 &= 0x0FF;
 			color1 |= tmp12;
 		}
-		else if (device_ram_address == 0x09) {
+		else if (addr_low == 0x9) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 8;
 			color2 &= 0x0FF;
@@ -234,7 +239,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 			color3 &= 0x0FF;
 			color3 |= tmp12;
 		}
-		else if (device_ram_address == 0x0A) {
+		else if (addr_low == 0xA) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 4;
 			color0 &= 0xF0F;
@@ -245,7 +250,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 			color1 &= 0xF0F;
 			color1 |= tmp12;
 		}
-		else if (device_ram_address == 0x0B) {
+		else if (addr_low == 0xB) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 4;
 			color2 &= 0xF0F;
@@ -256,7 +261,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 			color3 &= 0xF0F;
 			color3 |= tmp12;
 		}
-		else if (device_ram_address == 0x0C) {
+		else if (addr_low == 0xC) {
 			tmp12 = (uint12_t)color_cmp_0;
 			color0 &= 0xFF0;
 			color0 |= tmp12;
@@ -265,7 +270,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 			color1 &= 0xFF0;
 			color1 |= tmp12;
 		}
-		else if (device_ram_address == 0x0D) {
+		else if (addr_low == 0xD) {
 			tmp12 = (uint12_t)color_cmp_0;
 			color2 &= 0xFF0;
 			color2 |= tmp12;
@@ -317,7 +322,6 @@ uint16_t uxn_top(
 	static uint8_t vram_value = 0;
 	
 	if (~is_booted) {
-		
 		#if DEBUG
 		// (C-Array-Style)
 		boot_step_result_t boot_step_result = step_boot();
