@@ -2585,18 +2585,16 @@ opcode_result_t swp(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	}
 	else if (phase == 2) {
 		t8 = previous_stack_read;
+		result.sp_relative_shift = sp_relative_shift(ins, 2, 0);
+		result.is_stack_write = 1;
+		result.stack_address_sp_offset = 2;
+		result.u8_value = t8;	// set N
 	}
 	else if (phase == 3) {
 		n8 = previous_stack_read;
-		result.sp_relative_shift = sp_relative_shift(ins, 2, 0);
-		result.is_stack_write = 1;
+		result.sp_relative_shift = 0;
 		result.stack_address_sp_offset = 1;
 		result.u8_value = n8;	// set T
-	}
-	else if (phase == 4) {
-		result.sp_relative_shift = 0;
-		result.stack_address_sp_offset = 2;
-		result.u8_value = t8;	// set N
 		result.is_opc_done = 1;
 	}
 	
