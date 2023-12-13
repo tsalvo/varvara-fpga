@@ -244,7 +244,7 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 		result.is_device_ram_write = 1;
 		result.device_ram_address = device_address;
 		result.u8_value = value;
-		device_port = (uint4_t)(device_address & 0x0F);
+		device_port = (uint4_t)(device_address);
 		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
 	}
@@ -297,22 +297,24 @@ device_in_result_t system_dei(uint8_t device_address, uint8_t phase, uint8_t pre
 
 device_in_result_t screen_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
-	if (device_address == 0x22) {      // screen width (260, or 0x0104) (high byte)
+	static uint4_t device_port = 0;
+	device_port = (uint4_t)device_address;
+	if (device_port == 0x2) {      // screen width (260, or 0x0104) (high byte)
 		result.device_ram_address = 0;
 		result.dei_value = 0x01;
 		result.is_dei_done = 1;
 	}
-	else if (device_address == 0x23) { // screen width (260, or 0x0104) (low byte)
+	else if (device_port == 0x3) { // screen width (260, or 0x0104) (low byte)
 		result.device_ram_address = 0;
 		result.dei_value = 0x04;
 		result.is_dei_done = 1;
 	}
-	else if (device_address == 0x24) { // screen height (234, or 0x00EA) (high byte)
+	else if (device_port == 0x4) { // screen height (234, or 0x00EA) (high byte)
 		result.device_ram_address = 0;
 		result.dei_value = 0x00;
 		result.is_dei_done = 1;
 	}
-	else if (device_address == 0x25) { // screen height (234, or 0x00EA) (low byte)
+	else if (device_port == 0x5) { // screen height (234, or 0x00EA) (low byte)
 		result.device_ram_address = 0;
 		result.dei_value = 0xEA;
 		result.is_dei_done = 1;
