@@ -135,6 +135,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			if (ctrl_mode) { // fill mode
 				tmp8 |= flip_x ? 0x18 : 0x10;
 				tmp8 |= flip_y ? 0x04 : 0x00;
+				result.is_deo_done = 1;
 			}
 			
 			result.u8_value = tmp8;
@@ -145,20 +146,16 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		}
 	}
 	else if (phase == 0x07) {
-		if (is_pixel_port) { // PIXEL
+		if (is_pixel_port) { // PIXEL, assume single-pixel mode
 			auto_advance = previous_device_ram_read;
 			result.is_vram_write = 0;
 			result.u16_addr = 0;
 			result.u8_value = 0;
-			if (~ctrl_mode) {
-				if (auto_advance & 0x01) { // auto X
-					x += 1;
-					result.is_device_ram_write = 1;
-					result.device_ram_address = 0x28;
-					result.u8_value = (uint8_t)(x >> 8); // x (hi)
-				}
-			} else {
-				result.is_deo_done = 1;
+			if (auto_advance & 0x01) { // auto X
+				x += 1;
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x28;
+				result.u8_value = (uint8_t)(x >> 8); // x (hi)
 			}
 		}
 		else { // SPRITE
