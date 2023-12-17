@@ -2853,19 +2853,17 @@ opcode_result_t dup2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 }
 
 opcode_result_t brk(uint8_t phase) {
-	static opcode_result_t result;
-	if (phase == 0) {
-		#if DEBUG
-		printf("************\n**** BRK ***\n************\n");
-		#endif
-		result.is_stack_write = 0;
-		result.sp_relative_shift = 0;
-		result.is_stack_index_flipped = 0;
-		result.is_pc_updated = 0;
-		result.is_ram_write = 0;
-		result.is_vram_write = 0;
-		result.is_opc_done = 1;
-	}
+	opcode_result_t result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+	#if DEBUG
+	printf("************\n**** BRK ***\n************\n");
+	#endif
+	result.is_stack_write = 0;
+	result.sp_relative_shift = 0;
+	result.is_stack_index_flipped = 0;
+	result.is_pc_updated = 0;
+	result.is_ram_write = 0;
+	result.is_vram_write = 0;
+	result.is_opc_done = 1;
 	
 	return result;
 }
