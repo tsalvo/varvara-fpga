@@ -198,93 +198,80 @@ uint16_t vector_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint
 }
 
 uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write, uint2_t gpu_step_color) {
-	static uint12_t color0 = 0xFFF;
-	static uint12_t color1 = 0x000;
-	static uint12_t color2 = 0x7DB;
-	static uint12_t color3 = 0xF62;
-	uint12_t tmp12;
-	uint16_t result;
-	
+	static uint12_t color[4] = {0xFFF, 0x000, 0x7DB, 0xF62};
 	uint1_t is_palette_range = (device_ram_address >> 4) == 0 ? 1 : 0;
 	
 	if (is_device_ram_write & is_palette_range) {
+		uint12_t tmp12;
 		uint4_t addr_low = (uint4_t)device_ram_address;
 		uint4_t color_cmp_0 = (uint4_t)(device_ram_value >> 4);
 		uint4_t color_cmp_1 = (uint4_t)(device_ram_value);
+		
 		if (addr_low == 0x8) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 8;
-			color0 &= 0x0FF;
-			color0 |= tmp12;
+			color[0] &= 0x0FF;
+			color[0] |= tmp12;
 			
 			tmp12 = color_cmp_1;
 			tmp12 <<= 8;
-			color1 &= 0x0FF;
-			color1 |= tmp12;
+			color[1] &= 0x0FF;
+			color[1] |= tmp12;
 		}
 		else if (addr_low == 0x9) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 8;
-			color2 &= 0x0FF;
-			color2 |= tmp12;
+			color[2] &= 0x0FF;
+			color[2] |= tmp12;
 			
 			tmp12 = color_cmp_1;
 			tmp12 <<= 8;
-			color3 &= 0x0FF;
-			color3 |= tmp12;
+			color[3] &= 0x0FF;
+			color[3] |= tmp12;
 		}
 		else if (addr_low == 0xA) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 4;
-			color0 &= 0xF0F;
-			color0 |= tmp12;
+			color[0] &= 0xF0F;
+			color[0] |= tmp12;
 			
 			tmp12 = color_cmp_1;
 			tmp12 <<= 4;
-			color1 &= 0xF0F;
-			color1 |= tmp12;
+			color[1] &= 0xF0F;
+			color[1] |= tmp12;
 		}
 		else if (addr_low == 0xB) {
 			tmp12 = color_cmp_0;
 			tmp12 <<= 4;
-			color2 &= 0xF0F;
-			color2 |= tmp12;
+			color[2] &= 0xF0F;
+			color[2] |= tmp12;
 			
 			tmp12 = color_cmp_1;
 			tmp12 <<= 4;
-			color3 &= 0xF0F;
-			color3 |= tmp12;
+			color[3] &= 0xF0F;
+			color[3] |= tmp12;
 		}
 		else if (addr_low == 0xC) {
 			tmp12 = (uint12_t)color_cmp_0;
-			color0 &= 0xFF0;
-			color0 |= tmp12;
+			color[0] &= 0xFF0;
+			color[0] |= tmp12;
 			
 			tmp12 = (uint12_t)color_cmp_1;
-			color1 &= 0xFF0;
-			color1 |= tmp12;
+			color[1] &= 0xFF0;
+			color[1] |= tmp12;
 		}
 		else if (addr_low == 0xD) {
 			tmp12 = (uint12_t)color_cmp_0;
-			color2 &= 0xFF0;
-			color2 |= tmp12;
+			color[2] &= 0xFF0;
+			color[2] |= tmp12;
 			
 			tmp12 = (uint12_t)color_cmp_1;
-			color3 &= 0xFF0;
-			color3 |= tmp12;
+			color[3] &= 0xFF0;
+			color[3] |= tmp12;
 		}
 	}
 	
-	if (gpu_step_color == 0) {
-		result = color0;
-	} else if (gpu_step_color == 1) {
-		result = color1;
-	} else if (gpu_step_color == 2) {
-		result = color2;
-	} else {
-		result = color3;
-	}
-	
+	uint16_t result = color[gpu_step_color];
 	return result;
 }
 
