@@ -145,35 +145,30 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		#if DEBUG
 		printf("************\n**** JSI ***\n************\n");
 		#endif
-		result.is_stack_write = 0;
+		tmp16 = pc + 2;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
 		result.is_ram_write = 0;
 		result.is_vram_write = 0;
 		result.sp_relative_shift = 2; 		// shift(2)
-		tmp16 = pc + 2;
+		result.is_stack_write = 1;
+		result.stack_address_sp_offset = 1;
+		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u16_value = pc;     // peek RAM (byte 1 of 2) at address equal to PC
 		result.is_opc_done = 0;
 	}
 	else if (phase == 1) {
 		result.sp_relative_shift = 0;
-		result.is_stack_write = 1;
-		result.stack_address_sp_offset = 1;
-		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
-	}
-	else if (phase == 2) {
 		result.stack_address_sp_offset = 2;
 		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
-		result.u16_value = pc;     // peek RAM (byte 1 of 2) at address equal to PC
-	}
-	else if (phase == 3) {
-		result.is_stack_write = 0;
 		result.u16_value = pc + 1; // peek RAM (byte 2 of 2) at address equal to PC + 1
 	}
-	else if (phase == 4) {
+	else if (phase == 2) {
 		tmp16 = (uint16_t)(previous_ram_read);
 		tmp16 <<= 8;
+		result.is_stack_write = 0;
 	}
-	else if (phase == 5) {
+	else if (phase == 3) {
 		tmp16 |= ((uint16_t)(previous_ram_read));
 		result.is_pc_updated = 1;
 		result.u16_value = pc + tmp16 + 2; // pc += PEEK2_RAM(pc) + 2
