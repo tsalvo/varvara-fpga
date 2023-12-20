@@ -2546,12 +2546,12 @@ opcode_result_t sub2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.sp_relative_shift = sp_relative_shift(ins, 4, -2);
 		result.is_stack_write = 1;
 		result.stack_address_sp_offset = 1;
-		result.u8_value = (uint8_t)(tmp16);	// set T2 (low byte)
+		result.u8_value = tmp16(7, 0);	// set T2 (low byte)
 	}
 	else if (phase == 6) {
 		result.sp_relative_shift = 0;
 		result.stack_address_sp_offset = 2;
-		result.u8_value = (uint8_t)(tmp16 >> 8); // set T2 (high byte)
+		result.u8_value = tmp16(15, 8); // set T2 (high byte)
 		result.is_opc_done = 1;
 	}
 	
@@ -2958,7 +2958,7 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x3F /* SFT2  */) { opc_result = sft2(phase, ins, previous_stack_read); }
 	
 	
-	stack_index = (ins & 0x40) >> 6;
+	stack_index = ins(6);
 	stack_index ^= opc_result.is_stack_index_flipped;
 	
 	if (stack_index) {
