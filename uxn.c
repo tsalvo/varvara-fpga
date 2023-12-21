@@ -128,8 +128,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	// 0bCCCCTLPPPPPPPPPPPPPPPPPP (CCCC = VRAM Code, T = fill from top, L = fill from left, P = pixel number)
 	if (is_fill_code & ~is_fill_active) {
 		is_fill_active = 1;
-		uint1_t is_fill_top = vram_value(2); //vram_value >> 2;
-		uint1_t is_fill_left = vram_value(3); // vram_value >> 3;
+		uint1_t is_fill_top = vram_value >> 2;
+		uint1_t is_fill_left = vram_value >> 3;
 		fill_y0 = vram_address / 260;
 		fill_x0 = vram_address - (fill_y0 * 260);
 		fill_y1 = is_fill_top ? fill_y0 : 233;
@@ -204,8 +204,8 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	if (is_device_ram_write & is_palette_range) {
 		uint12_t tmp12;
 		uint4_t addr_low = (uint4_t)device_ram_address;
-		uint4_t color_cmp_0 = device_ram_value(7, 4);
-		uint4_t color_cmp_1 = device_ram_value(3, 0);
+		uint4_t color_cmp_0 = (uint4_t)(device_ram_value >> 4);
+		uint4_t color_cmp_1 = (uint4_t)device_ram_value;
 		
 		if (addr_low == 0x8) {
 			tmp12 = color_cmp_0;
