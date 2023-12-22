@@ -82,7 +82,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	static uint16_t x, y, ram_addr;
 	static uint8_t ctrl, auto_advance, tmp8;
 	static uint4_t color;
-	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer;
+	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y;
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	if (phase == 0x00) {
@@ -148,14 +148,23 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	else if (phase == 0x07) {
 		if (is_pixel_port) { // PIXEL, assume single-pixel mode
 			auto_advance = previous_device_ram_read;
+			is_auto_x = auto_advance;
+			is_auto_y = auto_advance >> 1;
 			result.is_vram_write = 0;
 			result.u16_addr = 0;
 			result.u8_value = 0;
-			if (auto_advance & 0x01) { // auto X
+			if (is_auto_x) { // auto X
 				x += 1;
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x28;
 				result.u8_value = (uint8_t)(x >> 8); // x (hi)
+			} else if (is_auto_y) {
+				y += 1;
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x2A;
+				result.u8_value = (uint8_t)(y >> 8); // y (hi)
+			} else {
+				result.is_deo_done = 1;
 			}
 		}
 		else { // SPRITE
@@ -165,10 +174,17 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x08) {
 		if (is_pixel_port) { // PIXEL
-			if (auto_advance & 0x01) { // auto X
+			if (is_auto_x) { // auto X
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x29;
 				result.u8_value = (uint8_t)(x); // x (lo)
+				result.is_deo_done = ~is_auto_y;
+			} else { // auto y
+				y += 1;
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x2B;
+				result.u8_value = (uint8_t)(y); // y (lo)
+				result.is_deo_done = 1;
 			}
 		}
 		else { // SPRITE
@@ -178,11 +194,10 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x09) {
 		if (is_pixel_port) {  // PIXEL, assume single pixel mode
-			if ((auto_advance >> 1) & 0x01) { // auto Y
-				result.is_device_ram_write = 1;
-				result.device_ram_address = 0x2A;
-				result.u8_value = (uint8_t)(y >> 8); // y (hi)
-			}
+			// auto Y
+			result.is_device_ram_write = 1;
+			result.device_ram_address = 0x2A;
+			result.u8_value = (uint8_t)(y >> 8); // y (hi)
 		}
 		else { // SPRITE
 			ram_addr |= (uint16_t)(previous_device_ram_read);
@@ -190,11 +205,11 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else if (phase == 0x0A) {
 		if (is_pixel_port) {  // PIXEL, assume single pixel mode
-			if ((auto_advance >> 1) & 0x01) { // auto Y
-				result.is_device_ram_write = 1;
-				result.device_ram_address = 0x2B;
-				result.u8_value = (uint8_t)(y); // y (lo)
-			}
+			// auto Y
+			result.is_device_ram_write = 1;
+			result.device_ram_address = 0x2B;
+			result.u8_value = (uint8_t)(y); // y (lo)
+			result.is_deo_done = 1;
 		}
 	}
 	else {
@@ -207,10 +222,6 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.vram_write_layer = screen_blit_result.vram_write_layer;
 			result.u8_value = screen_blit_result.u8_value;
 			result.is_deo_done = screen_blit_result.is_blit_done;
-		} else {
-			result.is_device_ram_write = 0;
-			result.device_ram_address = 0;
-			result.is_deo_done = 1;
 		}
 	}
 	
@@ -259,12 +270,17 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 device_in_result_t generic_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
 	
-	if (phase < 2) {
+	if (phase == 0) {
 		result.device_ram_address = device_address;
 		result.dei_value = 0;
 		result.is_dei_done = 0;
 	}
-	else {
+	else if (phase == 1) {
+		result.device_ram_address = 0;
+		result.dei_value = 0;
+		result.is_dei_done = 0;
+	}
+	else if (phase == 2) {
 		result.device_ram_address = 0;
 		result.dei_value = previous_device_ram_read;
 		result.is_dei_done = 1;
