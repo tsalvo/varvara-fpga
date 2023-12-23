@@ -252,11 +252,11 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 		result.is_device_ram_write = 1;
 		result.device_ram_address = device_address;
 		result.u8_value = value;
-		device_port = (uint4_t)(device_address);
 		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
 	}
 	else {
+		device_port = (uint4_t)(device_address);
 		result = emu_deo(device_index, device_port, phase - 1, previous_device_ram_read, previous_ram_read);
 	}
 
