@@ -256,14 +256,10 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 		device_index = (uint4_t)(device_address >> 4);
 		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
 	}
-	else if (phase == 1) {
-		result.is_device_ram_write = 0;
-		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
-	}
 	else {
-		result = emu_deo(device_index, device_port, phase - 2, previous_device_ram_read, previous_ram_read);
+		result = emu_deo(device_index, device_port, phase - 1, previous_device_ram_read, previous_ram_read);
 	}
-	
+
 	return result;
 }
 
