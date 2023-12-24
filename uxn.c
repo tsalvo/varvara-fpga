@@ -116,10 +116,9 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static gpu_step_result_t result = {0, 0, 0};
 	
 	// fill
-	static uint16_t fill_pixels_remaining;
 	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
 	static uint2_t fill_color;
-	static uint1_t is_fill_active, fill_layer;
+	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left;
 	
 	static uint16_t pixel_counter = 0; // 256*240, max = 61439
 	static uint16_t x, y;
@@ -129,15 +128,14 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	// 0bCCCCTLPPPPPPPPPPPPPPPPPP (CCCC = VRAM Code, T = fill from top, L = fill from left, P = pixel number)
 	if (is_fill_code & ~is_fill_active) {
 		is_fill_active = 1;
-		uint1_t is_fill_top = vram_value >> 2;
-		uint1_t is_fill_left = vram_value >> 3;
+	    is_fill_top = vram_value >> 2;
+		is_fill_left = vram_value >> 3;
 		fill_y1 = is_fill_top ? vram_address >> 8 : 239;
 		fill_x1 = is_fill_left ? vram_address & 0x00FF : 255;
 		fill_y0 = is_fill_top ? 0 : vram_address >> 8;
 		fill_x0 = is_fill_left ? 0 : vram_address & 0x00FF;
 		fill_layer = vram_write_layer;
 		fill_color = (uint2_t)vram_value;
-		fill_pixels_remaining = (fill_x1 - fill_x0 + 1) * (fill_y1 - fill_y0 + 1);
 		y = fill_y0;
 		x = fill_x0;
 		#if DEBUG
@@ -147,7 +145,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	
 	uint16_t adjusted_vram_address = is_fill_active ? ((y << 8) + x) : vram_address;
 	
-	uint1_t is_new_fill_row = (x == fill_x1) ? 1 : 0;
+	is_new_fill_row = (x == fill_x1) ? 1 : 0;
+	is_last_fill_col = (y == fill_y1) ? 1 : 0;
 	y = is_new_fill_row ? (y + 1) : y;
 	x = is_new_fill_row ? fill_x0 : x + 1;
 	
@@ -168,8 +167,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		is_fill_pixel1 | (~is_fill_active & is_vram_write & vram_write_layer)		    // write enable
 	);
 	
-	fill_pixels_remaining = is_fill_active ? fill_pixels_remaining - 1 : 0;
-	is_fill_active = fill_pixels_remaining == 0 ? 0 : 1;
+	is_fill_active = is_fill_active ? ~(is_new_fill_row & is_last_fill_col) : 0;
 	pixel_counter = (pixel_counter == 61439) ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
 	result.is_new_frame = (pixel_counter == 61439) ? 1 : 0;
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
