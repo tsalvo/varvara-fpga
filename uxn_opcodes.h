@@ -444,17 +444,14 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
 	// t=T;            SET(1, 1) T = DEI(t + 1); N = DEI(t);
 	static uint8_t t8, current_dei_phase, dei_param;
-	static uint1_t is_first_dei_done, is_second_dei_done, has_written_to_t, has_written_to_n;
+	static uint1_t is_first_dei_done;
 	static device_in_result_t device_in_result;
 	static opcode_result_t result;
 	if (phase == 0) {
 		#if DEBUG
 		printf("************\n*** DEI2 ***\n************\n");
 		#endif
-		has_written_to_t = 0;
-		has_written_to_n = 0;
 		is_first_dei_done = 0;
-		is_second_dei_done = 0;
 		current_dei_phase = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_write = 0;
@@ -473,33 +470,19 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 	else {
 		result.sp_relative_shift = 0;
 		t8 = (phase == 2) ? previous_stack_read : t8;
-		dei_param = is_first_dei_done ? t8 + 1 : t8;
-		if (~is_first_dei_done | (has_written_to_t & ~is_second_dei_done)) {
-			device_in_result = device_in(dei_param, current_dei_phase, previous_device_ram_read);
+		dei_param = is_first_dei_done ? t8 : t8 + 1;
+		device_in_result = device_in(dei_param, current_dei_phase, previous_device_ram_read);
+		if (device_in_result.is_dei_done) {
+			current_dei_phase = 0;
+			result.is_stack_write = 1;
+			result.is_opc_done = is_first_dei_done;
+			result.stack_address_sp_offset = is_first_dei_done ? 2 : 1; // set T and then N
+			result.u8_value = device_in_result.dei_value;
+			is_first_dei_done = 1;
+		} else {
 			result.device_ram_address = device_in_result.device_ram_address;
 			result.is_stack_write = 0;
 			current_dei_phase += 1;
-			if (~is_first_dei_done & device_in_result.is_dei_done) {
-				is_first_dei_done = 1;
-			} else if (device_in_result.is_dei_done) {
-				is_second_dei_done = 1;
-			}
-		}
-		else if (~has_written_to_t) {
-			current_dei_phase = 0;
-			result.is_stack_write = 1;
-			result.stack_address_sp_offset = 1;
-			result.u8_value = device_in_result.dei_value;
-			has_written_to_t = 1;
-		}
-		else if (~has_written_to_n) {
-			result.stack_address_sp_offset = 2;
-			result.u8_value = device_in_result.dei_value;
-			has_written_to_n = 1;
-		}
-		else {
-			result.is_stack_write = 0;
-			result.is_opc_done = 1;
 		}
 	}
 	
