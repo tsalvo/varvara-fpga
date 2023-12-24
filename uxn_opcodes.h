@@ -824,7 +824,6 @@ opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		result.u16_value = t16; // pc = t16
 		result.is_opc_done = 1;
 	}
-
 	
 	return result;
 }
