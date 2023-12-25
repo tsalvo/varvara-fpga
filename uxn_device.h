@@ -63,7 +63,7 @@ screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advan
 		dyx = flip_x ? (dy * (-1)) : dy;
 		dxx = flip_x ? (dx * (-1)) : dx;
 		dyy = flip_y ? (dy * (-1)) : dy;
-		ram_addr_incr = (auto_advance & 0x04) << (1 + ((ctrl & 0x80) > 0 ? 1 : 0));
+		ram_addr_incr = (auto_advance & 0x04) << (1 + ((ctrl & 0x80) != 0 ? 1 : 0));
 		length = (uint4_t)(auto_advance >> 4);
 		i_phase = 0;
 		i_length = length;
