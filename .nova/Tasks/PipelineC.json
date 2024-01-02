@@ -10,7 +10,7 @@
     },
     "run" : {
       "enabled" : true,
-      "script" : "rm -rf pipelinec_output_uxn.c_1\nsleep 1\nrm lextab.py\nrm yacctab.py\nrm work-obj08.cf\nsleep 1\ndocker run --rm -v $(pwd):\/workdir pipelinec uxn.c --sim --comb --ghdl\nsleep 1\nsed -i '' 's\/\\\/workdir\\\/\/\/g' .\/pipelinec_output_uxn.c_1\/vhdl_files.txt\nghdl -i --std=08 --work=work $(cat .\/pipelinec_output_uxn.c_1\/vhdl_files.txt) top_test.vhd\nghdl -m --std=08 --work=work top_test\nghdl -r --std=08 --work=work top_test --ieee-asserts=disable --stop-time=100ms"
+      "script" : "rm -rf pipelinec_output_uxn.c_1\nsleep 1\nrm lextab.py\nrm yacctab.py\nrm work-obj08.cf\nsleep 1\ndocker run --rm -v $(pwd):\/workdir pipelinec uxn.c --sim --comb --ghdl\nsleep 1\nsed -i '' 's\/\\\/workdir\\\/\/\/g' .\/pipelinec_output_uxn.c_1\/vhdl_files.txt\nghdl -i --std=08 --work=work $(cat .\/pipelinec_output_uxn.c_1\/vhdl_files.txt) top_test.vhd\nghdl -m --std=08 --work=work top_test\nghdl -r --std=08 --work=work top_test --ieee-asserts=disable --stop-time=120ms"
     }
   },
   "openLogOnRun" : "start"

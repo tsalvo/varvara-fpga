@@ -16,7 +16,7 @@ begin
 	-- The Device Under Test (DUT)
 	i_top : entity work.top
 	port map(
-		clk_13p8288 => test_clk,
+		clk_None => test_clk,
 		uxn_top_is_visible_pixel => test_is_visible_pixel,
 		uxn_top_rom_load_valid_byte => test_rom_load_valid_byte,
 		uxn_top_rom_load_address => test_rom_load_address,
