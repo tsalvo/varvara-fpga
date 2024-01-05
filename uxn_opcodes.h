@@ -318,8 +318,8 @@ opcode_result_t ovr(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		result.u8_value = t8;  // set N
 	}
 	else if (phase == 3) {
-		result.sp_relative_shift = 0;
 		n8 = previous_stack_read;
+		result.sp_relative_shift = 0;
 		result.stack_address_sp_offset = 1;
 		result.u8_value = n8;  // set T
 	}

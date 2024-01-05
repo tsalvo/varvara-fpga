@@ -229,9 +229,7 @@ device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t p
 device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	static uint4_t device_index, device_port;
-	static uint16_t deo_mask[16] = {
-		0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000
-	};
+	static uint1_t deo_mask[16] = {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1};
 		
 	if (phase == 0) {
 		result.is_vram_write = 0;
@@ -239,7 +237,7 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t ph
 		result.device_ram_address = device_address;
 		result.u8_value = value;
 		device_index = (uint4_t)(device_address >> 4);
-		result.is_deo_done = deo_mask[device_index] == 0 ? 1 : 0;
+		result.is_deo_done = deo_mask[device_index];
 	}
 	else {
 		device_port = (uint4_t)(device_address);
