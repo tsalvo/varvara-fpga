@@ -2949,7 +2949,7 @@ eval_opcode_result_t eval_opcode_phased(
 	}
 			
 	stack_address = ((uint9_t)(stack_index ? sp1 : sp0)) - ((uint9_t)(opc_result.stack_address_sp_offset));
-	stack_address += (stack_index ? 256 : 0);
+	stack_address |= (stack_index ? 0b100000000 : 0);
 	
 	previous_stack_read = stack_ram_update(
 		stack_address, 
