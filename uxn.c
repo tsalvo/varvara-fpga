@@ -358,11 +358,11 @@ uint16_t uxn_top(
 		ram_write_value = boot_step_result.rom_byte;
 		is_booted = boot_step_result.is_finished;
 		#else
-		boot_check = rom_load_valid_byte ? 0 : (((uint8_t)(u16_addr >> 8) != 0) ? boot_check + 1 : 0);
-		is_booted = (boot_check == 0xFFFFFF) ? 1 : 0;
-		is_ram_write = (rom_load_valid_byte | is_booted);
-		u16_addr += (rom_load_valid_byte | is_booted) ? 1 : 0;
-		ram_write_value = is_booted ? 0 : rom_load_value;
+		boot_check = rom_load_valid_byte ? 0 : boot_check + 1;
+		is_ram_write = rom_load_valid_byte;
+		u16_addr = rom_load_address + 0x0100;
+		ram_write_value = rom_load_value;
+		is_booted = boot_check == 0xFFFFFF ? 1 : 0;
 		#endif
 	} else {
 		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
