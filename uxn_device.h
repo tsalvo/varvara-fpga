@@ -39,6 +39,63 @@ typedef struct screen_blit_result_t {
 	uint1_t is_blit_done;
 } screen_blit_result_t;
 
+screen_blit_result_t screen_2bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read) {
+	static uint8_t blending[80] = {
+		0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0,
+		0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3,
+		1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1,
+		2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2,
+		0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0
+	};
+	static uint16_t x, y;
+	static uint8_t xmod = 0;
+	static uint1_t opaque = 0;
+	static uint16_t c = 0;
+	static uint2_t ch = 0;
+	static screen_blit_result_t result;
+	static uint8_t phase_minus_two = 0;
+	static uint5_t phase7_downto_4 = 0;
+	static uint5_t phase7_downto_3 = 0;
+	static uint3_t phase2_downto_0 = 0;
+	static uint8_t sprite_rows[16];
+	
+	phase7_downto_4 = phase(7, 4);
+	phase7_downto_3 = phase(7, 3);
+	phase2_downto_0 = phase(2, 0);
+	phase_minus_two = phase - 2;
+	
+	if (phase == 0) {
+		opaque = blending[(uint8_t)(64) + (uint8_t)(color)];
+		xmod = fx ? 7 : 0;
+		x = x1 + xmod;
+		y = y1 + (fy ? 7 : 0);
+	}
+	
+	if (phase7_downto_4 == 0) { // if phase < 16
+		result.is_vram_write = 0;
+		result.u8_value = 0;
+		result.is_blit_done = 0;
+		result.u16_addr = ram_addr + phase; // RAM read
+	} else {
+		c = phase2_downto_0 == 0b000 ? sprite_rows[(uint8_t)(phase7_downto_3) - 0x02] | (sprite_rows[(uint8_t)(phase7_downto_3) + 0x06] << 8) : c >> 1;
+		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : (fx ? (x - 1) : (x + 1));
+		ch = c(7);
+		ch <<= 1;
+		ch |= c(0);
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | (ch == 0 ? 0 : 1);
+		result.u8_value = blending[(uint8_t)(color) + (((uint8_t)(ch)) << 4)];
+		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
+		result.is_blit_done = phase2_downto_0 == 0b111 && phase7_downto_3 == 9;
+	}
+	
+	if (phase_minus_two(7, 4) == 0) { // phase 2 through 17
+		sprite_rows[phase_minus_two] = previous_ram_read;
+	}
+	
+	return result;
+}
+
 screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read)
 {
 	static uint2_t blending[48] = {
@@ -216,7 +273,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		if (is_sprite_port) { // SPRITE
 			
 			if (ctrl_mode) {
-				screen_blit_result = screen_1bpp(phase - 0x09, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
+				screen_blit_result = screen_2bpp(phase - 0x09, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
 			} else {
 				screen_blit_result = screen_1bpp(phase - 0x09, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
 			}
