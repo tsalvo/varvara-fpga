@@ -39,6 +39,526 @@ typedef struct screen_blit_result_t {
 	uint1_t is_blit_done;
 } screen_blit_result_t;
 
+screen_blit_result_t screen_1bpp(uint8_t phase, uint1_t layer, uint8_t x1, uint8_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read)
+{
+	static uint2_t blending[48] = {
+		0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0,
+		0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3,
+		0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0
+	};
+	static uint16_t row = 0;
+	static uint8_t w = 256, h = 240;
+	static uint16_t x, y;
+	static uint8_t ymod = 0;
+	static uint8_t xmod = 0;
+	static uint8_t ymax = 0;
+	static uint8_t xmax = 0;
+	static uint1_t opaque = 0;
+	static uint8_t c = 0;
+	static uint1_t ch = 0;
+	static screen_blit_result_t result;
+	
+	if (phase == 0) { // ROW 0
+		opaque = blending[(uint8_t)(32) + (uint8_t)(color)];
+		ymod = fy ? 7 : 0;
+		xmod = fx ? 0 : 7;
+		ymax = fy ? (y1 + ymod - 8) : (y1 + ymod + 8);
+		xmax = fx ? (x1 + xmod + 8) : (x1 + xmod - 8);
+		result.is_vram_write = 0;
+		result.vram_write_layer = layer;
+		result.u16_addr = ram_addr;
+		result.u8_value = 0;
+		result.is_blit_done = 0;
+	} else if (phase == 2) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		y = y1 + ymod;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 3) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 4) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 5) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 6) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 7) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 8) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 9) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 10) { // ROW 1
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 1;
+		result.u8_value = 0;
+	} else if (phase == 12) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 13) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 14) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 15) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 16) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 17) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 18) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 19) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 20) { // ROW 2
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 2;
+		result.u8_value = 0;
+	} else if (phase == 22) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 23) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 24) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 25) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 26) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 27) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 28) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 29) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 30) { // ROW 3
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 3;
+		result.u8_value = 0;
+	} else if (phase == 32) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 33) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 34) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 35) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 36) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 37) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 38) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 39) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 40) { // ROW 4
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 4;
+		result.u8_value = 0;
+	} else if (phase == 42) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 43) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 44) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 45) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 46) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 47) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 48) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 49) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 50) { // ROW 5
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 5;
+		result.u8_value = 0;
+	} else if (phase == 52) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 53) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 54) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 55) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 56) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 57) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 58) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 59) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	}  else if (phase == 60) { // ROW 6
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 6;
+		result.u8_value = 0;
+	} else if (phase == 62) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 63) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 64) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 65) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 66) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 67) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 68) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 69) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 70) { // ROW 7
+		y = fy ? (y - 1) : (y + 1);
+		result.is_vram_write = 0;
+		result.u16_addr = ram_addr + 7;
+		result.u8_value = 0;
+	} else if (phase == 72) {
+		c = previous_ram_read;
+		ch = c;
+		x = x1 + xmod;
+		result.is_vram_write = opaque | ch;
+		result.u16_addr = (y << 8) + x;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 73) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 74) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 75) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 76) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 77) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 78) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+	} else if (phase == 79) {
+		c >>= 1;
+		x = fx ? (x - 1) : (x + 1);
+		ch = c;
+		result.u16_addr = (y << 8) + x;
+		result.is_vram_write = opaque | ch;
+		result.u8_value = blending[(uint8_t)(color) + (ch ? 0x10 : 0x00)];
+		result.is_blit_done = 1;
+	}
+	
+	return result;
+}
+
 screen_blit_result_t screen_blit(uint8_t phase, uint8_t ctrl, uint8_t auto_advance, uint16_t x, uint16_t y, uint16_t ram_addr, uint8_t previous_ram_read) {
 	static uint2_t blending[64] = {
 		0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0,
@@ -84,6 +604,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	static uint4_t color;
 	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y;
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
+	static screen_blit_result_t screen_blit_result;
 	
 	if (phase == 0x00) {
 		is_pixel_port = device_port == 0xE ? 1 : 0;
@@ -200,7 +721,14 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 	}
 	else {
 		if (is_sprite_port) { // SPRITE
-			screen_blit_result_t screen_blit_result = screen_blit(phase - 0x09, ctrl, auto_advance, x, y, ram_addr, previous_ram_read);
+			
+			if (ctrl_mode) {
+				screen_blit_result = screen_1bpp(phase - 0x09, layer, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
+			} else {
+				screen_blit_result = screen_1bpp(phase - 0x09, layer, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
+			}
+			
+			// screen_blit_result_t screen_blit_result = screen_blit(phase - 0x09, ctrl, auto_advance, x, y, ram_addr, previous_ram_read);
 			result.is_device_ram_write = 0;
 			result.device_ram_address = 0;
 			result.is_vram_write = screen_blit_result.is_vram_write;
