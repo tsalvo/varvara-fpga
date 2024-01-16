@@ -370,8 +370,16 @@ device_in_result_t controller_dei(uint8_t device_address, uint8_t phase, uint8_t
 	device_port = (uint4_t)device_address;
 	
 	if (device_port == 0x2) {  // button RLDUTSBA (right, left, down, up, start, select, B, A)
+		uint8_t button_map = uint8_uint1_0(0, controller0_buttons(4));
+		button_map = uint8_uint1_1(button_map, controller0_buttons(5));
+		button_map = uint8_uint1_2(button_map, controller0_buttons(6));
+		button_map = uint8_uint1_3(button_map, controller0_buttons(7));
+		button_map = uint8_uint1_4(button_map, controller0_buttons(0));
+		button_map = uint8_uint1_5(button_map, controller0_buttons(1));
+		button_map = uint8_uint1_6(button_map, controller0_buttons(2));
+		button_map = uint8_uint1_7(button_map, controller0_buttons(3));
 		result.device_ram_address = 0;
-		result.dei_value = controller0_buttons;
+		result.dei_value = button_map;
 		result.is_dei_done = 1;
 	}
 	else {
