@@ -60,7 +60,7 @@ typedef struct cpu_step_result_t {
 
 } cpu_step_result_t;
 
-cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint1_t use_vector, uint16_t vector) {
+cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint8_t controller0_buttons, uint1_t use_vector, uint16_t vector) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint8_t step_cpu_phase = 0;
@@ -83,7 +83,7 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	}
 	else {
 		ins = step_cpu_phase == 2 ? previous_ram_read_value : ins;
-		eval_opcode_result_t eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, previous_ram_read_value, previous_device_ram_read);
+		eval_opcode_result_t eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, controller0_buttons, previous_ram_read_value, previous_device_ram_read);
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.u16_value : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.u16_addr = eval_opcode_result.u16_value;
@@ -324,6 +324,7 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 // #pragma PART "5CGXFC9E7F35C8" // TODO: try quartus step here for Cyclone V
 #pragma MAIN uxn_top
 uint16_t uxn_top(
+	uint8_t controller0_buttons,
 	uint1_t is_visible_pixel,
 	uint1_t rom_load_valid_byte,
 	uint16_t rom_load_address,
@@ -365,7 +366,7 @@ uint16_t uxn_top(
 		is_booted = boot_check == 0xFFFFFF ? 1 : 0;
 		#endif
 	} else {
-		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, gpu_step_result.is_new_frame, screen_vector);
+		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, controller0_buttons, gpu_step_result.is_new_frame, screen_vector);
 		is_ram_write = cpu_step_result.is_ram_write;
 		u16_addr = cpu_step_result.u16_addr;
 		device_ram_address = cpu_step_result.device_ram_address;
