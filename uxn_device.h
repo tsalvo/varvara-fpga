@@ -123,7 +123,7 @@ screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 	
 	if (phase == 0) {
 		opaque = blending[(uint8_t)(32) + (uint8_t)(color)];
-		xmod = fx ? 7 : 0;
+		xmod = fx ? 0 : 7;
 		x = x1 + xmod;
 		y = y1 + (fy ? 7 : 0);
 	}
@@ -135,7 +135,7 @@ screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 		result.u16_addr = ram_addr + phase; // RAM read
 	} else {
 		c = phase2_downto_0 == 0b000 ? sprite_rows[phase7_downto_3 - 1] : c >> 1;
-		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : (fx ? (x - 1) : (x + 1));
+		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : (fx ? (x + 1) : (x - 1));
 		result.u16_addr = (y << 8) + x;
 		result.is_vram_write = opaque | c(0);
 		result.u8_value = blending[color8 + (c(0) ? 0x10 : 0x00)];
