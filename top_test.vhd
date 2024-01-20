@@ -7,6 +7,7 @@ end entity;
   
 architecture sim of top_test is
 	  signal test_clk    : std_logic := '0';
+	  signal test_controller0_buttons : unsigned(7 downto 0) := x"00";
 	  signal test_is_visible_pixel : unsigned(0 downto 0) := to_unsigned(1, 1);
 	  signal test_rom_load_valid_byte : unsigned(0 downto 0) := to_unsigned(0, 1);
 	  signal test_rom_load_address : unsigned(15 downto 0) := x"0000";
@@ -17,6 +18,7 @@ begin
 	i_top : entity work.top
 	port map(
 		clk_None => test_clk,
+		uxn_top_controller0_buttons => test_controller0_buttons,
 		uxn_top_is_visible_pixel => test_is_visible_pixel,
 		uxn_top_rom_load_valid_byte => test_rom_load_valid_byte,
 		uxn_top_rom_load_address => test_rom_load_address,
