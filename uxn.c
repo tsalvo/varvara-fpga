@@ -63,7 +63,7 @@ typedef struct cpu_step_result_t {
 cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint8_t controller0_buttons, uint1_t is_new_frame, uint16_t screen_vector, uint16_t controller_vector) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
-	static uint8_t step_cpu_phase = 0;
+	static uint12_t step_cpu_phase = 0;
 	static uint1_t is_ins_done = 0, is_waiting = 0, pending_controller = 0, pending_frame = 0;
 	static uint8_t last_controller0 = 0;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};

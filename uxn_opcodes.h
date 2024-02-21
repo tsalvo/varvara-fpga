@@ -489,7 +489,7 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, ui
 	return result;
 }
 
-opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+opcode_result_t deo(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	// t=T;n=N;        SET(2,-2) DEO(t, n)
 	static uint8_t t8, n8;
 	static opcode_result_t result;
@@ -530,7 +530,7 @@ opcode_result_t deo(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 	return result;
 }
 
-opcode_result_t deo2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+opcode_result_t deo2(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	// t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO((t + 1), n)
 	static uint8_t t8, n8, l8, current_deo_phase, deo_param0, deo_param1;
 	static uint1_t is_second_deo = 0, is_phase_3 = 0, is_phase_4 = 0;
@@ -2846,7 +2846,7 @@ opcode_result_t brk(uint8_t phase) {
 }
 
 eval_opcode_result_t eval_opcode_phased(
-	uint8_t phase,
+	uint12_t phase,
 	uint8_t ins,
 	uint16_t pc,
 	uint8_t controller0_buttons,

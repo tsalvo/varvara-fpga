@@ -51,7 +51,7 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 	static uint8_t xmod = 0;
 	static uint1_t opaque = 0;
 	static uint16_t c = 0;
-	static uint2_t ch = 0;
+	static uint8_t ch = 0;
 	static uint8_t color8;
 	static screen_blit_result_t result;
 	static uint8_t phase_minus_two = 0;
@@ -67,8 +67,8 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 	phase_minus_two = phase - 2;
 	
 	if (phase == 0) {
-		opaque = blending[(uint8_t)(64) + color8];
-		xmod = fx ? 7 : 0;
+		opaque = blending[0x40 + color8];
+		xmod = fx ? 0 : 7;
 		x = x1 + xmod;
 		y = y1 + (fy ? 7 : 0);
 	}
@@ -79,16 +79,18 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 		result.is_blit_done = 0;
 		result.u16_addr = ram_addr + phase; // RAM read
 	} else {
-		c = phase2_downto_0 == 0b000 ? sprite_rows[(uint8_t)(phase7_downto_3) - 0x02] | (sprite_rows[(uint8_t)(phase7_downto_3) + 0x06] << 8) : c >> 1;
-		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : (fx ? (x - 1) : (x + 1));
-		ch = c(7);
+		c = phase2_downto_0 == 0b000 ? sprite_rows[(uint8_t)(phase7_downto_3) - 0x02] | (sprite_rows[(uint8_t)(phase7_downto_3) + 0x06] << 8) : c;
+		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : x;
+		ch = c(8);
 		ch <<= 1;
 		ch |= c(0);
 		result.u16_addr = (y << 8) + x;
 		result.is_vram_write = opaque | (ch == 0b00 ? 0 : 1);
-		result.u8_value = blending[color8 + (((uint8_t)(ch)) << 4)];
+		result.u8_value = blending[color8 + (ch << 4)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
-		result.is_blit_done = phase2_downto_0 == 0b111 && phase7_downto_3 == 9;
+		result.is_blit_done = phase2_downto_0 == 0b111 && phase7_downto_3 == 0b01001;
+		x = (fx ? (x + 1) : (x - 1));
+		c >>= 1;
 	}
 	
 	if (phase_minus_two(7, 4) == 0) { // phase 2 through 17
@@ -98,7 +100,7 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 	return result;
 }
 
-screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read)
+screen_blit_result_t screen_1bpp(uint12_t phase, uint8_t x1, uint8_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read)
 {
 	static uint2_t blending[48] = {
 		0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0,
@@ -122,7 +124,7 @@ screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 	phase_minus_two = phase - 2;
 	
 	if (phase == 0) {
-		opaque = blending[(uint8_t)(32) + (uint8_t)(color)];
+		opaque = blending[0x20 + color8];
 		xmod = fx ? 0 : 7;
 		x = x1 + xmod;
 		y = y1 + (fy ? 7 : 0);
@@ -134,13 +136,15 @@ screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 		result.is_blit_done = 0;
 		result.u16_addr = ram_addr + phase; // RAM read
 	} else {
-		c = phase2_downto_0 == 0b000 ? sprite_rows[phase7_downto_3 - 1] : c >> 1;
-		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : (fx ? (x + 1) : (x - 1));
+		c = phase2_downto_0 == 0b000 ? sprite_rows[phase7_downto_3 - 1] : c;
+		x = phase2_downto_0 == 0b000 ? (x1 + xmod) : x;
 		result.u16_addr = (y << 8) + x;
 		result.is_vram_write = opaque | c(0);
 		result.u8_value = blending[color8 + (c(0) ? 0x10 : 0x00)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
 		result.is_blit_done = phase2_downto_0 == 0b111 && phase7_downto_3 == 8;
+		c >>= 1;
+		x = (fx ? (x + 1) : (x - 1));
 	}
 	
 	if (phase_minus_two(7, 3) == 0) { // phase 2 through 9
@@ -150,15 +154,17 @@ screen_blit_result_t screen_1bpp(uint8_t phase, uint8_t x1, uint8_t y1, uint4_t 
 	return result;
 }
 
-device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+device_out_result_t screen_deo(uint4_t device_port, uint12_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static uint16_t x, y, ram_addr;
-	static uint8_t ctrl, auto_advance, tmp8;
-	static uint4_t color;
-	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y, is_auto_addr;
+	static uint12_t tmp12;
+	static uint8_t ctrl, auto_advance, tmp8, tmp8b, x_sprite_incr, y_sprite_incr;
+	static uint4_t color, auto_length, tmp4;
+	static uint1_t is_pixel_port, is_sprite_port, is_drawing_port, ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y, is_auto_addr, is_blit_done, is_last_blit;
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	static screen_blit_result_t screen_blit_result;
 	
-	if (phase == 0x00) {
+	if (phase == 0x000) {
+		is_blit_done = 0;
 		is_pixel_port = device_port == 0xE ? 1 : 0;
 		is_sprite_port = device_port == 0xF ? 1 : 0;
 		is_drawing_port = is_pixel_port | is_sprite_port;
@@ -171,10 +177,10 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.is_deo_done = 1;
 		}
 	}
-	else if (phase == 0x01) { // assume is_drawing_port
+	else if (phase == 0x001) { // assume is_drawing_port
 		result.device_ram_address = 0x29; // x (lo)
 	}
-	else if (phase == 0x02) {
+	else if (phase == 0x002) {
 		ctrl = previous_device_ram_read;
 		color = (uint4_t)(ctrl);
 		ctrl_mode = (uint1_t)(ctrl >> 7);
@@ -183,11 +189,11 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 		flip_x = (uint1_t)(ctrl >> 4);
 		result.device_ram_address = 0x2B; // y (lo) 
 	}
-	else if (phase == 0x03) {
+	else if (phase == 0x003) {
 		x = (uint16_t)(previous_device_ram_read);
 		result.device_ram_address = 0x26; // auto 
 	}
-	else if (phase == 0x04) {
+	else if (phase == 0x004) {
 		y = (uint16_t)(previous_device_ram_read);
 		if (is_pixel_port) { // PIXEL
 			result.device_ram_address = 0;
@@ -206,11 +212,15 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.device_ram_address = 0x2C; // ram_addr (hi)
 		}
 	}
-	else if (phase == 0x05) {
+	else if (phase == 0x005) {
+		// case 0x6: rMX = d[0x6] & 0x1, rMY = d[0x6] & 0x2, rMA = d[0x6] & 0x4, rML = d[0x6] >> 4, rDX = rMX << 3, rDY = rMY << 2; return;
 		auto_advance = previous_device_ram_read;
-		is_auto_x = auto_advance(0);
-		is_auto_y = auto_advance(1);
-		is_auto_addr = auto_advance(2);
+		auto_length = auto_advance(7, 4); 	  // rML
+		is_auto_x = auto_advance(0); 		  // rMX
+		is_auto_y = auto_advance(1); 		  // rMY
+		is_auto_addr = auto_advance(2); 	  // rMA
+		x_sprite_incr = is_auto_x ? 0x8 : 0;  // rDX
+		y_sprite_incr = is_auto_y ? 0x8 : 0;  // rDY
 		if (is_pixel_port) { // PIXEL, assume single-pixel mode
 			result.is_vram_write = 0;
 			result.u16_addr = 0;
@@ -222,7 +232,7 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			result.device_ram_address = 0x2D; // ram_addr (lo)
 		}
 	}
-	else if (phase == 0x06) {
+	else if (phase == 0x006) {
 		if (is_pixel_port) { // PIXEL
 			// auto y if we did auto x last cycle
 			result.is_device_ram_write = is_auto_y & is_auto_x;
@@ -235,31 +245,77 @@ device_out_result_t screen_deo(uint4_t device_port, uint8_t phase, uint8_t previ
 			ram_addr <<= 8;
 		}
 	}
-	else if (phase == 0x07) {
+	else if (phase == 0x007) {
 		// SPRITE
 		ram_addr |= (uint16_t)(previous_device_ram_read);
+		tmp12 = 0x008;
+		tmp4 = 0;
+		tmp8 = x;
+		tmp8b = y;
+		is_blit_done = 0;
+		is_last_blit = 0;
 	}
-	else {
-		// SPRITE
-		if (ctrl_mode) {
-			screen_blit_result = screen_2bpp(phase - 0x08, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
+	else {	
+		/*
+		auto_length = auto_advance(7, 4); 	  // rML
+		is_auto_x = auto_advance(0); 		  // rMX (0 or 1)
+		is_auto_y = auto_advance(1); 		  // rMY (0 or 2)
+		is_auto_addr = auto_advance(2); 	  // rMA = d[0x6] & 0x4 ()
+		x_sprite_incr = is_auto_x ? 0x8 : 0;  // rDX (0 or 8)
+		y_sprite_incr = is_auto_y ? 0x8 : 0;  // rDY (0 or 8)
+		*/
+		if (is_blit_done) {
+			result.is_vram_write = 0;
+			result.u16_addr = 0;
+			if (phase == tmp12) {
+				tmp8 = flip_x ? tmp8 - y_sprite_incr : tmp8 + y_sprite_incr;
+				tmp8b = flip_y ? tmp8b - x_sprite_incr : tmp8b + x_sprite_incr;
+				x = (is_last_blit ? (flip_x ? (x - x_sprite_incr) : (x + x_sprite_incr)) : x);
+				y = (is_last_blit ? (flip_y ? (y - y_sprite_incr) : (y + y_sprite_incr)) : y);
+				ram_addr += (is_auto_addr ? (ctrl_mode ? 0x0010 : 0x0008) : 0);
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x29;
+				result.u8_value = (uint8_t)(x); // x (lo)
+			} else if (phase == tmp12 + 1) {
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x2B;
+				result.u8_value = (uint8_t)(y); // y (lo)
+			} else if (phase == tmp12 + 2) {
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x2C; // ram_addr (hi)
+				result.u8_value = (uint8_t)(ram_addr >> 8);
+			} else if (phase == tmp12 + 3) {
+				tmp4 += 1;
+				screen_blit_result.is_blit_done = 0;
+				result.is_device_ram_write = 1;
+				result.device_ram_address = 0x2D; // ram_addr (lo)
+				result.u8_value = (uint8_t)(ram_addr);
+				result.is_deo_done = is_last_blit;
+			}
 		} else {
-			screen_blit_result = screen_1bpp(phase - 0x08, x, y, color, flip_x, flip_y, ram_addr, previous_ram_read);
+			if (ctrl_mode) {
+				screen_blit_result = screen_2bpp(phase - tmp12, tmp8, tmp8b, color, flip_x, flip_y, ram_addr, previous_ram_read); // 79 cycles
+			} else {
+				screen_blit_result = screen_1bpp(phase - tmp12, tmp8, tmp8b, color, flip_x, flip_y, ram_addr, previous_ram_read); // 71 cycles
+			}
+			
+			result.device_ram_address = 0;
+			result.is_device_ram_write = 0;
+			result.is_vram_write = screen_blit_result.is_vram_write;
+			result.u16_addr = screen_blit_result.u16_addr;
+			result.vram_write_layer = layer;
+			result.u8_value = screen_blit_result.u8_value;
 		}
-		
-		result.is_device_ram_write = 0;
-		result.device_ram_address = 0;
-		result.is_vram_write = screen_blit_result.is_vram_write;
-		result.u16_addr = screen_blit_result.u16_addr;
-		result.vram_write_layer = layer;
-		result.u8_value = screen_blit_result.u8_value;
-		result.is_deo_done = screen_blit_result.is_blit_done;
 	}
+	
+	tmp12 = is_blit_done ^ screen_blit_result.is_blit_done ? phase + 1 : tmp12;
+	is_blit_done = is_blit_done ? (tmp12 == phase + 1 ? 0 : 1) : screen_blit_result.is_blit_done;
+	is_last_blit = auto_length == tmp4 ? 1 : 0;
 	
 	return result;
 }
 
-device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint12_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	if (device_index == 0x2) { // SCREEN
@@ -271,7 +327,7 @@ device_out_result_t emu_deo(uint4_t device_index, uint4_t device_port, uint8_t p
 	return result;
 }
 
-device_out_result_t device_out(uint8_t device_address, uint8_t value, uint8_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
+device_out_result_t device_out(uint8_t device_address, uint8_t value, uint12_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	static uint4_t device_index, device_port;
 	static uint1_t deo_mask[16] = {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1};
