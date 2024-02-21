@@ -2454,7 +2454,7 @@ opcode_result_t sth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	return result;
 }
 
-opcode_result_t sub(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
+opcode_result_t sub1(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	// t=T;n=N;        SET(2,-1) T = n - t;
 	static uint8_t t8, n8;
 	static opcode_result_t result;
@@ -2925,7 +2925,7 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x37 /* DEO2  */) { opc_result = deo2(phase, ins, previous_stack_read, previous_device_ram_read, previous_ram_read); }
 	else if (opc == 0x18 /* ADD   */) { opc_result = add(phase, ins, previous_stack_read); }
 	else if (opc == 0x38 /* ADD2  */) { opc_result = add2(phase, ins, previous_stack_read); }
-	else if (opc == 0x19 /* SUB   */) { opc_result = sub(phase, ins, previous_stack_read); }
+	else if (opc == 0x19 /* SUB   */) { opc_result = sub1(phase, ins, previous_stack_read); }
 	else if (opc == 0x39 /* SUB2  */) { opc_result = sub2(phase, ins, previous_stack_read); }
 	else if (opc == 0x1A /* MUL   */) { opc_result = mul(phase, ins, previous_stack_read); }
 	else if (opc == 0x3A /* MUL2  */) { opc_result = mul2(phase, ins, previous_stack_read); }
