@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #if DEBUG
-#include "roms/star.h"
+#include "roms/controller.h"
 #endif
 
 // RULES:
