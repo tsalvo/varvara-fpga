@@ -493,6 +493,74 @@ device_in_result_t controller_dei(uint8_t device_address, uint8_t phase, uint8_t
 	return result;
 }
 
+device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+	static device_in_result_t result = {0, 0, 0};
+	static uint4_t device_port = 0;
+	device_port = (uint4_t)device_address;
+	
+	// TODO: result should be based on system real time clock
+	if (device_port == 0x00) { 		// year, high byte
+		result.device_ram_address = 0;
+		result.dei_value = 0x07;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x01) { // year, low byte
+		result.device_ram_address = 0;
+		result.dei_value = 0xBE;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x02) { // month
+		result.device_ram_address = 0;
+		result.dei_value = 0x0B;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x03) { // day
+		result.device_ram_address = 0;
+		result.dei_value = 0x1E;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x04) { // hour
+		result.device_ram_address = 0;
+		result.dei_value = 0x06;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x05) { // minute
+		result.device_ram_address = 0;
+		result.dei_value = 0x33;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x06) { // second
+		result.device_ram_address = 0;
+		result.dei_value = 0x04;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x07) { // day of week, beginning Sunday
+		result.device_ram_address = 0;
+		result.dei_value = 0x05;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x08) { // day of year, high byte
+		result.device_ram_address = 0;
+		result.dei_value = 0x01;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x09) { // day of year, low byte
+		result.device_ram_address = 0;
+		result.dei_value = 0x6C;
+		result.is_dei_done = 1;
+	}
+	else if (device_port == 0x0A) { // is daylight savings time
+		result.device_ram_address = 0;
+		result.dei_value = 0x00;
+		result.is_dei_done = 1;
+	}
+	else {
+		result = generic_dei(device_address, phase, previous_device_ram_read);
+	}
+	
+	return result;
+}
+
 device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t controller0_buttons, uint8_t previous_device_ram_read) {
 	static uint8_t device;
 	static device_in_result_t result = {0, 0, 0};
@@ -507,6 +575,9 @@ device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t cont
 	}
 	else if (device == 0x80) {
 		result = controller_dei(device_address, phase, controller0_buttons, previous_device_ram_read);
+	}
+	else if (device == 0xC0) {
+		result = datetime_dei(device_address, phase, previous_device_ram_read);
 	}
 	else {
 		result = generic_dei(device_address, phase, previous_device_ram_read);
