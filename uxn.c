@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #if DEBUG
-#include "roms/controller.h"
+#include "roms/screen_blending.h"
 #endif
 
 // RULES:
