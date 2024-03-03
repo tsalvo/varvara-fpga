@@ -532,7 +532,8 @@ opcode_result_t deo(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 
 opcode_result_t deo2(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	// t=T;n=N;l=L;    SET(3,-3) DEO(t, l) DEO((t + 1), n)
-	static uint8_t t8, n8, l8, current_deo_phase, deo_param0, deo_param1;
+	static uint8_t t8, n8, l8, deo_param0, deo_param1;
+	static uint12_t current_deo_phase;
 	static uint1_t is_second_deo = 0, is_phase_3 = 0, is_phase_4 = 0;
 	static opcode_result_t result;
 	static device_out_result_t device_out_result;
