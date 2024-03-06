@@ -308,7 +308,7 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 		y_sprite_incr = auto_advance(1) ? 0x8 : 0;  // rDY
 		ram_addr_incr = (auto_advance(2) ? (ctrl_mode ? 0x0010 : 0x0008) : 0);
 		if (is_blit_done) {
-			if (phase == tmp12) {
+			if (tmp12 == phase) {
 				tmp16 = flip_x ? (tmp16 - y_sprite_incr) : (tmp16 + y_sprite_incr);
 				tmp16b = flip_y ? (tmp16b - x_sprite_incr) : (tmp16b + x_sprite_incr);
 				x = (is_last_blit ? (flip_x ? (x - x_sprite_incr) : (x + x_sprite_incr)) : x);
@@ -319,46 +319,46 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 				result.device_ram_address = 0x28;
 				result.u8_value = (uint8_t)(x >> 8); // x (hi) WRITE
 			}
-			else if (phase == tmp12 + 1) {
+			else if (tmp12 == phase - 1) {
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x29;
 				result.u8_value = (uint8_t)(x);      // x (lo) WRITE
 			}
-			else if (phase == tmp12 + 2) {
+			else if (tmp12 == phase - 2) {
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2A;    
 				result.u8_value = (uint8_t)(y >> 8); // y (hi) WRITE
 			}
-			else if (phase == tmp12 + 3) {
+			else if (tmp12 == phase - 3) {
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2B;
 				result.u8_value = (uint8_t)(y); 	// y (lo) WRITE
 			}
-			else if (phase == tmp12 + 4) {
+			else if (tmp12 == phase - 4) {
 				result.is_device_ram_write = 0;
 				result.device_ram_address = 0x2C; // ram_addr (hi) READ
 			}
-			else if (phase == tmp12 + 5) {
+			else if (tmp12 == phase - 5) {
 				result.is_device_ram_write = 0;
 				result.device_ram_address = 0x2D; // ram_addr (lo) READ
 			}
-			else if (phase == tmp12 + 6) {
+			else if (tmp12 == phase - 6) {
 				ram_addr = (uint16_t)(previous_device_ram_read);
 				ram_addr <<= 8;
 			}
-			else if (phase == tmp12 + 7) {
+			else if (tmp12 == phase - 7) {
 				ram_addr |= (uint16_t)(previous_device_ram_read);
 				ram_addr += ram_addr_incr;
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2C; // ram_addr (hi) WRITE
 				result.u8_value = (uint8_t)(ram_addr >> 8);
 			}
-			else if (phase == tmp12 + 8) {
+			else if (tmp12 == phase - 8) {
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2D; // ram_addr (lo) WRITE
 				result.u8_value = (uint8_t)(ram_addr);
 			}
-			else if (phase == tmp12 + 9) {
+			else if (tmp12 == phase - 9) {
 				tmp4 += 1;
 				screen_blit_result.is_blit_done = 0;
 				result.is_device_ram_write = 0; 
@@ -460,16 +460,16 @@ device_in_result_t generic_dei(uint8_t device_address, uint8_t phase, uint8_t pr
 	return result;
 }
 
-device_in_result_t system_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+device_in_result_t system_dei(uint8_t device_address, uint8_t phase, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
 	if (device_address == 0x04) {
 		result.device_ram_address = 0;
-		result.dei_value = 0; // TODO: STACK 0 (WST) Pointer
+		result.dei_value = stack_ptr0;
 		result.is_dei_done = 1;
 	}
 	else if (device_address == 0x05) {
 		result.device_ram_address = 0;
-		result.dei_value = 0; // TODO: STACK 1 (RST) Pointer
+		result.dei_value = stack_ptr1;
 		result.is_dei_done = 1;
 	}
 	else {
@@ -603,14 +603,14 @@ device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint8_t p
 	return result;
 }
 
-device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t controller0_buttons, uint8_t previous_device_ram_read) {
+device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t controller0_buttons, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_device_ram_read) {
 	static uint8_t device;
 	static device_in_result_t result = {0, 0, 0};
 	
 	device = device_address & 0xF0;
 	
 	if (device == 0x00) {
-		result = system_dei(device_address, phase, previous_device_ram_read);
+		result = system_dei(device_address, phase, stack_ptr0, stack_ptr1, previous_device_ram_read);
 	}
 	else if (device == 0x20) {
 		result = screen_dei(device_address, phase, previous_device_ram_read);
