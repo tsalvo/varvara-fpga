@@ -141,13 +141,14 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint24_t queue_write_value = 0;
 	static uint24_t queue_read_value = 0;
 	static uint1_t queue_write_enable = 0;
-	static uint2_t queue_phase = 0;
+	static uint2_t queue_phase = 0, bg_pixel_color = 0, fg_pixel_color = 0;
 	static uint1_t is_buffer_swapped = 0;
+	static uint17_t adjusted_read_address = 0, adjusted_write_address = 0;
 	
 	// current fill
 	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
 	static uint2_t fill_color;
-	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left;
+	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
 	
 	static uint16_t pixel_counter = 0; // 256*240, max = 61439
 	static uint16_t x, y;
@@ -197,25 +198,25 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		x = fill_x0;
 	} 
 	
-	uint17_t adjusted_read_address = pixel_counter | (is_buffer_swapped & enable_buffer_swap ? 0b10000000000000000 : 0);
-	uint17_t adjusted_write_address = (is_fill_active ? ((y << 8) + x) : current_queue_item.vram_address) | (~is_buffer_swapped & enable_buffer_swap ? 0b10000000000000000 : 0);
+	adjusted_read_address = pixel_counter | (is_buffer_swapped & enable_buffer_swap ? 0b10000000000000000 : 0);
+	adjusted_write_address = (is_fill_active ? ((y << 8) + x) : current_queue_item.vram_address) | (~is_buffer_swapped & enable_buffer_swap ? 0b10000000000000000 : 0);
 	
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
 	is_last_fill_col = (y == fill_y1) ? 1 : 0;
 	y = is_new_fill_row ? (y + 1) : y;
 	x = is_new_fill_row ? fill_x0 : x + 1;
 	
-	uint1_t is_fill_pixel0 = is_fill_active & (~fill_layer);
-	uint1_t is_fill_pixel1 = is_fill_active & fill_layer;
+	is_fill_pixel0 = is_fill_active & (~fill_layer);
+	is_fill_pixel1 = is_fill_active & fill_layer;
 	
-	uint2_t bg_pixel_color = bg_vram_update(
+	bg_pixel_color = bg_vram_update(
 		adjusted_read_address,							                                           // read address
 		adjusted_write_address,                                                             // write address
 		is_fill_pixel0 ? fill_color : current_queue_item.color,					                       // write value
 		is_fill_pixel0 | (~is_fill_active & current_queue_item.is_valid & (~current_queue_item.layer))		   // write enable
 	);
 	
-	uint2_t fg_pixel_color = fg_vram_update(
+	fg_pixel_color = fg_vram_update(
 		adjusted_read_address,							                    					// read address
 		adjusted_write_address,                                                          // write address
 		is_fill_pixel1 ? fill_color : current_queue_item.color,										// write value
