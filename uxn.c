@@ -149,15 +149,14 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
 	static uint2_t fill_color;
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
-	
-	static uint16_t pixel_counter = 0; // 256*240, max = 61439
+	static uint17_t pixel_counter = 0; // 256*240, max = 61439
 	static uint16_t x, y;
 	
 	static uint1_t is_caught_up = 0, is_read_ready = 0;
 	
 	is_buffer_swapped ^= swap_buffers;
 	is_caught_up = queue_read_ptr == queue_write_ptr ? 1 : 0;
-	is_read_ready = queue_phase == 3 ? 1 : 0;
+	is_read_ready = queue_phase == 2 ? 1 : 0;
 
 	if (~current_queue_item.is_valid & ~is_caught_up & is_read_ready) { // ready for next item
 		current_queue_item.vram_address = queue_read_value(15, 0);
@@ -180,7 +179,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	}
 	
 	queue_write_enable = is_vram_write;
-	queue_phase = queue_phase == 3 ? 3 : queue_phase + 1;
+	queue_phase = queue_phase == 2 ? 2 : queue_phase + 1;
 
 	if (current_queue_item.is_valid & current_queue_item.is_fill & ~is_fill_active) {
 		is_fill_active = 1;
@@ -198,8 +197,9 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		x = fill_x0;
 	} 
 	
-	adjusted_read_address = pixel_counter | (is_buffer_swapped & enable_buffer_swap ? 0b10000000000000000 : 0);
-	adjusted_write_address = (is_fill_active ? ((y << 8) + x) : current_queue_item.vram_address) | (~is_buffer_swapped & enable_buffer_swap ? 0b10000000000000000 : 0);
+	adjusted_read_address = uint17_uint1_16(pixel_counter, is_buffer_swapped & enable_buffer_swap);
+	adjusted_write_address = (is_fill_active ? ((y << 8) + x) : current_queue_item.vram_address);
+	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_buffer_swapped & enable_buffer_swap);
 	
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
 	is_last_fill_col = (y == fill_y1) ? 1 : 0;
