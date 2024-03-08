@@ -39,7 +39,7 @@ typedef struct screen_blit_result_t {
 	uint1_t is_blit_done;
 } screen_blit_result_t;
 
-screen_blit_result_t screen_2bpp(uint8_t phase, uint16_t x1, uint16_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read) {
+screen_blit_result_t screen_2bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4_t color, uint1_t fx, uint1_t fy, uint16_t ram_addr, uint8_t previous_ram_read) {
 	static uint8_t blending[80] = {
 		0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0,
 		0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3,
@@ -53,17 +53,19 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint16_t x1, uint16_t y1, uint4_
 	static uint8_t ch = 0;
 	static uint8_t color8;
 	static screen_blit_result_t result;
-	static uint8_t phase_minus_two = 0;
+	static uint12_t phase_minus_two = 0;
 	static uint4_t phase7_downto_4 = 0;
 	static uint5_t phase7_downto_3 = 0;
 	static uint3_t phase2_downto_0 = 0;
+	static uint8_t phase7_downto_3_u8 = 0;
 	static uint8_t sprite_rows[16];
-	static uint1_t is_in_bounds = 0;
+	static uint1_t is_in_bounds = 0, is_new_row = 0;
 	
 	color8 = color;
 	phase7_downto_4 = phase(7, 4);
 	phase7_downto_3 = phase(7, 3);
 	phase2_downto_0 = phase(2, 0);
+	phase7_downto_3_u8 = phase7_downto_3;
 	phase_minus_two = phase - 2;
 	
 	if (phase_minus_two(7, 4) == 0) { // phase 2 through 17
@@ -82,8 +84,13 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint16_t x1, uint16_t y1, uint4_
 		result.is_blit_done = 0;
 		result.u16_addr = ram_addr + phase; // RAM read
 	} else {
-		c = phase2_downto_0 == 0b000 ? sprite_rows[(uint8_t)(phase7_downto_3) - 0x02] | (sprite_rows[(uint8_t)(phase7_downto_3) + 0x06] << 8) : c;
-		x = phase2_downto_0 == 0b000 ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
+		is_new_row = phase2_downto_0 == 0b00 ? 1 : 0;
+		if (is_new_row) {
+			c = (uint16_t)(sprite_rows[phase7_downto_3_u8 + 0x06]);
+			c <<= 8;
+			c |= (uint16_t)(sprite_rows[phase7_downto_3_u8 - 0x02]);
+		}
+		x = is_new_row ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
 		is_in_bounds = (x(15, 8) == 0x00) ? 1 : 0;
 		ch = c(8);
 		ch <<= 1;
@@ -92,7 +99,7 @@ screen_blit_result_t screen_2bpp(uint8_t phase, uint16_t x1, uint16_t y1, uint4_
 		result.is_vram_write = is_in_bounds & (opaque | (ch == 0x00 ? 0 : 1));
 		result.u8_value = blending[color8 + (ch << 4)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
-		result.is_blit_done = phase == 0x4F ? 1 : 0;
+		result.is_blit_done = phase == 0x04F ? 1 : 0;
 		x = (fx ? (x + 1) : (x - 1));
 		c >>= 1;
 	}
@@ -112,7 +119,7 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 	static uint8_t c = 0;
 	static uint8_t color8 = 0;
 	static screen_blit_result_t result;
-	static uint8_t phase_minus_two = 0;
+	static uint12_t phase_minus_two = 0;
 	static uint5_t phase7_downto_3 = 0;
 	static uint3_t phase2_downto_0 = 0;
 	static uint8_t sprite_rows[8];
@@ -146,7 +153,7 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 		result.is_vram_write = is_in_bounds & (opaque | c(0));
 		result.u8_value = blending[color8 + (c(0) ? 0x10 : 0x00)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
-		result.is_blit_done = phase == 0x47 ? 1 : 0; // phase2_downto_0 == 0b111 && phase7_downto_3 == 0b01000;
+		result.is_blit_done = phase == 0x047 ? 1 : 0; // phase2_downto_0 == 0b111 && phase7_downto_3 == 0b01000;
 		c >>= 1;
 		x = (fx ? (x + 1) : (x - 1));
 	}
