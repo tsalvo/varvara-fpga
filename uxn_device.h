@@ -341,31 +341,31 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 				result.device_ram_address = 0x2B;
 				result.u8_value = (uint8_t)(y); 	// y (lo) WRITE
 			}
+			// else if (tmp12 == phase - 4) {
+			// 	result.is_device_ram_write = 0;
+			// 	result.device_ram_address = 0x2C; // ram_addr (hi) READ
+			// }
+			// else if (tmp12 == phase - 5) {
+			// 	result.is_device_ram_write = 0;
+			// 	result.device_ram_address = 0x2D; // ram_addr (lo) READ
+			// }
+			// else if (tmp12 == phase - 6) {
+			// 	ram_addr = (uint16_t)(previous_device_ram_read);
+			// 	ram_addr <<= 8;
+			// }
 			else if (tmp12 == phase - 4) {
-				result.is_device_ram_write = 0;
-				result.device_ram_address = 0x2C; // ram_addr (hi) READ
-			}
-			else if (tmp12 == phase - 5) {
-				result.is_device_ram_write = 0;
-				result.device_ram_address = 0x2D; // ram_addr (lo) READ
-			}
-			else if (tmp12 == phase - 6) {
-				ram_addr = (uint16_t)(previous_device_ram_read);
-				ram_addr <<= 8;
-			}
-			else if (tmp12 == phase - 7) {
-				ram_addr |= (uint16_t)(previous_device_ram_read);
+				// ram_addr |= (uint16_t)(previous_device_ram_read);
 				ram_addr += ram_addr_incr;
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2C; // ram_addr (hi) WRITE
 				result.u8_value = (uint8_t)(ram_addr >> 8);
 			}
-			else if (tmp12 == phase - 8) {
+			else if (tmp12 == phase - 5) {
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2D; // ram_addr (lo) WRITE
 				result.u8_value = (uint8_t)(ram_addr);
 			}
-			else if (tmp12 == phase - 9) {
+			else if (tmp12 == phase - 6) {
 				tmp4 += 1;
 				screen_blit_result.is_blit_done = 0;
 				result.is_device_ram_write = 0; 
