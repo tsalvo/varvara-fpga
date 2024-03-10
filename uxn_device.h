@@ -162,9 +162,8 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 }
 
 device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
-	static uint16_t x, y;
-	static uint8_t ctrl, auto_advance, tmp8, tmp8b;
-	static uint4_t color;
+	static uint8_t x, y, ctrl, auto_advance, tmp8, tmp8b;
+	static uint2_t color;
 	static uint1_t ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y, is_x_in_bounds, is_y_in_bounds;
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
@@ -199,18 +198,21 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 	}
 	else if (phase == 0x006) {
 		ctrl = previous_device_ram_read;
-		color = (uint4_t)(ctrl);
-		ctrl_mode = (uint1_t)(ctrl >> 7);
-		layer = (uint1_t)(ctrl >> 6);
-		flip_y = (uint1_t)(ctrl >> 5);
-		flip_x = (uint1_t)(ctrl >> 4);
-		tmp8 = color & 0x3;
-		tmp8 |= (ctrl_mode ? (flip_x ? 0x18 : 0x10) : 0x00); // extra bits for fill mode
-		tmp8 |= (ctrl_mode ? (flip_y ? 0x04 : 0x00) : 0x00); // extra bits for fill mode
+		ctrl_mode = ctrl(7);
+		layer = ctrl(6);
+		flip_y = ctrl(5);
+		flip_x = ctrl(4);
+		color = ctrl(1, 0);
+		// extra bits for fill mode 0b000FXYCC (F = Is Fill, X = Flip X, Y = Flip Y)
+		tmp8 = uint8_uint2_0(0, color);
+		tmp8 = uint8_uint1_2(tmp8, flip_y);
+		tmp8 = uint8_uint1_3(tmp8, flip_x);
+		tmp8 = uint8_uint1_4(tmp8, ctrl_mode);
 		tmp8b = ~(ctrl_mode & ~is_x_in_bounds) ? x(7, 0) : 0xFF;
 		is_x_in_bounds = ctrl_mode ? (flip_x | is_x_in_bounds) : is_x_in_bounds;
 		is_y_in_bounds = ctrl_mode ? (flip_y | is_y_in_bounds) : is_y_in_bounds;
-		result.u16_addr = (y << 8) + tmp8b;
+		result.u16_addr = uint16_uint8_0(0, x);
+		result.u16_addr = uint16_uint8_8(result.u16_addr, y);
 		result.vram_write_layer = layer;
 		result.device_ram_address = 0;
 		result.is_vram_write = is_x_in_bounds & is_y_in_bounds;
@@ -224,7 +226,9 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		result.is_vram_write = 0;
 		result.u16_addr = 0;
 		result.is_device_ram_write = is_auto_x | is_auto_y;
-		result.u8_value = ((is_auto_x ? (x + 0x0001) : (y + 0x0001)) >> 8);
+		is_x_in_bounds = is_auto_x & is_x_in_bounds & (x == 0xFF ? 1 : 0) ? 0 : is_x_in_bounds;
+		is_y_in_bounds = is_auto_y & is_y_in_bounds & (y == 0xFF ? 1 : 0) ? 0 : is_y_in_bounds;
+		result.u8_value = (is_auto_x ? ~is_x_in_bounds : ~is_y_in_bounds);
 		result.device_ram_address = is_auto_x ? 0x28 : 0x2A;
 		result.is_deo_done = ~(is_auto_x | is_auto_y);
 	}
@@ -238,14 +242,14 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		// auto y if we did auto x last cycle
 		result.is_device_ram_write = is_auto_y & is_auto_x;
 		result.device_ram_address = 0x2A;
-		result.u8_value = (uint8_t)((y + 1) >> 8); // y (lo)
+		result.u8_value = ~is_y_in_bounds; // y (hi)
 		result.is_deo_done = 0;
 	}
 	else if (phase == 0x00A) {
 		// auto y if we did auto x last cycle
 		result.is_device_ram_write = is_auto_y & is_auto_x;
 		result.device_ram_address = 0x2B;
-		result.u8_value = (uint8_t)(y + 1); // y (lo)
+		result.u8_value = y + 1; // y (lo)
 		result.is_deo_done = 1;
 	}
 	
@@ -291,11 +295,11 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 	}
 	else if (phase == 0x006) {
 		ctrl = previous_device_ram_read;
-		color = (uint4_t)(ctrl);
 		ctrl_mode = ctrl(7);
 		layer = ctrl(6);
 		flip_y = ctrl(5);
 		flip_x = ctrl(4);
+		color = ctrl(3, 0);
 		result.device_ram_address = 0x2D; // ram_addr (lo)
 	}
 	else if (phase == 0x007) {
