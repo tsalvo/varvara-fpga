@@ -135,8 +135,8 @@ typedef struct draw_command_t {
 
 gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint16_t vram_address, uint8_t vram_value, uint32_t cycle, uint1_t enable_buffer_swap, uint1_t swap_buffers) {
 	static gpu_step_result_t result = {0, 0};
-	static uint12_t queue_read_ptr = 0;
-	static uint12_t queue_write_ptr = 0;
+	static uint13_t queue_read_ptr = 0;
+	static uint13_t queue_write_ptr = 0;
 	static draw_command_t current_queue_item = {0, 0, 0, 0, 0, 0, 0};
 	static uint24_t queue_write_value = 0;
 	static uint24_t queue_read_value = 0;
@@ -182,7 +182,6 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	queue_phase = queue_phase == 2 ? 2 : queue_phase + 1;
 
 	if (current_queue_item.is_valid & current_queue_item.is_fill & ~is_fill_active) {
-		is_fill_active = 1;
 		is_fill_top = current_queue_item.fill_top;
 		is_fill_left = current_queue_item.fill_left;
 		fill_y1 = is_fill_top ? current_queue_item.vram_address >> 8 : 239;
@@ -195,6 +194,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		is_last_fill_col = 0;
 		y = fill_y0;
 		x = fill_x0;
+		is_fill_active = 1;
 	} 
 	
 	adjusted_read_address = uint17_uint1_16(pixel_counter, is_buffer_swapped & enable_buffer_swap);

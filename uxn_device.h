@@ -163,9 +163,9 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 
 device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previous_device_ram_read, uint8_t previous_ram_read) {
 	static uint16_t x, y;
-	static uint8_t ctrl, auto_advance, tmp8;
+	static uint8_t ctrl, auto_advance, tmp8, tmp8b;
 	static uint4_t color;
-	static uint1_t ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y, is_in_bounds;
+	static uint1_t ctrl_mode, flip_x, flip_y, layer, is_auto_x, is_auto_y, is_x_in_bounds, is_y_in_bounds;
 	static device_out_result_t result = {0, 0, 0, 0, 0, 0, 0};
 	
 	if (phase == 0x000) {
@@ -181,7 +181,7 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		result.device_ram_address = 0x2A; // y (hi) 
 		x = (uint16_t)(previous_device_ram_read);
 		x <<= 8;
-		is_in_bounds = previous_device_ram_read == 0 ? 1 : 0;
+		is_x_in_bounds = previous_device_ram_read == 0 ? 1 : 0;
 	}
 	else if (phase == 0x003) {
 		result.device_ram_address = 0x2B; // y (lo) 
@@ -191,6 +191,7 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		result.device_ram_address = 0x2E; // ctrl
 		y = (uint16_t)(previous_device_ram_read);
 		y <<= 8;
+		is_y_in_bounds = previous_device_ram_read == 0 ? 1 : 0;
 	}
 	else if (phase == 0x005) {
 		y |= (uint16_t)(previous_device_ram_read);
@@ -204,12 +205,15 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		flip_y = (uint1_t)(ctrl >> 5);
 		flip_x = (uint1_t)(ctrl >> 4);
 		tmp8 = color & 0x3;
-		result.u16_addr = (y << 8) + x(7, 0);
-		result.vram_write_layer = layer;
 		tmp8 |= (ctrl_mode ? (flip_x ? 0x18 : 0x10) : 0x00); // extra bits for fill mode
 		tmp8 |= (ctrl_mode ? (flip_y ? 0x04 : 0x00) : 0x00); // extra bits for fill mode
+		tmp8b = ~(ctrl_mode & ~is_x_in_bounds) ? x(7, 0) : 0xFF;
+		is_x_in_bounds = ctrl_mode ? (flip_x | is_x_in_bounds) : is_x_in_bounds;
+		is_y_in_bounds = ctrl_mode ? (flip_y | is_y_in_bounds) : is_y_in_bounds;
+		result.u16_addr = (y << 8) + tmp8b;
+		result.vram_write_layer = layer;
 		result.device_ram_address = 0;
-		result.is_vram_write = ctrl_mode | is_in_bounds;
+		result.is_vram_write = is_x_in_bounds & is_y_in_bounds;
 		result.is_deo_done = ctrl_mode;
 		result.u8_value = tmp8;
 	}
@@ -341,20 +345,7 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 				result.device_ram_address = 0x2B;
 				result.u8_value = (uint8_t)(y); 	// y (lo) WRITE
 			}
-			// else if (tmp12 == phase - 4) {
-			// 	result.is_device_ram_write = 0;
-			// 	result.device_ram_address = 0x2C; // ram_addr (hi) READ
-			// }
-			// else if (tmp12 == phase - 5) {
-			// 	result.is_device_ram_write = 0;
-			// 	result.device_ram_address = 0x2D; // ram_addr (lo) READ
-			// }
-			// else if (tmp12 == phase - 6) {
-			// 	ram_addr = (uint16_t)(previous_device_ram_read);
-			// 	ram_addr <<= 8;
-			// }
 			else if (tmp12 == phase - 4) {
-				// ram_addr |= (uint16_t)(previous_device_ram_read);
 				ram_addr += ram_addr_incr;
 				result.is_device_ram_write = 1;
 				result.device_ram_address = 0x2C; // ram_addr (hi) WRITE
