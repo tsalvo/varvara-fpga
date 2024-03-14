@@ -95,7 +95,8 @@ screen_blit_result_t screen_2bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 		ch = c(8);
 		ch <<= 1;
 		ch |= c(0);
-		result.u16_addr = (y << 8) + x;
+		result.u16_addr = uint16_uint8_8(0, y(7, 0));
+		result.u16_addr = uint16_uint8_0(result.u16_addr, x(7, 0));
 		result.is_vram_write = is_in_bounds & (opaque | (ch == 0x00 ? 0 : 1));
 		result.u8_value = blending[color8 + (ch << 4)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
@@ -149,7 +150,8 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 		c = phase2_downto_0 == 0b000 ? sprite_rows[phase7_downto_3 - 1] : c;
 		x = phase2_downto_0 == 0b000 ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
 		is_in_bounds = x(15, 8) == 0x00 ? 1 : 0;
-		result.u16_addr = (y << 8) + x(7, 0);
+		result.u16_addr = uint16_uint8_8(0, y(7, 0));
+		result.u16_addr = uint16_uint8_0(result.u16_addr, x(7, 0));
 		result.is_vram_write = is_in_bounds & (opaque | c(0));
 		result.u8_value = blending[color8 + (c(0) ? 0x10 : 0x00)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
