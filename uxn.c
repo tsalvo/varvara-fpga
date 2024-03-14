@@ -146,11 +146,11 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint17_t adjusted_read_address = 0, adjusted_write_address = 0;
 	
 	// current fill
-	static uint16_t fill_x0, fill_y0, fill_x1, fill_y1;
+	static uint8_t fill_x0, fill_y0, fill_x1, fill_y1, x, y;
 	static uint2_t fill_color;
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
 	static uint17_t pixel_counter = 0; // 256*240, max = 61439
-	static uint16_t x, y;
+	static uint16_t tmp16 = 0;
 	
 	static uint1_t is_caught_up = 0, is_read_ready = 0;
 	
@@ -180,14 +180,15 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	
 	queue_write_enable = is_vram_write;
 	queue_phase = queue_phase == 2 ? 2 : queue_phase + 1;
+	tmp16 = current_queue_item.vram_address;
 
 	if (current_queue_item.is_valid & current_queue_item.is_fill & ~is_fill_active) {
 		is_fill_top = current_queue_item.fill_top;
 		is_fill_left = current_queue_item.fill_left;
-		fill_y1 = is_fill_top ? current_queue_item.vram_address >> 8 : 239;
-		fill_x1 = is_fill_left ? current_queue_item.vram_address & 0x00FF : 255;
-		fill_y0 = is_fill_top ? 0 : current_queue_item.vram_address >> 8;
-		fill_x0 = is_fill_left ? 0 : current_queue_item.vram_address & 0x00FF;
+		fill_y1 = is_fill_top ? tmp16(15, 8) : 239;
+		fill_x1 = is_fill_left ? tmp16(7, 0) : 255;
+		fill_y0 = is_fill_top ? 0 : tmp16(15, 8);
+		fill_x0 = is_fill_left ? 0 : tmp16(7, 0);
 		fill_layer = current_queue_item.layer;
 		fill_color = current_queue_item.color;
 		is_new_fill_row = 0;
@@ -195,10 +196,14 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		y = fill_y0;
 		x = fill_x0;
 		is_fill_active = 1;
-	} 
+	} else if (current_queue_item.is_valid & ~current_queue_item.is_fill) {
+		y = tmp16(15, 8);
+		x = tmp16(7, 0);
+	}
 	
 	adjusted_read_address = uint17_uint1_16(pixel_counter, is_buffer_swapped & enable_buffer_swap);
-	adjusted_write_address = (is_fill_active ? ((y << 8) + x) : current_queue_item.vram_address);
+	adjusted_write_address = uint16_uint8_8(0, y);
+	adjusted_write_address = uint16_uint8_0(adjusted_write_address(15, 0), x);
 	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_buffer_swapped & enable_buffer_swap);
 	
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
