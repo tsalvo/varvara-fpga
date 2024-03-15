@@ -86,9 +86,8 @@ screen_blit_result_t screen_2bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 	} else {
 		is_new_row = phase2_downto_0 == 0b00 ? 1 : 0;
 		if (is_new_row) {
-			c = (uint16_t)(sprite_rows[phase7_downto_3_u8 + 0x06]);
-			c <<= 8;
-			c |= (uint16_t)(sprite_rows[phase7_downto_3_u8 - 0x02]);
+			c = uint16_uint8_8(0, sprite_rows[phase7_downto_3_u8 + 0x06]);
+			c = uint16_uint8_0(c, sprite_rows[phase7_downto_3_u8 - 0x02]);
 		}
 		x = is_new_row ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
 		is_in_bounds = (x(15, 8) == 0x00) ? 1 : 0;
