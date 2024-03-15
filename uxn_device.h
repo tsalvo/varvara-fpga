@@ -92,13 +92,12 @@ screen_blit_result_t screen_2bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 		}
 		x = is_new_row ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
 		is_in_bounds = (x(15, 8) == 0x00) ? 1 : 0;
-		ch = c(8);
-		ch <<= 1;
-		ch |= c(0);
+		ch = uint8_uint1_5(0, c(8));
+		ch = uint8_uint1_4(ch, c(0));
 		result.u16_addr = uint16_uint8_8(0, y(7, 0));
 		result.u16_addr = uint16_uint8_0(result.u16_addr, x(7, 0));
 		result.is_vram_write = is_in_bounds & (opaque | (ch == 0x00 ? 0 : 1));
-		result.u8_value = blending[color8 + (ch << 4)];
+		result.u8_value = blending[color8 + ch];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
 		result.is_blit_done = phase == 0x04F ? 1 : 0;
 		x = (fx ? (x + 1) : (x - 1));
