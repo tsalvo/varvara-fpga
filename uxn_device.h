@@ -153,7 +153,7 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 		result.is_vram_write = is_in_bounds & (opaque | c(0));
 		result.u8_value = blending[color8 + (c(0) ? 0x10 : 0x00)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
-		result.is_blit_done = phase == 0x047 ? 1 : 0; // phase2_downto_0 == 0b111 && phase7_downto_3 == 0b01000;
+		result.is_blit_done = phase == 0x047 ? 1 : 0;
 		c >>= 1;
 		x = (fx ? (x + 1) : (x - 1));
 	}
