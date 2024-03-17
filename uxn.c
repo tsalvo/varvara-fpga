@@ -311,7 +311,18 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 // #pragma PART "5CGXFC9E7F35C8" // TODO: try quartus step here for Cyclone V
 #pragma MAIN uxn_top
 uint16_t uxn_top(
-	uint8_t controller0_buttons,
+	uint1_t controller0_up,
+	uint1_t controller0_down,
+	uint1_t controller0_left,
+	uint1_t controller0_right,
+	uint1_t controller0_a,
+	uint1_t controller0_b,
+	uint1_t controller0_x,
+	uint1_t controller0_y,
+	uint1_t controller0_l,
+	uint1_t controller0_r,
+	uint1_t controller0_select,
+	uint1_t controller0_start,
 	uint1_t is_visible_pixel,
 	uint1_t is_double_buffer_enabled,
 	uint1_t rom_load_valid_byte,
@@ -335,6 +346,7 @@ uint16_t uxn_top(
 	static uint1_t is_vram_write = 0;
 	static uint1_t vram_write_layer = 0;
 	static uint8_t vram_value = 0;
+	static uint8_t controller0_buttons = 0;
 	
 	static uint32_t cycle_count = 0;
 	
@@ -354,6 +366,14 @@ uint16_t uxn_top(
 		is_booted = boot_check == 0xFFFFFF ? 1 : 0;
 		#endif
 	} else {
+		controller0_buttons = uint8_uint1_0(0, controller0_a);
+		controller0_buttons = uint8_uint1_1(controller0_buttons, controller0_b);
+		controller0_buttons = uint8_uint1_2(controller0_buttons, controller0_select);
+		controller0_buttons = uint8_uint1_3(controller0_buttons, controller0_start);
+		controller0_buttons = uint8_uint1_4(controller0_buttons, controller0_up);
+		controller0_buttons = uint8_uint1_5(controller0_buttons, controller0_down);
+		controller0_buttons = uint8_uint1_6(controller0_buttons, controller0_left);
+		controller0_buttons = uint8_uint1_7(controller0_buttons, controller0_right);
 		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, controller0_buttons, gpu_step_result.is_new_frame, vectors.screen, vectors.controller);
 		is_ram_write = cpu_step_result.is_ram_write;
 		u16_addr = cpu_step_result.u16_addr;
