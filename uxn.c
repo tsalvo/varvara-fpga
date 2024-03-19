@@ -368,8 +368,8 @@ uint16_t uxn_top(
 	} else {
 		controller0_buttons = uint8_uint1_0(0, controller0_a);
 		controller0_buttons = uint8_uint1_1(controller0_buttons, controller0_b);
-		controller0_buttons = uint8_uint1_2(controller0_buttons, controller0_select);
-		controller0_buttons = uint8_uint1_3(controller0_buttons, controller0_start);
+		controller0_buttons = uint8_uint1_2(controller0_buttons, controller0_start);
+		controller0_buttons = uint8_uint1_3(controller0_buttons, controller0_select);
 		controller0_buttons = uint8_uint1_4(controller0_buttons, controller0_up);
 		controller0_buttons = uint8_uint1_5(controller0_buttons, controller0_down);
 		controller0_buttons = uint8_uint1_6(controller0_buttons, controller0_left);
