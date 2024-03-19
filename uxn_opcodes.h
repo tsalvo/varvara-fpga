@@ -2854,17 +2854,16 @@ eval_opcode_result_t eval_opcode_phased(
 	uint8_t previous_ram_read,
 	uint8_t previous_device_ram_read
 ) {
-	static uint8_t sp0, sp1, ins_a_3f, opc;
-	static uint1_t stack_index, is_wait, is_imm;
+	static uint8_t sp0, sp1, ins_a, opc;
+	static uint1_t stack_index, is_wait;
 	static uint9_t stack_address = 0;
 	static uint8_t previous_stack_read = 0;
 	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	
 	is_wait = 0;
-	ins_a_3f = (ins & 0x3F);
-	is_imm = ~((ins_a_3f ^ 0xDF) | 0x20) ? 0 : 1;
-	opc = is_imm ? ins : ins_a_3f;
+	ins_a = ins(4, 0) == 0 ? 0xFF : 0x3F;
+	opc = ins & ins_a;
 	
 	#if DEBUG
 	printf("        EVAL OPCODE: INS = 0x%X, OPC = 0x%X, phase = 0x%X\n", ins, opc, phase);
