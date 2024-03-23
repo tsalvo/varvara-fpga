@@ -151,7 +151,6 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
 	static uint17_t pixel_counter = 0; // 256*240, max = 61439
 	static uint16_t tmp16 = 0;
-	
 	static uint1_t is_caught_up = 0, is_read_ready = 0;
 	
 	is_buffer_swapped ^= swap_buffers;
@@ -202,8 +201,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	}
 	
 	adjusted_read_address = uint17_uint1_16(pixel_counter, is_buffer_swapped & enable_buffer_swap);
-	adjusted_write_address = uint16_uint8_8(0, y);
-	adjusted_write_address = uint16_uint8_0(adjusted_write_address(15, 0), x);
+	adjusted_write_address = uint17_uint8_8(0, y);
+	adjusted_write_address = uint17_uint8_0(adjusted_write_address, x);
 	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_buffer_swapped & enable_buffer_swap);
 	
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
