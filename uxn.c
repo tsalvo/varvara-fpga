@@ -135,8 +135,8 @@ typedef struct draw_command_t {
 
 gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint16_t vram_address, uint8_t vram_value, uint32_t cycle, uint1_t enable_buffer_swap, uint1_t swap_buffers) {
 	static gpu_step_result_t result = {0, 0};
-	static uint13_t queue_read_ptr = 0;
-	static uint13_t queue_write_ptr = 0;
+	static uint14_t queue_read_ptr = 0;
+	static uint14_t queue_write_ptr = 0;
 	static draw_command_t current_queue_item = {0, 0, 0, 0, 0, 0, 0};
 	static uint24_t queue_write_value = 0;
 	static uint24_t queue_read_value = 0;

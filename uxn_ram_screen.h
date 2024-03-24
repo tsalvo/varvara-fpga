@@ -3,11 +3,11 @@
 
 // 260 x 234 (double-buffering)
 #define SCREEN_RAM_SIZE 65536 * 2
-#define DRAW_QUEUE_SIZE 8192
+#define DRAW_QUEUE_SIZE 16384
 
 uint24_t draw_queue_update(
-	uint13_t read_address, 
-	uint13_t write_address, 
+	uint14_t read_address, 
+	uint14_t write_address, 
 	uint24_t write_value, 
 	uint1_t write_enable
 ) {
