@@ -59,7 +59,7 @@ screen_blit_result_t screen_2bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 	static uint3_t phase2_downto_0 = 0;
 	static uint8_t phase7_downto_3_u8 = 0;
 	static uint8_t sprite_rows[16];
-	static uint1_t is_in_bounds = 0, is_new_row = 0;
+	static uint1_t is_x_in_bounds = 0, is_y_in_bounds = 0, is_new_row = 0;
 	
 	color8 = color;
 	phase7_downto_4 = phase(7, 4);
@@ -90,12 +90,13 @@ screen_blit_result_t screen_2bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 			c = uint16_uint8_0(c, sprite_rows[phase7_downto_3_u8 - 0x02]);
 		}
 		x = is_new_row ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
-		is_in_bounds = (x(15, 8) == 0x00) ? 1 : 0;
+		is_x_in_bounds = (x(15, 8) == 0x00) ? 1 : 0;
+		is_y_in_bounds = (y(15, 8) == 0x00) ? 1 : 0;
 		ch = uint8_uint1_5(0, c(8));
 		ch = uint8_uint1_4(ch, c(0));
 		result.u16_addr = uint16_uint8_8(0, y(7, 0));
 		result.u16_addr = uint16_uint8_0(result.u16_addr, x(7, 0));
-		result.is_vram_write = is_in_bounds & (opaque | (ch == 0x00 ? 0 : 1));
+		result.is_vram_write = is_x_in_bounds & is_y_in_bounds & (opaque | (ch == 0x00 ? 0 : 1));
 		result.u8_value = blending[color8 + ch];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
 		result.is_blit_done = phase == 0x04F ? 1 : 0;
@@ -122,7 +123,8 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 	static uint5_t phase7_downto_3 = 0;
 	static uint3_t phase2_downto_0 = 0;
 	static uint8_t sprite_rows[8];
-	static uint1_t is_in_bounds = 0;
+	static uint1_t is_x_in_bounds = 0;
+	static uint1_t is_y_in_bounds = 0;
 	
 	color8 = color;
 	phase7_downto_3 = phase(7, 3);
@@ -147,10 +149,11 @@ screen_blit_result_t screen_1bpp(uint12_t phase, uint16_t x1, uint16_t y1, uint4
 	} else {
 		c = phase2_downto_0 == 0b000 ? sprite_rows[phase7_downto_3 - 1] : c;
 		x = phase2_downto_0 == 0b000 ? (x1 + (fx ? 0x0000 : 0x0007)) : x;
-		is_in_bounds = x(15, 8) == 0x00 ? 1 : 0;
+		is_x_in_bounds = x(15, 8) == 0x00 ? 1 : 0;
+		is_y_in_bounds = y(15, 8) == 0x00 ? 1 : 0;
 		result.u16_addr = uint16_uint8_8(0, y(7, 0));
 		result.u16_addr = uint16_uint8_0(result.u16_addr, x(7, 0));
-		result.is_vram_write = is_in_bounds & (opaque | c(0));
+		result.is_vram_write = is_x_in_bounds & is_y_in_bounds & (opaque | c(0));
 		result.u8_value = blending[color8 + (c(0) ? 0x10 : 0x00)];
 		y = phase2_downto_0 == 0b111 ? (fy ? (y - 1) : (y + 1)) : y;
 		result.is_blit_done = phase == 0x047 ? 1 : 0;
