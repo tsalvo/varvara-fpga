@@ -59,6 +59,11 @@ typedef struct eval_opcode_result_t {
 	uint1_t is_opc_done;
 } eval_opcode_result_t;
 
+uint16_t u16_add_u8_as_i8(uint16_t u16, uint8_t u8) {
+	uint1_t is_negative = u8(7);
+	return is_negative ? (u16 - 0x0080 + (uint16_t)(u8 & 0x7F)) : (u16 + u8);
+}
+
 int4_t sp_relative_shift(uint8_t ins, int4_t x, int4_t y) {
 	return (((ins & 0x80) != 0) ? x + y : y);
 }
@@ -588,7 +593,7 @@ opcode_result_t deo2(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, u
 
 opcode_result_t jmp(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_stack_read) {
 	// t=T;            SET(1,-1) pc += (Sint8)t;
-	static int8_t t8;
+	static uint8_t t8;
 	static opcode_result_t result;
 	if (phase == 0) {
 		#if DEBUG
@@ -607,10 +612,10 @@ opcode_result_t jmp(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		result.stack_address_sp_offset = 1; 
 	}
 	else if (phase == 2) {
-		t8 = (int8_t)(previous_stack_read);
+		t8 = previous_stack_read;
 		result.sp_relative_shift = sp_relative_shift(ins, 1, -1);
 		result.is_pc_updated = 1;
-		result.u16_value = pc + t8;
+		result.u16_value = u16_add_u8_as_i8(pc, t8); 
 		result.is_opc_done = 1;
 	}
 	
@@ -679,7 +684,7 @@ opcode_result_t jcn(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		n8 = previous_stack_read;
 		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
 		result.is_pc_updated = 1;
-		result.u16_value = n8 == 0 ? pc : pc + (int8_t)(t8); // if(n) pc += (Sint8)t;
+		result.u16_value = n8 == 0 ? pc : u16_add_u8_as_i8(pc, t8); // if(n) pc += (Sint8)t;
 		result.is_opc_done = 1;
 	}
 	
@@ -760,7 +765,7 @@ opcode_result_t jsr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		result.stack_address_sp_offset = 2;
 		result.u8_value = (uint8_t)(pc >> 8); 	// set T2 (high byte)
 		result.is_pc_updated = 1;
-		result.u16_value = pc + (int8_t)(t8); // pc += t
+		result.u16_value = u16_add_u8_as_i8(pc, t8); // pc += t
 		result.is_opc_done = 1;
 	}
 	
@@ -1616,7 +1621,7 @@ opcode_result_t ldr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 	else if (phase == 2) {
 		t8 = previous_stack_read;
 		result.sp_relative_shift = sp_relative_shift(ins, 1, 0);
-		result.u16_value = pc + (int8_t)(t8); // peek RAM at address equal to  PC + T 
+		result.u16_value = u16_add_u8_as_i8(pc, t8); // peek RAM at address equal to  PC + T 
 	}
 	else if (phase == 3) {
 		result.sp_relative_shift = 0;
@@ -1655,10 +1660,10 @@ opcode_result_t ldr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 	else if (phase == 2) {
 		t8 = previous_stack_read;
 		result.sp_relative_shift = 0;
-		result.u16_value = pc + (int8_t)(t8);     // peek RAM (byte 1 of 2) at address equal to PC + T 
+		result.u16_value = u16_add_u8_as_i8(pc, t8);     // peek RAM (byte 1 of 2) at address equal to PC + T 
 	}
 	else if (phase == 3) {
-		result.u16_value = pc + (int8_t)(t8) + 1; // peek RAM (byte 2 of 2) at address equal to PC + T + 1
+		result.u16_value += 1; // peek RAM (byte 2 of 2) at address equal to PC + T + 1
 	}
 	else if (phase == 4) {
 		tmp8_high = previous_ram_read;
@@ -1703,7 +1708,7 @@ opcode_result_t str1(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		n8 = previous_stack_read;
 		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
 		result.is_ram_write = 1;
-		result.u16_value = pc + (int8_t)(t8);
+		result.u16_value = u16_add_u8_as_i8(pc, t8);
 		result.u8_value = n8; // set first n8 to ram address t8 
 		result.is_opc_done = 1;
 	}
@@ -1739,13 +1744,13 @@ opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		n16_high = previous_stack_read;
 		result.sp_relative_shift = sp_relative_shift(ins, 3, -3);
 		result.is_ram_write = 1;
-		result.u16_value = pc + (int8_t)(t8);
+		result.u16_value = u16_add_u8_as_i8(pc, t8);
 		result.u8_value = n16_high; // set first byte of n16 to ram address pc + t8 
 	}
 	else if (phase == 4) {
 		n16_low = previous_stack_read;
 		result.sp_relative_shift = 0;
-		result.u16_value = pc + (int8_t)(t8) + 1;
+		result.u16_value += 1;
 		result.u8_value = n16_low; // set second byte of n16 to ram address pc + t8 + 1 
 		result.is_opc_done = 1;
 	}

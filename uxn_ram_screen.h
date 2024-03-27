@@ -1,7 +1,7 @@
 #pragma once
 #include "uintN_t.h"  // uintN_t types for any N
 
-// 260 x 234 (double-buffering)
+// 256 x 256 (double-buffering)
 #define SCREEN_RAM_SIZE 65536 * 2
 #define DRAW_QUEUE_SIZE 16384
 

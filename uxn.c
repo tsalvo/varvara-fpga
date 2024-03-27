@@ -133,7 +133,7 @@ typedef struct draw_command_t {
 	uint1_t is_valid;
 } draw_command_t;
 
-gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint16_t vram_address, uint8_t vram_value, uint32_t cycle, uint1_t enable_buffer_swap, uint1_t swap_buffers) {
+gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint16_t vram_address, uint8_t vram_value, uint1_t has_screen_vector, uint1_t enable_buffer_swap, uint1_t swap_buffers) {
 	static gpu_step_result_t result = {0, 0};
 	static uint14_t queue_read_ptr = 0;
 	static uint14_t queue_write_ptr = 0;
@@ -149,10 +149,11 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint8_t fill_x0, fill_y0, fill_x1, fill_y1, x, y;
 	static uint2_t fill_color;
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
-	static uint17_t pixel_counter = 0; // 256*240, max = 61439
+	static uint16_t pixel_counter = 0; // 256*256, max = 65535
 	static uint16_t tmp16 = 0;
-	static uint1_t is_caught_up = 0, is_read_ready = 0;
+	static uint1_t is_caught_up = 0, is_read_ready = 0, can_swap_buffers = 0;
 	
+	can_swap_buffers = has_screen_vector & enable_buffer_swap;
 	is_buffer_swapped ^= swap_buffers;
 	is_caught_up = queue_read_ptr == queue_write_ptr ? 1 : 0;
 	is_read_ready = queue_phase == 2 ? 1 : 0;
@@ -184,7 +185,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	if (current_queue_item.is_valid & current_queue_item.is_fill & ~is_fill_active) {
 		is_fill_top = current_queue_item.fill_top;
 		is_fill_left = current_queue_item.fill_left;
-		fill_y1 = is_fill_top ? tmp16(15, 8) : 239;
+		fill_y1 = is_fill_top ? tmp16(15, 8) : 255;
 		fill_x1 = is_fill_left ? tmp16(7, 0) : 255;
 		fill_y0 = is_fill_top ? 0 : tmp16(15, 8);
 		fill_x0 = is_fill_left ? 0 : tmp16(7, 0);
@@ -200,10 +201,11 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		x = tmp16(7, 0);
 	}
 	
-	adjusted_read_address = uint17_uint1_16(pixel_counter, is_buffer_swapped & enable_buffer_swap);
+	adjusted_read_address = uint17_uint16_0(0, pixel_counter);
+	adjusted_read_address = uint17_uint1_16(adjusted_read_address, is_buffer_swapped & can_swap_buffers);
 	adjusted_write_address = uint17_uint8_8(0, y);
 	adjusted_write_address = uint17_uint8_0(adjusted_write_address, x);
-	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_buffer_swapped & enable_buffer_swap);
+	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_buffer_swapped & can_swap_buffers);
 	
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
 	is_last_fill_col = (y == fill_y1) ? 1 : 0;
@@ -236,8 +238,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	
 	is_fill_active = is_fill_active ? ~(is_new_fill_row & is_last_fill_col) : 0;
 	current_queue_item.is_valid = is_fill_active;
-	pixel_counter = (pixel_counter == 61439) ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
-	result.is_new_frame = (pixel_counter == 61439) ? 1 : 0;
+	pixel_counter = is_active_drawing_area ? (pixel_counter + 1) : pixel_counter;
+	result.is_new_frame = (is_active_drawing_area & has_screen_vector & (pixel_counter == 0) ? 1 : 0);
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
 
 	return result;
@@ -347,8 +349,6 @@ uint16_t uxn_top(
 	static uint8_t vram_value = 0;
 	static uint8_t controller0_buttons = 0;
 	
-	static uint32_t cycle_count = 0;
-	
 	if (~is_booted) {
 		#if DEBUG
 		// (C-Array-Style)
@@ -396,11 +396,9 @@ uint16_t uxn_top(
 		is_device_ram_write
 	);
 	
-	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, cycle_count, vectors.screen == 0 ? 0 : 1 & is_double_buffer_enabled, cpu_step_result.swap_buffers);
+	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, vectors.screen == 0 ? 0 : 1, is_double_buffer_enabled, cpu_step_result.swap_buffers);
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_step_result.color);
 	vectors = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);
-	
-	cycle_count += 1;
 	
 	return uxn_eval_result;
 }

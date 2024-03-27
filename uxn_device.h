@@ -500,14 +500,14 @@ device_in_result_t screen_dei(uint8_t device_address, uint8_t phase, uint8_t pre
 		result.dei_value = 0x00;
 		result.is_dei_done = 1;
 	}
-	else if (device_port == 0x4) { // screen height (240, or 0x00F0) (high byte)
+	else if (device_port == 0x4) { // screen height (256, or 0x0100) (high byte)
 		result.device_ram_address = 0;
-		result.dei_value = 0x00;
+		result.dei_value = 0x01;
 		result.is_dei_done = 1;
 	}
-	else if (device_port == 0x5) { // screen height (240, or 0x00F0) (low byte)
+	else if (device_port == 0x5) { // screen height (256, or 0x0100) (low byte)
 		result.device_ram_address = 0;
-		result.dei_value = 0xF0;
+		result.dei_value = 0x00;
 		result.is_dei_done = 1;
 	}
 	else {
