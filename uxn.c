@@ -54,7 +54,7 @@ typedef struct cpu_step_result_t {
 	uint1_t is_device_ram_write;
 	uint8_t device_ram_address;
 	
-	uint1_t swap_buffers;
+	uint1_t is_waiting;
 	
 	uint8_t u8_value;
 
@@ -64,7 +64,7 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint12_t step_cpu_phase = 0;
-	static uint1_t is_ins_done = 0, is_waiting = 0, pending_controller = 0, pending_frame = 0;
+	static uint1_t is_ins_done = 0, is_waiting = 0, pending_controller = 0;
 	static uint8_t last_controller0 = 0;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
 	
@@ -72,15 +72,9 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 		pending_controller = 1;
 	}
 	
-	if (is_new_frame & (screen_vector(15, 8) == 0 ? 0 : 1)) {
-		pending_frame = 1;
-	}
-	
-	cpu_step_result.swap_buffers = pending_frame & is_waiting;
-	pc = is_waiting ? (pending_frame ? screen_vector : (pending_controller ? controller_vector : pc)) : pc;
-	is_waiting = pending_frame | pending_controller ? 0 : is_waiting;
+	pc = is_waiting ? (is_new_frame ? screen_vector : (pending_controller ? controller_vector : pc)) : pc;
+	is_waiting = is_new_frame | pending_controller ? 0 : is_waiting;
 	pending_controller = pc == controller_vector ? 0 : pending_controller;
-	pending_frame = 0;
 	
 	last_controller0 = controller0_buttons;
 	
@@ -115,6 +109,8 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 		step_cpu_phase = (pc(15, 8) == 0) ? 0 : (step_cpu_phase + 1);  // stop if PC == 0
 	}
 	
+	cpu_step_result.is_waiting = is_waiting;
+	
 	return cpu_step_result;
 }
 
@@ -133,7 +129,16 @@ typedef struct draw_command_t {
 	uint1_t is_valid;
 } draw_command_t;
 
-gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write, uint1_t vram_write_layer, uint16_t vram_address, uint8_t vram_value, uint1_t has_screen_vector, uint1_t enable_buffer_swap, uint1_t swap_buffers) {
+gpu_step_result_t step_gpu(
+	uint1_t is_active_drawing_area, 
+	uint1_t is_vram_write, 
+	uint1_t vram_write_layer, 
+	uint16_t vram_address, 
+	uint8_t vram_value, 
+	uint1_t has_screen_vector, 
+	uint1_t enable_buffer_swap, 
+	uint1_t is_cpu_waiting
+) {
 	static gpu_step_result_t result = {0, 0};
 	static uint14_t queue_read_ptr = 0;
 	static uint14_t queue_write_ptr = 0;
@@ -141,8 +146,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint24_t queue_write_value = 0;
 	static uint24_t queue_read_value = 0;
 	static uint1_t queue_write_enable = 0;
-	static uint2_t queue_phase = 0, bg_pixel_color = 0, fg_pixel_color = 0;
-	static uint1_t is_buffer_swapped = 0;
+	static uint2_t queue_phase = 0, bg_pixel_color = 0, fg_pixel_color = 0, adjusted_write_value_bg = 0, adjusted_write_value_fg = 0;
+	static uint1_t adjusted_write_enable_bg = 0, adjusted_write_enable_fg = 0 /*, is_buffer_swapped = 0*/;
 	static uint17_t adjusted_read_address = 0, adjusted_write_address = 0;
 	
 	// current fill
@@ -151,14 +156,15 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
 	static uint16_t pixel_counter = 0; // 256*256, max = 65535
 	static uint16_t tmp16 = 0;
-	static uint1_t is_caught_up = 0, is_read_ready = 0, can_swap_buffers = 0;
+	static uint1_t is_caught_up = 0, is_read_ready = 0, is_copy_phase = 0;
 	
-	can_swap_buffers = has_screen_vector & enable_buffer_swap;
-	is_buffer_swapped ^= swap_buffers;
+	static uint20_t pixel_cycle = 0; // up to 1024x1024
+	static uint16_t copy_cycle = 0;
+	
 	is_caught_up = queue_read_ptr == queue_write_ptr ? 1 : 0;
 	is_read_ready = queue_phase == 2 ? 1 : 0;
 
-	if (~current_queue_item.is_valid & ~is_caught_up & is_read_ready) { // ready for next item
+	if (~current_queue_item.is_valid & ~is_caught_up & is_read_ready & ~is_copy_phase) { // ready for next item
 		current_queue_item.vram_address = queue_read_value(15, 0);
 		current_queue_item.color = queue_read_value(17, 16);
 		current_queue_item.fill_top = queue_read_value(18);
@@ -169,7 +175,7 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		queue_phase = 0;
 		queue_read_ptr += 1;
 	}
-
+	
 	if (is_vram_write) { // queue up new draw command (if given)
 		queue_write_value = uint24_uint16_0(0, vram_address);
 		queue_write_value = uint24_uint5_16(queue_write_value, vram_value(4, 0)); // 0b000FLTCC (F = Fill, L = Left, T = Top, C = Color)
@@ -181,8 +187,8 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 	queue_write_enable = is_vram_write;
 	queue_phase = queue_phase == 2 ? 2 : queue_phase + 1;
 	tmp16 = current_queue_item.vram_address;
-
-	if (current_queue_item.is_valid & current_queue_item.is_fill & ~is_fill_active) {
+	
+	if (current_queue_item.is_valid & current_queue_item.is_fill & ~is_fill_active & ~is_copy_phase) {
 		is_fill_top = current_queue_item.fill_top;
 		is_fill_left = current_queue_item.fill_left;
 		fill_y1 = is_fill_top ? tmp16(15, 8) : 255;
@@ -201,32 +207,40 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		x = tmp16(7, 0);
 	}
 	
-	adjusted_read_address = uint17_uint16_0(0, pixel_counter);
-	adjusted_read_address = uint17_uint1_16(adjusted_read_address, is_buffer_swapped & can_swap_buffers);
-	adjusted_write_address = uint17_uint8_8(0, y);
-	adjusted_write_address = uint17_uint8_0(adjusted_write_address, x);
-	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_buffer_swapped & can_swap_buffers);
+	// READ: from upper buffer if copy phase, lower buffer otherwise
+	adjusted_read_address = uint17_uint16_0(0, is_copy_phase ? copy_cycle : pixel_counter);
+	adjusted_read_address = uint17_uint1_16(adjusted_read_address, is_copy_phase);
+	
+	//WRITE: to lower buffer if copy phase, upper buffer otherwise
+	adjusted_write_address = is_copy_phase ? uint17_uint16_0(0, copy_cycle - 2) : uint17_uint8_8(0, y);
+	adjusted_write_address = is_copy_phase ? adjusted_write_address : uint17_uint8_0(adjusted_write_address, x);
+	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_copy_phase);
 	
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
 	is_last_fill_col = (y == fill_y1) ? 1 : 0;
-	y = is_new_fill_row ? (y + 1) : y;
-	x = is_new_fill_row ? fill_x0 : x + 1;
-	
+	y = (is_new_fill_row & ~is_copy_phase) ? (y + 1) : y;
+	x = (is_new_fill_row & ~is_copy_phase) ? fill_x0 : x + 1;
 	is_fill_pixel0 = is_fill_active & (~fill_layer);
 	is_fill_pixel1 = is_fill_active & fill_layer;
 	
+	adjusted_write_value_bg = is_copy_phase ? bg_pixel_color : (is_fill_pixel0 ? fill_color : current_queue_item.color);
+	adjusted_write_value_fg = is_copy_phase ? fg_pixel_color : (is_fill_pixel1 ? fill_color : current_queue_item.color);
+	
+	adjusted_write_enable_bg = is_copy_phase | is_fill_pixel0 | (~is_fill_active & current_queue_item.is_valid & (~current_queue_item.layer));
+	adjusted_write_enable_fg = is_copy_phase | is_fill_pixel1 | (~is_fill_active & current_queue_item.is_valid & current_queue_item.layer);
+	
 	bg_pixel_color = bg_vram_update(
-		adjusted_read_address,							                                           // read address
-		adjusted_write_address,                                                             // write address
-		is_fill_pixel0 ? fill_color : current_queue_item.color,					                       // write value
-		is_fill_pixel0 | (~is_fill_active & current_queue_item.is_valid & (~current_queue_item.layer))		   // write enable
+		adjusted_read_address,		// read address
+		adjusted_write_address,     // write address
+		adjusted_write_value_bg,	// write value
+		adjusted_write_enable_bg	// write enable
 	);
 	
 	fg_pixel_color = fg_vram_update(
-		adjusted_read_address,							                    					// read address
-		adjusted_write_address,                                                          // write address
-		is_fill_pixel1 ? fill_color : current_queue_item.color,										// write value
-		is_fill_pixel1 | (~is_fill_active & current_queue_item.is_valid & current_queue_item.layer)		    // write enable
+		adjusted_read_address,		// read address
+		adjusted_write_address,     // write address
+		adjusted_write_value_fg,	// write value
+		adjusted_write_enable_fg	// write enable
 	);
 	
 	queue_read_value = draw_queue_update(
@@ -236,12 +250,24 @@ gpu_step_result_t step_gpu(uint1_t is_active_drawing_area, uint1_t is_vram_write
 		queue_write_enable		// write enable
 	);
 	
+	copy_cycle += is_copy_phase;
+	pixel_cycle += 1;
+	result.is_new_frame = 0;
+	if (pixel_cycle == 258821) { // (954×340 - 1) - (256x256) - 2
+		is_copy_phase = is_cpu_waiting;
+		copy_cycle = 0;
+	} else if (pixel_cycle == 324360) {  // (954×340)
+		is_copy_phase = 0;
+		copy_cycle = 0;
+		pixel_cycle = 0;
+		result.is_new_frame = has_screen_vector;
+	}
+	
 	is_fill_active = is_fill_active ? ~(is_new_fill_row & is_last_fill_col) : 0;
 	current_queue_item.is_valid = is_fill_active;
 	pixel_counter = is_active_drawing_area ? (pixel_counter + 1) : pixel_counter;
-	result.is_new_frame = (is_active_drawing_area & has_screen_vector & (pixel_counter == 0) ? 1 : 0);
 	result.color = fg_pixel_color == 0 ? bg_pixel_color : fg_pixel_color;
-
+	
 	return result;
 }
 
@@ -396,7 +422,7 @@ uint16_t uxn_top(
 		is_device_ram_write
 	);
 	
-	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, vectors.screen == 0 ? 0 : 1, is_double_buffer_enabled, cpu_step_result.swap_buffers);
+	gpu_step_result = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, vectors.screen == 0 ? 0 : 1, is_double_buffer_enabled, cpu_step_result.is_waiting);
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_step_result.color);
 	vectors = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);
 	
