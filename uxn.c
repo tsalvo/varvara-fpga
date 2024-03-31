@@ -132,7 +132,6 @@ uint2_t step_gpu(
 	uint16_t vram_address, 
 	uint8_t vram_value, 
 	uint1_t has_screen_vector, 
-	uint1_t is_double_buffer_enabled, 
 	uint1_t is_cpu_waiting,
 	uint1_t vsync, // cycle 0 of every frame (new frame)
 	uint1_t hsync // cycle 3 of every horizontal line (new line)
@@ -343,7 +342,6 @@ uint16_t uxn_top(
 	uint1_t vsync, // cycle 0 of every frame (new frame)
 	uint1_t hsync, // cycle 3 of every horizontal line (new line)
 	uint1_t is_visible_pixel,
-	uint1_t is_double_buffer_enabled,
 	uint1_t rom_load_valid_byte,
 	uint16_t rom_load_address,
 	uint8_t rom_load_value
@@ -415,7 +413,7 @@ uint16_t uxn_top(
 		is_device_ram_write
 	);
 	
-	gpu_color = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, has_screen_vector, is_double_buffer_enabled, cpu_step_result.is_waiting, vsync, hsync);
+	gpu_color = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, has_screen_vector, cpu_step_result.is_waiting, vsync, hsync);
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_color);
 	vectors = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);
 	has_screen_vector = vectors.screen == 0 ? 0 : 1;

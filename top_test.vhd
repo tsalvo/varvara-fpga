@@ -9,7 +9,8 @@ architecture sim of top_test is
 	  signal test_clk    : std_logic := '0';
 	  signal test_controller_button : unsigned(0 downto 0) := to_unsigned(0, 1);
 	  signal test_is_visible_pixel : unsigned(0 downto 0) := to_unsigned(1, 1);
-	  signal test_is_double_buffer_enabled: unsigned(0 downto 0) := to_unsigned(1, 1);
+	  signal test_is_vsync: unsigned(0 downto 0) := to_unsigned(0, 1);
+	  signal test_is_hsync: unsigned(0 downto 0) := to_unsigned(0, 1);
 	  signal test_rom_load_valid_byte : unsigned(0 downto 0) := to_unsigned(0, 1);
 	  signal test_rom_load_address : unsigned(15 downto 0) := x"0000";
 	  signal test_rom_load_value : unsigned(7 downto 0) := x"00";
@@ -32,7 +33,8 @@ begin
 		uxn_top_controller0_select => test_controller_button,
 		uxn_top_controller0_start => test_controller_button,
 		uxn_top_is_visible_pixel => test_is_visible_pixel,
-		uxn_top_is_double_buffer_enabled => test_is_double_buffer_enabled,
+		uxn_top_vsync => test_is_vsync,
+		uxn_top_hsync => test_is_hsync,
 		uxn_top_rom_load_valid_byte => test_rom_load_valid_byte,
 		uxn_top_rom_load_address => test_rom_load_address,
 		uxn_top_rom_load_value => test_rom_load_value
