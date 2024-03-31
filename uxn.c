@@ -137,8 +137,8 @@ uint2_t step_gpu(
 	uint1_t hsync // cycle 3 of every horizontal line (new line)
 ) {
 	static uint2_t gpu_color = 0;
-	static uint14_t queue_read_ptr = 0;
-	static uint14_t queue_write_ptr = 0;
+	static uint15_t queue_read_ptr = 0;
+	static uint15_t queue_write_ptr = 0;
 	static draw_command_t current_queue_item = {0, 0, 0, 0, 0, 0, 0};
 	static uint24_t queue_write_value = 0;
 	static uint24_t queue_read_value = 0;
