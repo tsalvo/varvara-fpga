@@ -202,7 +202,7 @@ gpu_step_result_t step_gpu(
 		y = fill_y0;
 		x = fill_x0;
 		is_fill_active = 1;
-	} else if (current_queue_item.is_valid & ~current_queue_item.is_fill) {
+	} else if (current_queue_item.is_valid & ~current_queue_item.is_fill & ~is_copy_phase) {
 		y = tmp16(15, 8);
 		x = tmp16(7, 0);
 	}
@@ -211,7 +211,7 @@ gpu_step_result_t step_gpu(
 	adjusted_read_address = uint17_uint16_0(0, is_copy_phase ? copy_cycle : pixel_counter);
 	adjusted_read_address = uint17_uint1_16(adjusted_read_address, is_copy_phase);
 	
-	//WRITE: to lower buffer if copy phase, upper buffer otherwise
+	// WRITE: to lower buffer if copy phase, upper buffer otherwise
 	adjusted_write_address = is_copy_phase ? uint17_uint16_0(0, copy_cycle - 2) : uint17_uint8_8(0, y);
 	adjusted_write_address = is_copy_phase ? adjusted_write_address : uint17_uint8_0(adjusted_write_address, x);
 	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_copy_phase);
@@ -219,7 +219,7 @@ gpu_step_result_t step_gpu(
 	is_new_fill_row = (x == fill_x1) ? 1 : 0;
 	is_last_fill_col = (y == fill_y1) ? 1 : 0;
 	y = (is_new_fill_row & ~is_copy_phase) ? (y + 1) : y;
-	x = (is_new_fill_row & ~is_copy_phase) ? fill_x0 : x + 1;
+	x = is_copy_phase ? x : (is_new_fill_row ? fill_x0 : x + 1);
 	is_fill_pixel0 = is_fill_active & (~fill_layer);
 	is_fill_pixel1 = is_fill_active & fill_layer;
 	
