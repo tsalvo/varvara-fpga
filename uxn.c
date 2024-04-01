@@ -177,7 +177,7 @@ uint2_t step_gpu(
 		queue_write_value = uint24_uint16_0(0, vram_address);
 		queue_write_value = uint24_uint5_16(queue_write_value, vram_value(4, 0)); // 0b000FLTCC (F = Fill, L = Left, T = Top, C = Color)
 		queue_write_value = uint24_uint1_21(queue_write_value, vram_write_layer);
-		queue_phase = 0;
+		queue_phase = is_caught_up ? 0 : queue_phase;
 		queue_write_ptr += 1;
 	}
 	
