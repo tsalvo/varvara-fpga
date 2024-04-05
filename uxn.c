@@ -153,7 +153,7 @@ uint2_t step_gpu(
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
 	static uint16_t pixel_counter = 0; // 256*256, max = 65535
 	static uint16_t tmp16 = 0;
-	static uint1_t is_caught_up = 0, is_read_ready = 0, is_copy_phase = 0, is_copy_start_cycle = 0;
+	static uint1_t is_caught_up = 0, is_read_ready = 0, is_copy_phase = 0, is_copy_start_cycle = 0, can_swap_buffers = 0;
 	
 	static uint10_t line = 0;
 	static uint16_t copy_cycle = 0;
@@ -250,7 +250,10 @@ uint2_t step_gpu(
 	line = vsync ? 0 : (line + hsync);
 	pixel_counter = vsync ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
 	is_copy_start_cycle = hsync & (line == 762 ? 1 : 0);
-	is_copy_phase = vsync ? 0 : (is_copy_start_cycle ? (is_cpu_waiting | ~has_screen_vector) : is_copy_phase);
+	
+	can_swap_buffers = is_copy_start_cycle ? ((is_cpu_waiting | ~has_screen_vector) ? 1 : ~can_swap_buffers) : can_swap_buffers;
+	is_copy_phase = ~vsync & (is_copy_phase | (is_copy_start_cycle & can_swap_buffers));  	
+	
 	copy_cycle = (vsync | is_copy_start_cycle) ? 0 : (copy_cycle + is_copy_phase);
 	
 	is_fill_active = is_fill_active ? ~(is_new_fill_row & is_last_fill_col) : 0;
