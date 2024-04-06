@@ -1,5 +1,5 @@
 # uxn-fpga
-Very early work in progress implementation of [Varvara / UXN](https://100r.co/site/uxn.html) by [hundredrabbits](https://100r.co/site/home.html) in FPGA using [PipelineC](https://github.com/JulianKemmerer/PipelineC). Intended for importing into the [openfpga-uxn](https://github.com/tsalvo/openfpga-uxn) core for Analogue Pocket.
+Very early work in progress implementation of [Varvara / UXN](https://100r.co/site/uxn.html) by [hundredrabbits](https://100r.co/site/home.html) in FPGA using [PipelineC](https://github.com/JulianKemmerer/PipelineC). Intended for importing into the [openfpga-varvara](https://github.com/tsalvo/openfpga-varvara) core for Analogue Pocket.
 
 ### Change test ROM (for GHDL simulation):
 Currently several ROMs are available as C arrays within `.h` files in the `roms/` directory:
