@@ -64,18 +64,20 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint12_t step_cpu_phase = 0;
-	static uint1_t is_ins_done = 0, is_waiting = 0, pending_frame = 0, pending_controller = 0, has_controller_vector = 0, controller0_input_changed = 0;
+	static uint1_t is_ins_done = 0, is_waiting = 0, pending_frame = 0, pending_controller = 0;
 	static uint8_t last_controller0 = 0;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
 	
-	has_controller_vector = controller_vector(15, 8) == 0 ? 0 : 1;
-	controller0_input_changed = controller0_buttons != last_controller0 ? is_new_frame : 0;
-	pending_controller = is_new_frame ? pending_controller | (has_controller_vector & controller0_input_changed) : pending_controller;
+	if (controller0_buttons != last_controller0 && controller_vector(15, 8) != 0) {
+		pending_controller = 1;
+	}
+	
 	pending_frame = is_new_frame & has_screen_vector;
 	pc = is_waiting ? (pending_frame ? screen_vector : (pending_controller ? controller_vector : pc)) : pc;
 	is_waiting = pending_frame | pending_controller ? 0 : is_waiting;
 	pending_controller = pc == controller_vector ? 0 : pending_controller;
-	last_controller0 = is_new_frame ? controller0_buttons : last_controller0;
+	
+	last_controller0 = controller0_buttons;
 	
 	if (step_cpu_phase == 0) {
 		is_ins_done = 0;
