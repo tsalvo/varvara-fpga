@@ -24,6 +24,7 @@ typedef struct opcode_result_t {
 	
 	int4_t sp_relative_shift; // updated stack pointer value
 	
+	uint1_t is_stack_operation_16bit;
 	uint1_t is_stack_write;
 	uint4_t stack_address_sp_offset;
 	
@@ -36,7 +37,7 @@ typedef struct opcode_result_t {
 	uint1_t vram_write_layer;
 
 	uint8_t u8_value; // for stack_value, ram_value, vram_value, device_ram_value
-	uint16_t u16_value; // for pc value, vram address write, or ram address read
+	uint16_t u16_value; // for pc value, 16-bit stack writes, vram address write, or ram address read
 		
 	uint1_t is_opc_done;
 } opcode_result_t;
@@ -77,6 +78,7 @@ opcode_result_t jci(uint8_t phase, uint16_t pc, uint8_t previous_stack_read, uin
 		#if DEBUG
 		printf("************\n**** JCI ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -116,6 +118,7 @@ opcode_result_t jmi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		#if DEBUG
 		printf("************\n**** JMI ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.sp_relative_shift = 0;
@@ -151,6 +154,7 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		printf("************\n**** JSI ***\n************\n");
 		#endif
 		tmp16 = pc + 2;
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
 		result.is_ram_write = 0;
@@ -191,6 +195,7 @@ opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		#if DEBUG
 		printf("************\n**** LIT ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
@@ -225,6 +230,7 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 		#if DEBUG
 		printf("************\n*** LIT2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
@@ -264,6 +270,7 @@ opcode_result_t pop(uint8_t phase, uint8_t ins) {
 		#if DEBUG
 		printf("************\n**** POP ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
@@ -283,6 +290,7 @@ opcode_result_t pop2(uint8_t phase, uint8_t ins) {
 		#if DEBUG
 		printf("************\n*** POP2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
 		result.is_pc_updated = 0;
@@ -303,6 +311,7 @@ opcode_result_t ovr(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** OVR ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -345,6 +354,7 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** OVR2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -410,6 +420,7 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uin
 		printf("************\n**** DEI ***\n************\n");
 		#endif
 		has_written_to_t = 0;
+		result.is_stack_operation_16bit = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
@@ -458,6 +469,7 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, ui
 		#endif
 		is_first_dei_done = 0;
 		current_dei_phase = 0;
+		result.is_stack_operation_16bit = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_write = 0;
 		result.is_stack_index_flipped = 0;
@@ -503,6 +515,7 @@ opcode_result_t deo(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		#if DEBUG
 		printf("************\n**** DEO ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -546,6 +559,7 @@ opcode_result_t deo2(uint12_t phase, uint8_t ins, uint8_t previous_stack_read, u
 		#if DEBUG
 		printf("************\n*** DEO2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -599,6 +613,7 @@ opcode_result_t jmp(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		#if DEBUG
 		printf("************\n**** JMP ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -630,6 +645,7 @@ opcode_result_t jmp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** JMP2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -665,6 +681,7 @@ opcode_result_t jcn(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		#if DEBUG
 		printf("************\n**** JCN ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -700,6 +717,7 @@ opcode_result_t jcn2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** JCN2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -739,6 +757,7 @@ opcode_result_t jsr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		#if DEBUG
 		printf("************\n**** JSR ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -780,6 +799,7 @@ opcode_result_t jsr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		#if DEBUG
 		printf("************\n*** JSR2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -825,6 +845,7 @@ opcode_result_t add(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** ADD ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -860,6 +881,7 @@ opcode_result_t add2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** ADD2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -911,6 +933,7 @@ opcode_result_t and(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** AND ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -946,6 +969,7 @@ opcode_result_t and2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** AND2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -997,6 +1021,7 @@ opcode_result_t ora(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** ORA ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1032,6 +1057,7 @@ opcode_result_t ora2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** ORA2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1083,6 +1109,7 @@ opcode_result_t eor(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** EOR ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1118,6 +1145,7 @@ opcode_result_t eor2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** EOR2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1169,6 +1197,7 @@ opcode_result_t equ(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** EQU ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1204,6 +1233,7 @@ opcode_result_t equ2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** EQU2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1249,6 +1279,7 @@ opcode_result_t neq(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** NEQ ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1284,6 +1315,7 @@ opcode_result_t neq2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** NEQ2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1330,6 +1362,7 @@ opcode_result_t inc(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** INC ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1362,6 +1395,7 @@ opcode_result_t inc2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** INC2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1401,6 +1435,7 @@ opcode_result_t lda(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		#if DEBUG
 		printf("************\n**** LDA ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1444,6 +1479,7 @@ opcode_result_t ldz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, uin
 		#if DEBUG
 		printf("************\n**** LDZ ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1483,6 +1519,7 @@ opcode_result_t ldz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		#if DEBUG
 		printf("************\n*** LDZ2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1528,6 +1565,7 @@ opcode_result_t stz(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** STZ ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1564,6 +1602,7 @@ opcode_result_t stz2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** STZ2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1606,6 +1645,7 @@ opcode_result_t ldr(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_st
 		#if DEBUG
 		printf("************\n**** LDR ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1645,6 +1685,7 @@ opcode_result_t ldr2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		#if DEBUG
 		printf("************\n*** LDR2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1689,6 +1730,7 @@ opcode_result_t str1(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		#if DEBUG
 		printf("************\n**** STR ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1724,6 +1766,7 @@ opcode_result_t str2(uint8_t phase, uint8_t ins, uint16_t pc, uint8_t previous_s
 		#if DEBUG
 		printf("************\n*** STR2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1767,6 +1810,7 @@ opcode_result_t lda2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read, ui
 		#if DEBUG
 		printf("************\n*** LDA2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1816,6 +1860,7 @@ opcode_result_t gth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** ADD ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1851,6 +1896,7 @@ opcode_result_t gth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** GTH2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1896,6 +1942,7 @@ opcode_result_t lth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** LTH ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1931,6 +1978,7 @@ opcode_result_t lth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** LTH2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -1976,6 +2024,7 @@ opcode_result_t mul(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** MUL ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2011,6 +2060,7 @@ opcode_result_t mul2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** MUL2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2062,6 +2112,7 @@ opcode_result_t div(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** DIV ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2097,6 +2148,7 @@ opcode_result_t div2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** DIV2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2148,6 +2200,7 @@ opcode_result_t nip(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** NIP ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2181,6 +2234,7 @@ opcode_result_t nip2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** NIP2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2220,6 +2274,7 @@ opcode_result_t sft(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** SFT ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2258,6 +2313,7 @@ opcode_result_t sft2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** SFT2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2305,6 +2361,7 @@ opcode_result_t sta(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** STA ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2346,6 +2403,7 @@ opcode_result_t sta2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** STA2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2393,6 +2451,7 @@ opcode_result_t sth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** STH ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2426,6 +2485,7 @@ opcode_result_t sth2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** STH2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2468,6 +2528,7 @@ opcode_result_t sub1(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** SUB ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2503,6 +2564,7 @@ opcode_result_t sub2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** SUB2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2554,6 +2616,7 @@ opcode_result_t swp(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** SWP ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2592,6 +2655,7 @@ opcode_result_t swp2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** SWP2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2646,6 +2710,7 @@ opcode_result_t rot(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** ROT ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2692,6 +2757,7 @@ opcode_result_t rot2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** ROT2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2762,6 +2828,7 @@ opcode_result_t dup(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n**** DUP ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2797,6 +2864,7 @@ opcode_result_t dup2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 		#if DEBUG
 		printf("************\n*** DUP2 ***\n************\n");
 		#endif
+		result.is_stack_operation_16bit = 0;
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
 		result.is_stack_index_flipped = 0;
@@ -2840,6 +2908,7 @@ opcode_result_t brk(uint8_t phase) {
 	#if DEBUG
 	printf("************\n**** BRK ***\n************\n");
 	#endif
+	result.is_stack_operation_16bit = 0;
 	result.is_stack_write = 0;
 	result.sp_relative_shift = 0;
 	result.is_stack_index_flipped = 0;
@@ -2862,8 +2931,8 @@ eval_opcode_result_t eval_opcode_phased(
 	static uint8_t sp0, sp1, ins_a, opc;
 	static uint1_t stack_index, is_wait;
 	static uint9_t stack_address = 0;
-	static uint8_t previous_stack_read = 0;
-	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	static uint16_t previous_stack_read = 0;
+	static opcode_result_t opc_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	static eval_opcode_result_t opc_eval_result = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	
 	is_wait = 0;
@@ -2958,8 +3027,11 @@ eval_opcode_result_t eval_opcode_phased(
 	stack_address |= (stack_index ? 0b100000000 : 0);
 	
 	previous_stack_read = stack_ram_update(
-		stack_address, 
-		opc_result.u8_value,
+		opc_result.is_stack_operation_16bit ? stack_address : 0,
+		opc_result.is_stack_operation_16bit ? ((uint8_t)(opc_result.u16_value >> 8)) : 0,
+		opc_result.is_stack_operation_16bit & opc_result.is_stack_write,
+		opc_result.is_stack_operation_16bit ? (stack_address + 1) : stack_address,
+		opc_result.is_stack_operation_16bit ? ((uint8_t)(opc_result.u16_value)) : opc_result.u8_value,
 		opc_result.is_stack_write
 	);
 	
