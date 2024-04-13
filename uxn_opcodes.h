@@ -245,19 +245,17 @@ opcode_result_t pop(uint8_t phase, uint8_t ins) {
 
 opcode_result_t pop2(uint8_t phase, uint8_t ins) {
 	// SET(2,-2)
-	static opcode_result_t result;
-	if (phase == 0) {
-		#if DEBUG
-		printf("************\n*** POP2 ***\n************\n");
-		#endif
-		result.is_stack_write = 0;
-		result.is_stack_index_flipped = 0;
-		result.is_pc_updated = 0;
-		result.is_ram_write = 0;
-		result.is_vram_write = 0;
-		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
-		result.is_opc_done = 1;
-	}
+	#if DEBUG
+	printf("************\n**** POP2 ***\n************\n");
+	#endif
+	opcode_result_t result;
+	result.is_stack_write = 0;
+	result.is_stack_index_flipped = 0;
+	result.is_pc_updated = 0;
+	result.is_ram_write = 0;
+	result.is_vram_write = 0;
+	result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
+	result.is_opc_done = 1;
 	
 	return result;
 }
