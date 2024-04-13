@@ -151,12 +151,14 @@ uint2_t step_gpu(
 	static uint8_t fill_x0, fill_y0, fill_x1, fill_y1, x, y;
 	static uint2_t fill_color;
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
-	static uint16_t pixel_counter = 0; // 256*256, max = 65535
+	static uint16_t pixel_counter = 0; // 256*256, max = 65535, visible pixels only
+	static uint20_t cycle_counter = 0; // max 1024x1024, includes all pixels
+	static uint20_t buffer_swap_begin_cycle = 0; // cycle at which we begin swapping buffers
+	static uint16_t buffer_swap_cycle = 0;
 	static uint16_t tmp16 = 0;
 	static uint1_t is_caught_up = 0, is_read_ready = 0, is_copy_phase = 0, is_copy_start_cycle = 0, can_swap_buffers = 0;
 	
-	static uint10_t line = 0;
-	static uint16_t copy_cycle = 0;
+
 	
 	is_caught_up = queue_read_ptr == queue_write_ptr ? 1 : 0;
 	is_read_ready = queue_phase == 2 ? 1 : 0;
@@ -205,11 +207,11 @@ uint2_t step_gpu(
 	}
 	
 	// READ: from upper buffer if copy phase, lower buffer otherwise
-	adjusted_read_address = uint17_uint16_0(0, is_copy_phase ? copy_cycle : pixel_counter);
+	adjusted_read_address = uint17_uint16_0(0, is_copy_phase ? buffer_swap_cycle : pixel_counter);
 	adjusted_read_address = uint17_uint1_16(adjusted_read_address, is_copy_phase);
 	
 	// WRITE: to lower buffer if copy phase, upper buffer otherwise
-	adjusted_write_address = is_copy_phase ? uint17_uint16_0(0, copy_cycle - 2) : uint17_uint8_8(0, y);
+	adjusted_write_address = is_copy_phase ? uint17_uint16_0(0, buffer_swap_cycle - 2) : uint17_uint8_8(0, y);
 	adjusted_write_address = is_copy_phase ? adjusted_write_address : uint17_uint8_0(adjusted_write_address, x);
 	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_copy_phase);
 	
@@ -247,14 +249,15 @@ uint2_t step_gpu(
 		queue_write_enable		// write enable
 	);
 	
-	line = vsync ? 0 : (line + hsync);
 	pixel_counter = vsync ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
-	is_copy_start_cycle = hsync & (line == 762 ? 1 : 0);
+	buffer_swap_begin_cycle = vsync ? cycle_counter - 65538 : buffer_swap_begin_cycle;
+	cycle_counter = vsync ? 0 : cycle_counter + 1;
+	is_copy_start_cycle = cycle_counter == buffer_swap_begin_cycle ? 1 : 0;
 	
 	can_swap_buffers = is_copy_start_cycle ? ((is_cpu_waiting | ~has_screen_vector) ? 1 : ~can_swap_buffers) : can_swap_buffers;
 	is_copy_phase = ~vsync & (is_copy_phase | (is_copy_start_cycle & can_swap_buffers));  	
 	
-	copy_cycle = (vsync | is_copy_start_cycle) ? 0 : (copy_cycle + is_copy_phase);
+	buffer_swap_cycle = (vsync | is_copy_start_cycle) ? 0 : (buffer_swap_cycle + is_copy_phase);
 	
 	is_fill_active = is_fill_active ? ~(is_new_fill_row & is_last_fill_col) : 0;
 	current_queue_item.is_valid = is_fill_active;
@@ -352,7 +355,6 @@ uint16_t uxn_top(
 	static uint24_t boot_check = 0;
 	static uint16_t uxn_eval_result = 0;
 	static uint1_t is_booted = 0;
-	
 	static uint2_t gpu_color;
 	static cpu_step_result_t cpu_step_result;
 	static uint1_t is_ram_write = 0;
