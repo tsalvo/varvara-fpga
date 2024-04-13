@@ -446,23 +446,11 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint12_t p
 }
 
 device_in_result_t generic_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_in_result_t result = {0, 0, 0};
 	
-	if (phase == 0) {
-		result.device_ram_address = device_address;
-		result.dei_value = 0;
-		result.is_dei_done = 0;
-	}
-	else if (phase == 1) {
-		result.device_ram_address = 0;
-		result.dei_value = 0;
-		result.is_dei_done = 0;
-	}
-	else if (phase == 2) {
-		result.device_ram_address = 0;
-		result.dei_value = previous_device_ram_read;
-		result.is_dei_done = 1;
-	}
+	device_in_result_t result;
+	result.device_ram_address = phase == 0 ? device_address : 0;
+	result.dei_value = phase == 2 ? previous_device_ram_read : 0;
+	result.is_dei_done = phase == 2 ? 1 : 0;
 	
 	return result;
 }
