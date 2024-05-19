@@ -213,7 +213,7 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		tmp8 = uint8_uint1_2(tmp8, flip_y);
 		tmp8 = uint8_uint1_3(tmp8, flip_x);
 		tmp8 = uint8_uint1_4(tmp8, ctrl_mode);
-		tmp8b = ~(ctrl_mode & ~is_x_in_bounds) ? x(7, 0) : 0xFF;
+		tmp8b = ~(ctrl_mode & ~is_x_in_bounds) ? x : 0xFF;
 		is_x_in_bounds = ctrl_mode ? (flip_x | is_x_in_bounds) : is_x_in_bounds;
 		is_y_in_bounds = ctrl_mode ? (flip_y | is_y_in_bounds) : is_y_in_bounds;
 		result.u16_addr = uint16_uint8_0(0, x);
