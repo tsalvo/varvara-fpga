@@ -324,8 +324,8 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 	else {
 		auto_advance = phase == 0x009 ? previous_device_ram_read : auto_advance;
 		auto_length = auto_advance(7, 4); 	  // rML
-		x_sprite_incr = auto_advance(0) ? 0x8 : 0;  // rDX
-		y_sprite_incr = auto_advance(1) ? 0x8 : 0;  // rDY
+		x_sprite_incr = uint4_uint1_3(0, auto_advance(0)); // rDX
+		y_sprite_incr = uint4_uint1_3(0, auto_advance(1)); // rDY
 		ram_addr_incr = (auto_advance(2) ? (ctrl_mode ? 0x0010 : 0x0008) : 0);
 		if (is_blit_done) {
 			if (tmp12 == phase) {

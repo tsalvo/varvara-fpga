@@ -293,39 +293,32 @@ vector_snoop_result_t vector_snoop(uint8_t device_ram_address, uint8_t device_ra
 
 uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write, uint2_t gpu_step_color) {
 	static uint12_t color[4] = {0xFFF, 0x000, 0x7DB, 0xF62};
-	static uint4_t device_ram_addr_lo = 0, device_ram_addr_hi = 0, color_cmp_0 = 0, color_cmp_1 = 0;
-	static uint1_t is_palette_range = 0;
+	static uint5_t device_ram_addr_7dt3 = 0;
+	static uint4_t color_cmp_0 = 0, color_cmp_1 = 0;
+	static uint2_t device_ram_addr_2dt1 = 0, index0 = 0, index1 = 0;
+	static uint1_t is_palette_range = 0, device_ram_addr_0 = 0;
 	
-	device_ram_addr_hi = device_ram_address(7, 4);
-	device_ram_addr_lo = device_ram_address(3, 0);
-	color_cmp_0 = device_ram_value(7, 4);
-	color_cmp_1 = device_ram_value(3, 0);
-	is_palette_range = device_ram_addr_hi == 0 ? 1 : 0;
+	device_ram_addr_7dt3 = device_ram_address(7, 3);
+	is_palette_range = device_ram_addr_7dt3 == 1 ? 1 : 0;
 	
 	if (is_device_ram_write & is_palette_range) {
-		if (device_ram_addr_lo == 0x8) {
-			color[0] = uint12_uint4_8(color[0], color_cmp_0);
-			color[1] = uint12_uint4_8(color[1], color_cmp_1);
+		device_ram_addr_2dt1 = device_ram_address(2, 1);
+		device_ram_addr_0 = device_ram_address(0);
+		color_cmp_0 = device_ram_value(7, 4);
+		color_cmp_1 = device_ram_value(3, 0);
+		index0 = uint2_uint1_1(0, device_ram_addr_0);
+		index1 = index0 | 0b01;
+		if (device_ram_addr_2dt1 == 0) {
+			color[index0] = uint12_uint4_8(color[index0], color_cmp_0);
+			color[index1] = uint12_uint4_8(color[index1], color_cmp_1);
 		}
-		else if (device_ram_addr_lo == 0x9) {
-			color[2] = uint12_uint4_8(color[2], color_cmp_0);
-			color[3] = uint12_uint4_8(color[3], color_cmp_1);
+		else if (device_ram_addr_2dt1 == 1) {
+			color[index0] = uint12_uint4_4(color[index0], color_cmp_0);
+			color[index1] = uint12_uint4_4(color[index1], color_cmp_1);
 		}
-		else if (device_ram_addr_lo == 0xA) {
-			color[0] = uint12_uint4_4(color[0], color_cmp_0);
-			color[1] = uint12_uint4_4(color[1], color_cmp_1);
-		}
-		else if (device_ram_addr_lo == 0xB) {
-			color[2] = uint12_uint4_4(color[2], color_cmp_0);
-			color[3] = uint12_uint4_4(color[3], color_cmp_1);
-		}
-		else if (device_ram_addr_lo == 0xC) {
-			color[0] = uint12_uint4_0(color[0], color_cmp_0);
-			color[1] = uint12_uint4_0(color[1], color_cmp_1);
-		}
-		else if (device_ram_addr_lo == 0xD) {
-			color[2] = uint12_uint4_0(color[2], color_cmp_0);
-			color[3] = uint12_uint4_0(color[3], color_cmp_1);
+		else if (device_ram_addr_2dt1 == 2) {
+			color[index0] = uint12_uint4_0(color[index0], color_cmp_0);
+			color[index1] = uint12_uint4_0(color[index1], color_cmp_1);
 		}
 	}
 	
