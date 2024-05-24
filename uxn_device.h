@@ -213,7 +213,7 @@ device_out_result_t pixel_deo(uint4_t device_port, uint12_t phase, uint8_t previ
 		tmp8 = uint8_uint1_2(tmp8, flip_y);
 		tmp8 = uint8_uint1_3(tmp8, flip_x);
 		tmp8 = uint8_uint1_4(tmp8, ctrl_mode);
-		tmp8b = ~(ctrl_mode & ~is_x_in_bounds) ? x(7, 0) : 0xFF;
+		tmp8b = ~(ctrl_mode & ~is_x_in_bounds) ? x : 0xFF;
 		is_x_in_bounds = ctrl_mode ? (flip_x | is_x_in_bounds) : is_x_in_bounds;
 		is_y_in_bounds = ctrl_mode ? (flip_y | is_y_in_bounds) : is_y_in_bounds;
 		result.u16_addr = uint16_uint8_0(0, x);
@@ -324,8 +324,8 @@ device_out_result_t sprite_deo(uint4_t device_port, uint12_t phase, uint8_t prev
 	else {
 		auto_advance = phase == 0x009 ? previous_device_ram_read : auto_advance;
 		auto_length = auto_advance(7, 4); 	  // rML
-		x_sprite_incr = auto_advance(0) ? 0x8 : 0;  // rDX
-		y_sprite_incr = auto_advance(1) ? 0x8 : 0;  // rDY
+		x_sprite_incr = uint4_uint1_3(0, auto_advance(0)); // rDX
+		y_sprite_incr = uint4_uint1_3(0, auto_advance(1)); // rDY
 		ram_addr_incr = (auto_advance(2) ? (ctrl_mode ? 0x0010 : 0x0008) : 0);
 		if (is_blit_done) {
 			if (tmp12 == phase) {
@@ -446,23 +446,11 @@ device_out_result_t device_out(uint8_t device_address, uint8_t value, uint12_t p
 }
 
 device_in_result_t generic_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
-	static device_in_result_t result = {0, 0, 0};
 	
-	if (phase == 0) {
-		result.device_ram_address = device_address;
-		result.dei_value = 0;
-		result.is_dei_done = 0;
-	}
-	else if (phase == 1) {
-		result.device_ram_address = 0;
-		result.dei_value = 0;
-		result.is_dei_done = 0;
-	}
-	else if (phase == 2) {
-		result.device_ram_address = 0;
-		result.dei_value = previous_device_ram_read;
-		result.is_dei_done = 1;
-	}
+	device_in_result_t result;
+	result.device_ram_address = phase == 0 ? device_address : 0;
+	result.dei_value = phase == 2 ? previous_device_ram_read : 0;
+	result.is_dei_done = phase == 2 ? 1 : 0;
 	
 	return result;
 }

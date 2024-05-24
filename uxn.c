@@ -60,7 +60,7 @@ typedef struct cpu_step_result_t {
 
 } cpu_step_result_t;
 
-cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint8_t controller0_buttons, uint1_t is_new_frame, uint1_t has_screen_vector, uint16_t screen_vector, uint16_t controller_vector) {
+cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint8_t controller0_buttons, uint1_t is_new_frame, uint1_t has_screen_vector, uint1_t has_controller_vector, uint16_t screen_vector, uint16_t controller_vector) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint12_t step_cpu_phase = 0;
@@ -68,7 +68,7 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	static uint8_t last_controller0 = 0;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
 	
-	if (controller0_buttons != last_controller0 && controller_vector(15, 8) != 0) {
+	if (has_controller_vector & (controller0_buttons != last_controller0 ? 1 : 0)) {
 		pending_controller = 1;
 	}
 	
@@ -151,12 +151,12 @@ uint2_t step_gpu(
 	static uint8_t fill_x0, fill_y0, fill_x1, fill_y1, x, y;
 	static uint2_t fill_color;
 	static uint1_t is_new_fill_row, is_last_fill_col, is_fill_active, fill_layer, is_fill_top, is_fill_left, is_fill_pixel0, is_fill_pixel1;
-	static uint16_t pixel_counter = 0; // 256*256, max = 65535
+	static uint16_t pixel_counter = 0; // 256*256, max = 65535, visible pixels only
+	static uint20_t cycle_counter = 0; // max 1024x1024, includes all pixels
+	static uint20_t buffer_swap_begin_cycle = 0; // cycle at which we begin swapping buffers
+	static uint16_t buffer_swap_cycle = 0;
 	static uint16_t tmp16 = 0;
 	static uint1_t is_caught_up = 0, is_read_ready = 0, is_copy_phase = 0, is_copy_start_cycle = 0, can_swap_buffers = 0;
-	
-	static uint10_t line = 0;
-	static uint16_t copy_cycle = 0;
 	
 	is_caught_up = queue_read_ptr == queue_write_ptr ? 1 : 0;
 	is_read_ready = queue_phase == 2 ? 1 : 0;
@@ -205,11 +205,11 @@ uint2_t step_gpu(
 	}
 	
 	// READ: from upper buffer if copy phase, lower buffer otherwise
-	adjusted_read_address = uint17_uint16_0(0, is_copy_phase ? copy_cycle : pixel_counter);
+	adjusted_read_address = uint17_uint16_0(0, is_copy_phase ? buffer_swap_cycle : pixel_counter);
 	adjusted_read_address = uint17_uint1_16(adjusted_read_address, is_copy_phase);
 	
 	// WRITE: to lower buffer if copy phase, upper buffer otherwise
-	adjusted_write_address = is_copy_phase ? uint17_uint16_0(0, copy_cycle - 2) : uint17_uint8_8(0, y);
+	adjusted_write_address = is_copy_phase ? uint17_uint16_0(0, buffer_swap_cycle - 2) : uint17_uint8_8(0, y);
 	adjusted_write_address = is_copy_phase ? adjusted_write_address : uint17_uint8_0(adjusted_write_address, x);
 	adjusted_write_address = uint17_uint1_16(adjusted_write_address, ~is_copy_phase);
 	
@@ -247,14 +247,15 @@ uint2_t step_gpu(
 		queue_write_enable		// write enable
 	);
 	
-	line = vsync ? 0 : (line + hsync);
 	pixel_counter = vsync ? 0 : (is_active_drawing_area ? (pixel_counter + 1) : pixel_counter);
-	is_copy_start_cycle = hsync & (line == 762 ? 1 : 0);
+	buffer_swap_begin_cycle = vsync ? cycle_counter - 65538 : buffer_swap_begin_cycle;
+	cycle_counter = vsync ? 0 : cycle_counter + 1;
+	is_copy_start_cycle = cycle_counter == buffer_swap_begin_cycle ? 1 : 0;
 	
 	can_swap_buffers = is_copy_start_cycle ? ((is_cpu_waiting | ~has_screen_vector) ? 1 : ~can_swap_buffers) : can_swap_buffers;
 	is_copy_phase = ~vsync & (is_copy_phase | (is_copy_start_cycle & can_swap_buffers));  	
 	
-	copy_cycle = (vsync | is_copy_start_cycle) ? 0 : (copy_cycle + is_copy_phase);
+	buffer_swap_cycle = (vsync | is_copy_start_cycle) ? 0 : (buffer_swap_cycle + is_copy_phase);
 	
 	is_fill_active = is_fill_active ? ~(is_new_fill_row & is_last_fill_col) : 0;
 	current_queue_item.is_valid = is_fill_active;
@@ -266,18 +267,22 @@ uint2_t step_gpu(
 typedef struct vector_snoop_result_t {
 	uint16_t screen;
 	uint16_t controller;
+	uint1_t has_screen_vector;
+	uint1_t has_controller_vector;
 } vector_snoop_result_t;
 
 vector_snoop_result_t vector_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write) {
-	static vector_snoop_result_t vectors = {0, 0};
+	static vector_snoop_result_t vectors = {0, 0, 0, 0};
 	
 	if (is_device_ram_write) {
 		if (device_ram_address == 0x20) {
 			vectors.screen = uint16_uint8_8(vectors.screen, device_ram_value);
+			vectors.has_screen_vector = device_ram_value == 0 ? 0 : 1;
 		} else if (device_ram_address == 0x21) {
 			vectors.screen = uint16_uint8_0(vectors.screen, device_ram_value);
 		} else if (device_ram_address == 0x80) {
 			vectors.controller = uint16_uint8_8(vectors.controller, device_ram_value);
+			vectors.has_controller_vector = device_ram_value == 0 ? 0 : 1;
 		} else if (device_ram_address == 0x81) {
 			vectors.controller = uint16_uint8_0(vectors.controller, device_ram_value);
 		}
@@ -288,39 +293,32 @@ vector_snoop_result_t vector_snoop(uint8_t device_ram_address, uint8_t device_ra
 
 uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uint1_t is_device_ram_write, uint2_t gpu_step_color) {
 	static uint12_t color[4] = {0xFFF, 0x000, 0x7DB, 0xF62};
-	static uint4_t device_ram_addr_lo = 0, device_ram_addr_hi = 0, color_cmp_0 = 0, color_cmp_1 = 0;
-	static uint1_t is_palette_range = 0;
+	static uint5_t device_ram_addr_7dt3 = 0;
+	static uint4_t color_cmp_0 = 0, color_cmp_1 = 0;
+	static uint2_t device_ram_addr_2dt1 = 0, index0 = 0, index1 = 0;
+	static uint1_t is_palette_range = 0, device_ram_addr_0 = 0;
 	
-	device_ram_addr_hi = device_ram_address(7, 4);
-	device_ram_addr_lo = device_ram_address(3, 0);
-	color_cmp_0 = device_ram_value(7, 4);
-	color_cmp_1 = device_ram_value(3, 0);
-	is_palette_range = device_ram_addr_hi == 0 ? 1 : 0;
+	device_ram_addr_7dt3 = device_ram_address(7, 3);
+	is_palette_range = device_ram_addr_7dt3 == 1 ? 1 : 0;
 	
 	if (is_device_ram_write & is_palette_range) {
-		if (device_ram_addr_lo == 0x8) {
-			color[0] = uint12_uint4_8(color[0], color_cmp_0);
-			color[1] = uint12_uint4_8(color[1], color_cmp_1);
+		device_ram_addr_2dt1 = device_ram_address(2, 1);
+		device_ram_addr_0 = device_ram_address(0);
+		color_cmp_0 = device_ram_value(7, 4);
+		color_cmp_1 = device_ram_value(3, 0);
+		index0 = uint2_uint1_1(0, device_ram_addr_0);
+		index1 = index0 | 0b01;
+		if (device_ram_addr_2dt1 == 0) {
+			color[index0] = uint12_uint4_8(color[index0], color_cmp_0);
+			color[index1] = uint12_uint4_8(color[index1], color_cmp_1);
 		}
-		else if (device_ram_addr_lo == 0x9) {
-			color[2] = uint12_uint4_8(color[2], color_cmp_0);
-			color[3] = uint12_uint4_8(color[3], color_cmp_1);
+		else if (device_ram_addr_2dt1 == 1) {
+			color[index0] = uint12_uint4_4(color[index0], color_cmp_0);
+			color[index1] = uint12_uint4_4(color[index1], color_cmp_1);
 		}
-		else if (device_ram_addr_lo == 0xA) {
-			color[0] = uint12_uint4_4(color[0], color_cmp_0);
-			color[1] = uint12_uint4_4(color[1], color_cmp_1);
-		}
-		else if (device_ram_addr_lo == 0xB) {
-			color[2] = uint12_uint4_4(color[2], color_cmp_0);
-			color[3] = uint12_uint4_4(color[3], color_cmp_1);
-		}
-		else if (device_ram_addr_lo == 0xC) {
-			color[0] = uint12_uint4_0(color[0], color_cmp_0);
-			color[1] = uint12_uint4_0(color[1], color_cmp_1);
-		}
-		else if (device_ram_addr_lo == 0xD) {
-			color[2] = uint12_uint4_0(color[2], color_cmp_0);
-			color[3] = uint12_uint4_0(color[3], color_cmp_1);
+		else if (device_ram_addr_2dt1 == 2) {
+			color[index0] = uint12_uint4_0(color[index0], color_cmp_0);
+			color[index1] = uint12_uint4_0(color[index1], color_cmp_1);
 		}
 	}
 	
@@ -352,13 +350,11 @@ uint16_t uxn_top(
 	static uint24_t boot_check = 0;
 	static uint16_t uxn_eval_result = 0;
 	static uint1_t is_booted = 0;
-	
 	static uint2_t gpu_color;
 	static cpu_step_result_t cpu_step_result;
 	static uint1_t is_ram_write = 0;
 	static uint16_t u16_addr = 0x00FF; // ram address, or occasionally vram write addr
-	static vector_snoop_result_t vectors = {0, 0};
-	static uint1_t has_screen_vector = 0;
+	static vector_snoop_result_t vectors = {0, 0, 0, 0};
 	static uint8_t ram_write_value = 0;
 	static uint8_t ram_read_value = 0;
 	static uint8_t device_ram_address = 0;
@@ -393,7 +389,7 @@ uint16_t uxn_top(
 		controller0_buttons = uint8_uint1_5(controller0_buttons, controller0_down);
 		controller0_buttons = uint8_uint1_6(controller0_buttons, controller0_left);
 		controller0_buttons = uint8_uint1_7(controller0_buttons, controller0_right);
-		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, controller0_buttons, vsync, has_screen_vector, vectors.screen, vectors.controller);
+		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, controller0_buttons, vsync, vectors.has_screen_vector, vectors.has_controller_vector, vectors.screen, vectors.controller);
 		is_ram_write = cpu_step_result.is_ram_write;
 		u16_addr = cpu_step_result.u16_addr;
 		device_ram_address = cpu_step_result.device_ram_address;
@@ -416,10 +412,9 @@ uint16_t uxn_top(
 		is_device_ram_write
 	);
 	
-	gpu_color = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, has_screen_vector, cpu_step_result.is_waiting, vsync, hsync);
+	gpu_color = step_gpu(is_visible_pixel, is_vram_write, vram_write_layer, u16_addr, vram_value, vectors.has_screen_vector, cpu_step_result.is_waiting, vsync, hsync);
 	uxn_eval_result = palette_snoop(device_ram_address, ram_write_value, is_device_ram_write, gpu_color);
 	vectors = vector_snoop(device_ram_address, ram_write_value, is_device_ram_write);
-	has_screen_vector = vectors.screen == 0 ? 0 : 1;
 	
 	return uxn_eval_result;
 }

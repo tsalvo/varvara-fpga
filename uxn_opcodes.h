@@ -189,116 +189,77 @@ opcode_result_t jsi(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 
 opcode_result_t lit(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	// SHIFT( 1) T = ram[pc++];
-	static opcode_result_t result;
-	
-	if (phase == 0) {
-		#if DEBUG
-		printf("************\n**** LIT ***\n************\n");
-		#endif
-		result.is_stack_operation_16bit = 0;
-		result.is_stack_write = 0;
-		result.is_stack_index_flipped = 0;
-		result.is_pc_updated = 0;
-		result.is_ram_write = 0;
-		result.is_vram_write = 0;
-		result.sp_relative_shift = 1; 		// shift(1)
-		result.u16_value = pc; // peek RAM at at address equal to PC
-		result.is_opc_done = 0;
-	} 
-	else if (phase == 1) {
-		result.sp_relative_shift = 0;
-		result.is_pc_updated = 1;
-		result.u16_value = pc + 1; // pc += 1
-	}
-	else if (phase == 2) {
-		result.is_pc_updated = 0;
-		result.is_stack_write = 1;
-		result.stack_address_sp_offset = 1;
-		result.u8_value = previous_ram_read; // T = PEEK_RAM(pc);
-		result.is_opc_done = 1;
-	}
-		
+	#if DEBUG
+	printf("************\n**** LIT ***\n************\n");
+	#endif
+	opcode_result_t result;
+	result.is_stack_index_flipped = 0;
+	result.is_pc_updated = phase == 1 ? 1 : 0;
+	result.is_ram_write = 0;
+	result.is_vram_write = 0;
+	result.sp_relative_shift = phase == 0 ? 1 : 0; 	// shift(1)
+	result.stack_address_sp_offset = 1;
+	result.is_stack_write = phase == 2 ? 1 : 0;
+	result.u8_value = phase == 2 ? previous_ram_read : 0;
+	result.u16_value = phase == 2 ? 0 : pc + phase; // peek RAM at at address equal to PC
+	result.is_opc_done = phase == 2 ? 1 : 0;
+
 	return result;
 }
 
 opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
-	// SHIFT( 2) rr = ram + pc; T2_(PEEK2(rr)) pc += 2;
-	static uint8_t tmp8_high = 0, tmp8_low = 0;
-	static opcode_result_t result;
+	// SHIFT( 2) rr = ram + pc; T2_(PEEK2(rr)) pc += 2;	
+	static uint4_t offsets[4] = {0, 0, 2, 1};
+	static uint1_t stack_writes[4] = {0, 0, 1, 1};
+	#if DEBUG
+	printf("************\n**** LIT2 ***\n************\n");
+	#endif
 	
-	if (phase == 0) {
-		#if DEBUG
-		printf("************\n*** LIT2 ***\n************\n");
-		#endif
-		result.is_stack_operation_16bit = 0;
-		result.is_stack_write = 0;
-		result.is_stack_index_flipped = 0;
-		result.is_pc_updated = 0;
-		result.is_ram_write = 0;
-		result.is_vram_write = 0;
-		result.sp_relative_shift = 2;
-		result.u16_value = pc;     // peek RAM (high byte) of u16 at address equal to PC
-		result.is_opc_done = 0;
-	} 
-	else if (phase == 1) {
-		result.sp_relative_shift = 0;
-		result.u16_value = pc + 1; // peek RAM (low byte) of u16 at address equal to PC + 1
-	}
-	else if (phase == 2) {
-		tmp8_high = previous_ram_read;
-		result.is_pc_updated = 1;
-		result.is_stack_write = 1;
-		result.u16_value = pc + 2; // pc += 2
-		result.stack_address_sp_offset = 2;
-		result.u8_value = tmp8_high; // set T2 (high byte) to value of RAM
-	}
-	else if (phase == 3) {
-		tmp8_low = previous_ram_read;
-		result.is_pc_updated = 0;
-		result.stack_address_sp_offset = 1;
-		result.u8_value = tmp8_low;	// set T2 (low byte) to value of RAM
-		result.is_opc_done = 1;
-	}
+	opcode_result_t result;
+	result.is_stack_index_flipped = 0;
+	result.is_pc_updated = phase == 2 ? 1 : 0;
+	result.is_ram_write = 0;
+	result.is_vram_write = 0;
+	result.sp_relative_shift = phase == 0 ? 2 : 0;
+	result.stack_address_sp_offset = offsets[phase];
+	result.is_stack_write = stack_writes[phase];
+	result.u8_value = previous_ram_read;
+	result.u16_value = phase == 3 ? 0 : pc + phase;
+	result.is_opc_done = phase == 3 ? 1 : 0;
 		
 	return result;
 }
 
 opcode_result_t pop(uint8_t phase, uint8_t ins) {
 	// SET(1,-1)
-	static opcode_result_t result;
-	if (phase == 0) {
-		#if DEBUG
-		printf("************\n**** POP ***\n************\n");
-		#endif
-		result.is_stack_operation_16bit = 0;
-		result.is_stack_write = 0;
-		result.is_stack_index_flipped = 0;
-		result.is_pc_updated = 0;
-		result.is_ram_write = 0;
-		result.is_vram_write = 0;
-		result.sp_relative_shift = sp_relative_shift(ins, 1, -1);
-		result.is_opc_done = 1;
-	}
-	
+	#if DEBUG
+	printf("************\n**** POP ***\n************\n");
+	#endif
+	opcode_result_t result;
+	result.is_stack_write = 0;
+	result.is_stack_index_flipped = 0;
+	result.is_pc_updated = 0;
+	result.is_ram_write = 0;
+	result.is_vram_write = 0;
+	result.sp_relative_shift = sp_relative_shift(ins, 1, -1);
+	result.is_opc_done = 1;
+		
 	return result;
 }
 
 opcode_result_t pop2(uint8_t phase, uint8_t ins) {
 	// SET(2,-2)
-	static opcode_result_t result;
-	if (phase == 0) {
-		#if DEBUG
-		printf("************\n*** POP2 ***\n************\n");
-		#endif
-		result.is_stack_operation_16bit = 0;
-		result.is_stack_write = 0;
-		result.is_stack_index_flipped = 0;
-		result.is_pc_updated = 0;
-		result.is_ram_write = 0;
-		result.is_vram_write = 0;
-		result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
-		result.is_opc_done = 1;
-	}
+	#if DEBUG
+	printf("************\n**** POP2 ***\n************\n");
+	#endif
+	opcode_result_t result;
+	result.is_stack_write = 0;
+	result.is_stack_index_flipped = 0;
+	result.is_pc_updated = 0;
+	result.is_ram_write = 0;
+	result.is_vram_write = 0;
+	result.sp_relative_shift = sp_relative_shift(ins, 2, -2);
+	result.is_opc_done = 1;
 	
 	return result;
 }
