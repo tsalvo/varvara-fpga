@@ -50,26 +50,9 @@ uint16_t stack_ram_update(
 	rdvalue0 = stack_ram_out.rd_data0;
 	rdvalue1 = stack_ram_out.rd_data1;
 	
-	result = (uint16_t)(rdvalue0);
-	result <<= 8;
-	result |= ((uint16_t)(rdvalue1));
+	result = uint16_uint8_0(0, rdvalue1);
+	result = uint16_uint8_8(result, rdvalue0);
 	
 	return result;
 }
 
-// // 512 bytes Stack RAM (256 for work stack, 256 for return stack)
-// uint8_t stack_ram_update(uint9_t stack_address, uint8_t value, uint1_t write_enable) {
-// 	static uint8_t stack_ram[512];
-// 	static uint32_t rwaddr;
-// 	static uint8_t wdata;
-// 	rwaddr = (uint32_t)(stack_address);
-// 	wdata = value;
-// 	
-// 	uint8_t rdata = stack_ram_RAM_SP_RF_1(
-// 		rwaddr,			// rw address
-// 		wdata, 			// write value
-// 		write_enable	// write enable
-// 	);
-// 	
-// 	return rdata;
-// }
