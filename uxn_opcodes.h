@@ -1779,7 +1779,7 @@ opcode_result_t gth(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	static opcode_result_t result;
 	if (phase == 0) {
 		#if DEBUG
-		printf("************\n**** ADD ***\n************\n");
+		printf("************\n**** GTH ***\n************\n");
 		#endif
 		result.is_stack_write = 0;
 		result.sp_relative_shift = 0;
