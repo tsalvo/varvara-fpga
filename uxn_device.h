@@ -591,21 +591,21 @@ device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint8_t p
 }
 
 device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t controller0_buttons, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_device_ram_read) {
-	static uint8_t device;
+	static uint4_t device;
 	static device_in_result_t result = {0, 0, 0};
 	
-	device = device_address & 0xF0;
+	device = device_address(7, 4);
 	
-	if (device == 0x00) {
+	if (device == 0x0) {
 		result = system_dei(device_address, phase, stack_ptr0, stack_ptr1, previous_device_ram_read);
 	}
-	else if (device == 0x20) {
+	else if (device == 0x2) {
 		result = screen_dei(device_address, phase, previous_device_ram_read);
 	}
-	else if (device == 0x80) {
+	else if (device == 0x8) {
 		result = controller_dei(device_address, phase, controller0_buttons, previous_device_ram_read);
 	}
-	else if (device == 0xC0) {
+	else if (device == 0xC) {
 		result = datetime_dei(device_address, phase, previous_device_ram_read);
 	}
 	else {
