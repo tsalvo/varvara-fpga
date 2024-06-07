@@ -226,7 +226,7 @@ opcode_result_t lit2(uint8_t phase, uint16_t pc, uint8_t previous_ram_read) {
 	return result;
 }
 
-opcode_result_t pop(uint8_t phase, uint8_t ins) {
+opcode_result_t pop(uint8_t ins) {
 	// SET(1,-1)
 	#if DEBUG
 	printf("************\n**** POP ***\n************\n");
@@ -243,7 +243,7 @@ opcode_result_t pop(uint8_t phase, uint8_t ins) {
 	return result;
 }
 
-opcode_result_t pop2(uint8_t phase, uint8_t ins) {
+opcode_result_t pop2(uint8_t ins) {
 	// SET(2,-2)
 	#if DEBUG
 	printf("************\n**** POP2 ***\n************\n");
@@ -364,7 +364,7 @@ opcode_result_t ovr2(uint8_t phase, uint8_t ins, uint8_t previous_stack_read) {
 	return result;
 }
 
-opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
+opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uint32_t time, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
 	// t=T;            SET(1, 0) T = DEI(t);
 	static uint1_t has_written_to_t;
 	static uint8_t t8;
@@ -393,7 +393,7 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uin
 		result.sp_relative_shift = 0;
 		t8 = (phase == 2) ? previous_stack_read : t8;
 		if (~device_in_result.is_dei_done) {
-			device_in_result = device_in(t8, phase - 2, controller0_buttons, stack_ptr0, stack_ptr1, previous_device_ram_read);
+			device_in_result = device_in(t8, phase - 2, controller0_buttons, time, stack_ptr0, stack_ptr1, previous_device_ram_read);
 			result.device_ram_address = device_in_result.device_ram_address;
 		} else {
 			if (~has_written_to_t) {
@@ -411,7 +411,7 @@ opcode_result_t dei(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uin
 	return result;
 }
 
-opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
+opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, uint32_t time, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_stack_read, uint8_t previous_device_ram_read) {
 	// t=T;            SET(1, 1) T = DEI(t + 1); N = DEI(t);
 	static uint8_t t8, current_dei_phase, dei_param;
 	static uint1_t is_first_dei_done;
@@ -441,7 +441,7 @@ opcode_result_t dei2(uint8_t phase, uint8_t ins, uint8_t controller0_buttons, ui
 		result.sp_relative_shift = 0;
 		t8 = (phase == 2) ? previous_stack_read : t8;
 		dei_param = is_first_dei_done ? t8 : t8 + 1;
-		device_in_result = device_in(dei_param, current_dei_phase, controller0_buttons, stack_ptr0, stack_ptr1, previous_device_ram_read);
+		device_in_result = device_in(dei_param, current_dei_phase, controller0_buttons, time, stack_ptr0, stack_ptr1, previous_device_ram_read);
 		if (device_in_result.is_dei_done) {
 			current_dei_phase = 0;
 			result.is_stack_write = 1;
@@ -2821,6 +2821,7 @@ eval_opcode_result_t eval_opcode_phased(
 	uint8_t ins,
 	uint16_t pc,
 	uint8_t controller0_buttons,
+	uint32_t time,
 	uint8_t previous_ram_read,
 	uint8_t previous_device_ram_read
 ) {
@@ -2849,8 +2850,8 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0xE0 /* LIT2r */) { opc_result = lit2(phase, pc, previous_ram_read); }
 	else if (opc == 0x01 /* INC   */) { opc_result = inc(phase, ins, previous_stack_read); }
 	else if (opc == 0x21 /* INC2  */) { opc_result = inc2(phase, ins, previous_stack_read); }
-	else if (opc == 0x02 /* POP   */) { opc_result = pop(phase, ins); }
-	else if (opc == 0x22 /* POP2  */) { opc_result = pop2(phase, ins); }
+	else if (opc == 0x02 /* POP   */) { opc_result = pop(ins); }
+	else if (opc == 0x22 /* POP2  */) { opc_result = pop2(ins); }
 	else if (opc == 0x03 /* NIP   */) { opc_result = nip(phase, ins, previous_stack_read); }
 	else if (opc == 0x23 /* NIP2  */) { opc_result = nip2(phase, ins, previous_stack_read); }
 	else if (opc == 0x04 /* SWP   */) { opc_result = swp(phase, ins, previous_stack_read); }
@@ -2889,8 +2890,8 @@ eval_opcode_result_t eval_opcode_phased(
 	else if (opc == 0x34 /* LDA2  */) { opc_result = lda2(phase, ins, previous_stack_read, previous_ram_read); }
 	else if (opc == 0x15 /* STA   */) { opc_result = sta(phase, ins, previous_stack_read); }
 	else if (opc == 0x35 /* STA2  */) { opc_result = sta2(phase, ins, previous_stack_read); }
-	else if (opc == 0x16 /* DEI   */) { opc_result = dei(phase, ins, controller0_buttons, sp0, sp1, previous_stack_read, previous_device_ram_read); }
-	else if (opc == 0x36 /* DEI2  */) { opc_result = dei2(phase, ins, controller0_buttons, sp0, sp1, previous_stack_read, previous_device_ram_read); }
+	else if (opc == 0x16 /* DEI   */) { opc_result = dei(phase, ins, controller0_buttons, time, sp0, sp1, previous_stack_read, previous_device_ram_read); }
+	else if (opc == 0x36 /* DEI2  */) { opc_result = dei2(phase, ins, controller0_buttons, time, sp0, sp1, previous_stack_read, previous_device_ram_read); }
 	else if (opc == 0x17 /* DEO   */) { opc_result = deo(phase, ins, previous_stack_read, previous_device_ram_read, previous_ram_read); }
 	else if (opc == 0x37 /* DEO2  */) { opc_result = deo2(phase, ins, previous_stack_read, previous_device_ram_read, previous_ram_read); }
 	else if (opc == 0x18 /* ADD   */) { opc_result = add(phase, ins, previous_stack_read); }

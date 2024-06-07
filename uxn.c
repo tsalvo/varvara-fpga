@@ -60,6 +60,29 @@ typedef struct cpu_step_result_t {
 
 } cpu_step_result_t;
 
+uint32_t step_clock(uint1_t vsync) {
+	static uint8_t ticks = 0;
+	static uint8_t seconds = 0;
+	static uint8_t minutes = 0;
+	static uint8_t hours = 0;
+	static uint32_t result = 0;
+	
+	ticks += vsync;
+	seconds += ticks == 60 ? 1 : 0;
+	minutes += seconds == 60 ? 1 : 0;
+	hours += minutes == 60 ? 1 : 0;
+	ticks = ticks == 60 ? 0 : ticks;
+	seconds = seconds == 60 ? 0 : seconds;
+	minutes = minutes == 60 ? 0 : minutes;
+	hours = hours == 24 ? 0 : hours;
+	
+	result = uint32_uint8_0(0, seconds);
+	result = uint32_uint8_8(result, minutes);
+	result = uint32_uint8_16(result, hours);
+	
+	return result;
+}
+
 cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint8_t controller0_buttons, uint1_t is_new_frame, uint1_t has_screen_vector, uint1_t has_controller_vector, uint16_t screen_vector, uint16_t controller_vector) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
@@ -67,6 +90,9 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	static uint1_t is_ins_done = 0, is_waiting = 0, pending_frame = 0, pending_controller = 0;
 	static uint8_t last_controller0 = 0;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
+	static uint32_t time = 0;
+	
+	time = step_clock(is_new_frame);
 	
 	if (has_controller_vector & (controller0_buttons != last_controller0 ? 1 : 0)) {
 		pending_controller = 1;
@@ -91,7 +117,7 @@ cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_dev
 	}
 	else {
 		ins = step_cpu_phase == 2 ? previous_ram_read_value : ins;
-		eval_opcode_result_t eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, controller0_buttons, previous_ram_read_value, previous_device_ram_read);
+		eval_opcode_result_t eval_opcode_result = eval_opcode_phased(step_cpu_phase - 2, ins, pc, controller0_buttons, time, previous_ram_read_value, previous_device_ram_read);
 		pc = eval_opcode_result.is_pc_updated ? eval_opcode_result.u16_value : pc;
 		cpu_step_result.is_ram_write = eval_opcode_result.is_ram_write;
 		cpu_step_result.u16_addr = eval_opcode_result.u16_value;

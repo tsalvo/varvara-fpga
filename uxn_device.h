@@ -522,7 +522,7 @@ device_in_result_t controller_dei(uint8_t device_address, uint8_t phase, uint8_t
 	return result;
 }
 
-device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint8_t previous_device_ram_read) {
+device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint32_t time, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
 	static uint4_t device_port = 0;
 	device_port = (uint4_t)device_address;
@@ -550,17 +550,17 @@ device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint8_t p
 	}
 	else if (device_port == 0x4) { // hour
 		result.device_ram_address = 0;
-		result.dei_value = 0x06;
+		result.dei_value = time(23, 16);
 		result.is_dei_done = 1;
 	}
 	else if (device_port == 0x5) { // minute
 		result.device_ram_address = 0;
-		result.dei_value = 0x33;
+		result.dei_value = time(15, 8);
 		result.is_dei_done = 1;
 	}
 	else if (device_port == 0x6) { // second
 		result.device_ram_address = 0;
-		result.dei_value = 0x04;
+		result.dei_value = time(7, 0);
 		result.is_dei_done = 1;
 	}
 	else if (device_port == 0x7) { // day of week, beginning Sunday
@@ -590,7 +590,7 @@ device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint8_t p
 	return result;
 }
 
-device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t controller0_buttons, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_device_ram_read) {
+device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t controller0_buttons, uint32_t time, uint8_t stack_ptr0, uint8_t stack_ptr1, uint8_t previous_device_ram_read) {
 	static uint4_t device;
 	static device_in_result_t result = {0, 0, 0};
 	
@@ -606,7 +606,7 @@ device_in_result_t device_in(uint8_t device_address, uint8_t phase, uint8_t cont
 		result = controller_dei(device_address, phase, controller0_buttons, previous_device_ram_read);
 	}
 	else if (device == 0xC) {
-		result = datetime_dei(device_address, phase, previous_device_ram_read);
+		result = datetime_dei(device_address, phase, time, previous_device_ram_read);
 	}
 	else {
 		result = generic_dei(device_address, phase, previous_device_ram_read);
