@@ -565,7 +565,7 @@ device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint32_t 
 	}
 	else if (device_port == 0x7) { // day of week, beginning Sunday
 		result.device_ram_address = 0;
-		result.dei_value = 0x05;
+		result.dei_value = time(31, 24);
 		result.is_dei_done = 1;
 	}
 	else if (device_port == 0x8) { // day of year, high byte

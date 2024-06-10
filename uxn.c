@@ -60,39 +60,13 @@ typedef struct cpu_step_result_t {
 
 } cpu_step_result_t;
 
-uint32_t step_clock(uint1_t vsync) {
-	static uint8_t ticks = 0;
-	static uint8_t seconds = 0;
-	static uint8_t minutes = 0;
-	static uint8_t hours = 0;
-	static uint32_t result = 0;
-	
-	ticks += vsync;
-	seconds += ticks == 60 ? 1 : 0;
-	minutes += seconds == 60 ? 1 : 0;
-	hours += minutes == 60 ? 1 : 0;
-	ticks = ticks == 60 ? 0 : ticks;
-	seconds = seconds == 60 ? 0 : seconds;
-	minutes = minutes == 60 ? 0 : minutes;
-	hours = hours == 24 ? 0 : hours;
-	
-	result = uint32_uint8_0(0, seconds);
-	result = uint32_uint8_8(result, minutes);
-	result = uint32_uint8_16(result, hours);
-	
-	return result;
-}
-
-cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint8_t controller0_buttons, uint1_t is_new_frame, uint1_t has_screen_vector, uint1_t has_controller_vector, uint16_t screen_vector, uint16_t controller_vector) {
+cpu_step_result_t step_cpu(uint8_t previous_ram_read_value, uint8_t previous_device_ram_read, uint32_t time, uint8_t controller0_buttons, uint1_t is_new_frame, uint1_t has_screen_vector, uint1_t has_controller_vector, uint16_t screen_vector, uint16_t controller_vector) {
 	static uint16_t pc = 0x0100;
 	static uint8_t ins = 0;
 	static uint12_t step_cpu_phase = 0;
 	static uint1_t is_ins_done = 0, is_waiting = 0, pending_frame = 0, pending_controller = 0;
 	static uint8_t last_controller0 = 0;
 	static cpu_step_result_t cpu_step_result = {0, 0, 0, 0, 0, 0, 0, 0};
-	static uint32_t time = 0;
-	
-	time = step_clock(is_new_frame);
 	
 	if (has_controller_vector & (controller0_buttons != last_controller0 ? 1 : 0)) {
 		pending_controller = 1;
@@ -351,9 +325,59 @@ uint16_t palette_snoop(uint8_t device_ram_address, uint8_t device_ram_value, uin
 	return color[gpu_step_color];
 }
 
+uint8_t bcd_to_decimal(uint8_t bcd_value) {
+	uint8_t tens_digit = 0x0A * uint8_uint4_0(0, bcd_value(7, 4));
+	uint8_t ones_digit = uint8_uint4_0(0, bcd_value(3, 0));
+	return tens_digit + ones_digit;
+}
+
+uint32_t step_time(uint32_t bcd_time, uint1_t bcd_is_valid, uint1_t vsync) {
+	static uint8_t ticks = 0;
+	static uint8_t seconds = 0;
+	static uint8_t minutes = 0;
+	static uint8_t hours = 0;
+	static uint8_t day_of_week = 0;
+	static uint32_t result = 0;
+	static uint1_t has_set_from_bcd = 0;
+	
+	if (bcd_is_valid & ~has_set_from_bcd) {
+		ticks = 0;
+		day_of_week = bcd_to_decimal(bcd_time(31, 24)); // TODO: maybe this could be simplified
+		hours = bcd_to_decimal(bcd_time(23, 16));
+		minutes = bcd_to_decimal(bcd_time(15, 8));
+		seconds = bcd_to_decimal(bcd_time(7, 0));
+		
+		result = uint32_uint8_0(0, seconds);
+		result = uint32_uint8_8(result, minutes);
+		result = uint32_uint8_16(result, hours);
+		result = uint32_uint8_24(result, day_of_week);
+		
+		has_set_from_bcd = 1;
+	} else if (vsync) {
+		ticks += 1;
+		seconds = ticks == 60 ? seconds + 1 : seconds;
+		minutes = seconds == 60 ? minutes + 1 : minutes;
+		hours = minutes == 60 ? hours + 1 : hours;
+		day_of_week = hours == 24 ? day_of_week + 1 : day_of_week;
+		ticks = ticks == 60 ? 0 : ticks;
+		seconds = seconds == 60 ? 0 : seconds;
+		minutes = minutes == 60 ? 0 : minutes;
+		hours = hours == 24 ? 0 : hours;
+		day_of_week = day_of_week == 7 ? 0 : day_of_week;
+		
+		result = uint32_uint8_0(0, seconds);
+		result = uint32_uint8_8(result, minutes);
+		result = uint32_uint8_16(result, hours);
+		result = uint32_uint8_24(result, day_of_week);
+	}
+	
+	return result;
+}
+
 // #pragma PART "5CGXFC9E7F35C8" // TODO: try quartus step here for Cyclone V
 #pragma MAIN uxn_top
 uint16_t uxn_top(
+	uint33_t rtc_time_bcd,
 	uint1_t controller0_up,
 	uint1_t controller0_down,
 	uint1_t controller0_left,
@@ -390,6 +414,10 @@ uint16_t uxn_top(
 	static uint1_t vram_write_layer = 0;
 	static uint8_t vram_value = 0;
 	static uint8_t controller0_buttons = 0;
+	static uint1_t rtc_valid = 0;
+	static uint32_t time_reg = 0;
+	
+	time_reg = step_time(rtc_time_bcd(31, 0), rtc_time_bcd(32), vsync);
 	
 	if (~is_booted) {
 		#if DEBUG
@@ -415,7 +443,7 @@ uint16_t uxn_top(
 		controller0_buttons = uint8_uint1_5(controller0_buttons, controller0_down);
 		controller0_buttons = uint8_uint1_6(controller0_buttons, controller0_left);
 		controller0_buttons = uint8_uint1_7(controller0_buttons, controller0_right);
-		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, controller0_buttons, vsync, vectors.has_screen_vector, vectors.has_controller_vector, vectors.screen, vectors.controller);
+		cpu_step_result = step_cpu(ram_read_value, device_ram_read_value, time_reg, controller0_buttons, vsync, vectors.has_screen_vector, vectors.has_controller_vector, vectors.screen, vectors.controller);
 		is_ram_write = cpu_step_result.is_ram_write;
 		u16_addr = cpu_step_result.u16_addr;
 		device_ram_address = cpu_step_result.device_ram_address;
