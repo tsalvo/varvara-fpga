@@ -331,28 +331,27 @@ uint8_t bcd_to_decimal(uint8_t bcd_value) {
 	return tens_digit + ones_digit;
 }
 
-uint32_t step_time(uint32_t bcd_time, uint1_t bcd_is_valid, uint1_t vsync) {
+uint32_t step_time(uint1_t bcd_is_valid, uint32_t bcd_time, uint1_t vsync) {
+	
 	static uint8_t ticks = 0;
 	static uint8_t seconds = 0;
 	static uint8_t minutes = 0;
 	static uint8_t hours = 0;
 	static uint8_t day_of_week = 0;
 	static uint32_t result = 0;
-	static uint1_t has_set_from_bcd = 0;
+	static uint1_t has_set_time = 0;
 	
-	if (bcd_is_valid & ~has_set_from_bcd) {
+	if (bcd_is_valid & ~has_set_time) {
 		ticks = 0;
 		day_of_week = bcd_to_decimal(bcd_time(31, 24)); // TODO: maybe this could be simplified
 		hours = bcd_to_decimal(bcd_time(23, 16));
 		minutes = bcd_to_decimal(bcd_time(15, 8));
 		seconds = bcd_to_decimal(bcd_time(7, 0));
-		
 		result = uint32_uint8_0(0, seconds);
 		result = uint32_uint8_8(result, minutes);
 		result = uint32_uint8_16(result, hours);
 		result = uint32_uint8_24(result, day_of_week);
-		
-		has_set_from_bcd = 1;
+		has_set_time = 1;
 	} else if (vsync) {
 		ticks += 1;
 		seconds = ticks == 60 ? seconds + 1 : seconds;
@@ -364,6 +363,7 @@ uint32_t step_time(uint32_t bcd_time, uint1_t bcd_is_valid, uint1_t vsync) {
 		minutes = minutes == 60 ? 0 : minutes;
 		hours = hours == 24 ? 0 : hours;
 		day_of_week = day_of_week == 7 ? 0 : day_of_week;
+		// TODO: increment and populate day / month / year
 		
 		result = uint32_uint8_0(0, seconds);
 		result = uint32_uint8_8(result, minutes);
@@ -377,7 +377,8 @@ uint32_t step_time(uint32_t bcd_time, uint1_t bcd_is_valid, uint1_t vsync) {
 // #pragma PART "5CGXFC9E7F35C8" // TODO: try quartus step here for Cyclone V
 #pragma MAIN uxn_top
 uint16_t uxn_top(
-	uint33_t rtc_time_bcd,
+	uint1_t rtc_valid,		// is_valid
+	uint32_t rtc_time_bcd,  // BCD of current time - example 0x00235959 (bits 26 through 24 = day of week 0-6)
 	uint1_t controller0_up,
 	uint1_t controller0_down,
 	uint1_t controller0_left,
@@ -414,10 +415,9 @@ uint16_t uxn_top(
 	static uint1_t vram_write_layer = 0;
 	static uint8_t vram_value = 0;
 	static uint8_t controller0_buttons = 0;
-	static uint1_t rtc_valid = 0;
 	static uint32_t time_reg = 0;
 	
-	time_reg = step_time(rtc_time_bcd(31, 0), rtc_time_bcd(32), vsync);
+	time_reg = step_time(rtc_valid, rtc_time_bcd, vsync);
 	
 	if (~is_booted) {
 		#if DEBUG

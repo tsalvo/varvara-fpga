@@ -524,67 +524,21 @@ device_in_result_t controller_dei(uint8_t device_address, uint8_t phase, uint8_t
 
 device_in_result_t datetime_dei(uint8_t device_address, uint8_t phase, uint32_t time, uint8_t previous_device_ram_read) {
 	static device_in_result_t result = {0, 0, 0};
-	static uint4_t device_port = 0;
-	device_port = (uint4_t)device_address;
 	
-	// TODO: result should be based on system real time clock
-	if (device_port == 0x0) { 		// year, high byte
-		result.device_ram_address = 0;
-		result.dei_value = 0x07;
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0x1) { // year, low byte
-		result.device_ram_address = 0;
-		result.dei_value = 0xBE;
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0x2) { // month
-		result.device_ram_address = 0;
-		result.dei_value = 0x0B;
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0x3) { // day
-		result.device_ram_address = 0;
-		result.dei_value = 0x1E;
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0x4) { // hour
-		result.device_ram_address = 0;
+	result.device_ram_address = 0;
+	result.dei_value = 0;
+	result.is_dei_done = 1;
+	if (device_address == 0xC4) { // hour
 		result.dei_value = time(23, 16);
-		result.is_dei_done = 1;
 	}
-	else if (device_port == 0x5) { // minute
-		result.device_ram_address = 0;
+	else if (device_address == 0xC5) { // minute
 		result.dei_value = time(15, 8);
-		result.is_dei_done = 1;
 	}
-	else if (device_port == 0x6) { // second
-		result.device_ram_address = 0;
+	else if (device_address == 0xC6) { // second
 		result.dei_value = time(7, 0);
-		result.is_dei_done = 1;
 	}
-	else if (device_port == 0x7) { // day of week, beginning Sunday
-		result.device_ram_address = 0;
+	else if (device_address == 0xC7) { // day of week, beginning Sunday
 		result.dei_value = time(31, 24);
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0x8) { // day of year, high byte
-		result.device_ram_address = 0;
-		result.dei_value = 0x01;
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0x9) { // day of year, low byte
-		result.device_ram_address = 0;
-		result.dei_value = 0x6C;
-		result.is_dei_done = 1;
-	}
-	else if (device_port == 0xA) { // is daylight savings time
-		result.device_ram_address = 0;
-		result.dei_value = 0x00;
-		result.is_dei_done = 1;
-	}
-	else {
-		result = generic_dei(device_address, phase, previous_device_ram_read);
 	}
 	
 	return result;
